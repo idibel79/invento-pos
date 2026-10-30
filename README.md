@@ -4,6 +4,48 @@ Caisse web pour les produits gérés dans Invento. Backend Java 21 / Spring Boot
 front React + TypeScript / Vite (`frontend/`), servi par Spring Boot dans l'image Docker. Les règles de code et les décisions
 d'architecture sont dans [CLAUDE.md](CLAUDE.md).
 
+## Tester une PR dans son navigateur (prévisualisation locale)
+
+Prérequis, une seule fois :
+- **Docker Desktop** (lancé), pour PostgreSQL ;
+- **JDK 21** (`java -version` doit afficher 21 ou plus) ; Maven n'est pas nécessaire (`mvnw`) ;
+- **Node.js 22** et npm ;
+- **Git**, avec ce dépôt cloné.
+
+Puis, depuis la racine du dépôt, avec le numéro de la PR :
+
+```powershell
+.\scripts\preview.ps1 21          # Windows (PowerShell)
+```
+
+```bash
+scripts/preview.sh 21              # Linux, macOS, WSL
+```
+
+Si Windows refuse d'exécuter le script : `powershell -ExecutionPolicy Bypass -File scripts\preview.ps1 21`.
+
+Le script récupère la PR (HEAD détaché, `git checkout main` pour revenir ; il refuse de démarrer
+s'il y a des modifications non commitées), lance PostgreSQL (`docker compose up -d db`), recrée une
+base `pos_preview` neuve, démarre l'API avec le profil `demo` puis le front Vite et ouvre
+http://localhost:5173. Le front se recharge à chaud ; l'API se relance en relançant le script.
+Ctrl+C arrête l'API et le front (la base reste démarrée : `docker compose stop db`). Le journal de
+l'API est dans `.preview/backend.log`.
+
+Sans argument, le script prévisualise le code actuel du dossier ; un nom de branche marche aussi.
+`-GarderDonnees` (PowerShell) ou `--garder-donnees` (bash) conserve la base de la fois précédente.
+
+Données de démo (profil `demo`, jamais en production) :
+
+| Compte | Rôle | Caisses | PIN |
+|---|---|---|---|
+| `admin` | administrateur | Caisse 1, Caisse 2 | `0000` |
+| `responsable` | responsable | Caisse 1, Caisse 2 | `1234` |
+| `caissier` | caissier | Caisse 1 | — |
+
+Mot de passe `demo1234` pour tous, sans changement demandé à la connexion. Huit produits
+`DEMO-001` à `DEMO-008` (codes-barres `6118000010019`, `…026`, `…033` … `…088`), dont un presque
+épuisé (`DEMO-007`, 2 en stock) et un en rupture (`DEMO-008`).
+
 ## Démarrer en développement
 
 Prérequis : JDK 21 et Docker.

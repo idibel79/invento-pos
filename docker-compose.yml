@@ -32,7 +32,9 @@ services:
       POS_DB_URL: jdbc:postgresql://db:5432/pos
       POS_DB_USER: pos
       POS_DB_PASSWORD: ${POS_DB_PASSWORD:-pos}
-      POS_JWT_SECRET: ${POS_JWT_SECRET:?POS_JWT_SECRET doit être défini dans .env}
+      # Repris de .env sans interpolation : `docker compose up -d db` fonctionne sans ce secret,
+      # et l'application refuse de démarrer en prod s'il est absent ou vide.
+      POS_JWT_SECRET:
       POS_ADMIN_INITIAL_PASSWORD: ${POS_ADMIN_INITIAL_PASSWORD:-}
       # Sur le réseau local sans HTTPS, mettre false (sinon le cookie de session est refusé).
       POS_COOKIE_SECURE: ${POS_COOKIE_SECURE:-true}
