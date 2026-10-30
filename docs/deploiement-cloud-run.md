@@ -12,8 +12,9 @@ Vue d'ensemble :
 - **GitHub** : six variables du dépôt, **aucun secret** (les mots de passe restent dans
   Secret Manager). L'image GHCR reste privée : la CI s'y connecte avec son `GITHUB_TOKEN`.
 
-Région conseillée : **Paris** des deux côtés (Cloud Run `europe-west9`, Supabase `eu-west-3`),
-pour que chaque requête SQL ne traverse pas l'Europe.
+Région : la **même ville** des deux côtés, pour que chaque requête SQL ne traverse pas l'Europe.
+Paris = Supabase `eu-west-3` + Cloud Run `europe-west9` ; Francfort = Supabase `eu-central-1` +
+Cloud Run `europe-west3`.
 
 ## 1. Supabase
 
@@ -53,7 +54,7 @@ le service s'arrête quand personne ne l'utilise).
 
 ```bash
 export PROJECT_ID=invento-pos-test        # identifiant unique, à adapter
-export REGION=europe-west9
+export REGION=europe-west9               # ou europe-west3 si Supabase est à Francfort
 export REPO=idibel79/invento-pos
 
 gcloud projects create "$PROJECT_ID"
