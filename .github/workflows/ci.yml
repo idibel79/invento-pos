@@ -33,7 +33,7 @@ jobs:
         run: git diff --exit-code ../frontend/openapi.json
       - name: Rapport de couverture
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco
           path: backend/target/site/jacoco
@@ -113,7 +113,7 @@ jobs:
         run: npx playwright test
       - name: Rapport Playwright
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright
           path: |
