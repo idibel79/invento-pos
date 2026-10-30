@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:24-jdk AS build
 WORKDIR /src/backend
 COPY backend/.mvn .mvn
 COPY backend/mvnw backend/pom.xml ./
@@ -20,7 +20,7 @@ COPY --from=front /src/frontend/dist src/main/resources/static
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q package -DskipTests -Dspotless.check.skip=true -Djacoco.skip=true \
     && java -Djarmode=tools -jar target/invento-pos.jar extract --layers --launcher --destination /app
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:24-jre
 RUN groupadd --system pos && useradd --system --gid pos --home-dir /app pos
 WORKDIR /app
 COPY --from=build /app/dependencies/ ./
