@@ -24,6 +24,9 @@ pour que chaque requête SQL ne traverse pas l'Europe.
 
    ```sql
    create role invento_pos with login password 'MOT_DE_PASSE_GENERE';
+   -- postgres n'est pas superutilisateur sur Supabase : il doit être membre du rôle
+   -- pour lui attribuer le schéma (PostgreSQL 16+).
+   grant invento_pos to postgres;
    create schema pos authorization invento_pos;
    ```
 
