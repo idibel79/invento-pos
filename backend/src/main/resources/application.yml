@@ -1,0 +1,74 @@
+# Configuration commune. Les valeurs propres à un environnement viennent des variables
+# d'environnement (voir .env.example) ou des profils dev / test / prod.
+spring:
+  application:
+    name: invento-pos
+  datasource:
+    url: ${POS_DB_URL:jdbc:postgresql://localhost:5432/pos}
+    username: ${POS_DB_USER:pos}
+    password: ${POS_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${POS_DB_POOL_SIZE:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: ${POS_DB_SCHEMA:pos}
+        jdbc:
+          time_zone: UTC
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+  flyway:
+    # Schéma dédié : avec Supabase, il n'est pas exposé par l'API de données (schéma public).
+    schemas: ${POS_DB_SCHEMA:pos}
+    default-schema: ${POS_DB_SCHEMA:pos}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  mvc:
+    problemdetails:
+      enabled: true
+  data:
+    web:
+      pageable:
+        max-page-size: 200
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+pos:
+  security:
+    jwt-secret: ${POS_JWT_SECRET:}
+    cookie-secure: ${POS_COOKIE_SECURE:true}
+    cors-origins: ${POS_CORS_ORIGINS:}
+  admin:
+    mot-de-passe-initial: ${POS_ADMIN_INITIAL_PASSWORD:}
