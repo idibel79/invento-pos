@@ -1,0 +1,6 @@
+pos:
+  security:
+    jwt-secret: secret-de-test-uniquement-0123456789abcdef
+    cookie-secure: true
+  admin:
+    mot-de-passe-initial: Installation-2026

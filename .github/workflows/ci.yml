@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (tests, Spotless, JaCoCo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # Tests unitaires + tests d'intégration sur PostgreSQL (Testcontainers, Docker du runner).
+      - run: ./mvnw -B verify
+      - name: Rapport de couverture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco
+          path: backend/target/site/jacoco
+          if-no-files-found: ignore
+
+  image:
+    name: Image Docker
+    needs: backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Connexion à GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Sur une PR : vérifie seulement que l'image se construit (amd64).
+      # Sur main : images amd64 (Cloud Run, PC) + arm64 (Raspberry Pi) publiées sur GHCR.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ github.event_name == 'push' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Déploiement Cloud Run, actif seulement quand les variables GCP du dépôt sont renseignées
+  # (Settings > Secrets and variables > Actions > Variables). Authentification sans clé par
+  # Workload Identity Federation ; les secrets applicatifs restent dans Secret Manager.
+  deploy:
+    name: Déploiement Cloud Run
+    needs: image
+    if: github.event_name == 'push' && vars.GCP_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    environment: test-en-ligne
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      REGION: ${{ vars.GCP_REGION }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/invento-pos/app:${{ github.sha }}
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      # Cloud Run ne tire pas depuis GHCR : l'image amd64 est recopiée dans Artifact Registry.
+      - name: Copie de l'image vers Artifact Registry
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker pull --platform linux/amd64 "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          docker tag "ghcr.io/${{ github.repository }}:${{ github.sha }}" "$IMAGE"
+          docker push "$IMAGE"
+      - uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: invento-pos
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ env.IMAGE }}
+          env_vars: |
+            POS_DB_URL=${{ vars.POS_DB_URL }}
+            POS_DB_USER=${{ vars.POS_DB_USER }}
+            POS_DB_POOL_SIZE=5
+          secrets: |
+            POS_DB_PASSWORD=pos-db-password:latest
+            POS_JWT_SECRET=pos-jwt-secret:latest

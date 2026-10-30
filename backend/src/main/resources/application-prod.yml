@@ -1,0 +1,17 @@
+# Production (Cloud Run, Raspberry Pi, PC du site) : secrets obligatoires, logs JSON.
+pos:
+  security:
+    # Pas de valeur par défaut : le démarrage échoue si POS_JWT_SECRET est absent.
+    jwt-secret: ${POS_JWT_SECRET}
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+# Contrat OpenAPI et Swagger UI servis en dev et en CI seulement (génération du client TS).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

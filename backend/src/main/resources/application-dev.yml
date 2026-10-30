@@ -1,0 +1,9 @@
+# Poste de développement : PostgreSQL de docker-compose, cookie sans HTTPS, front Vite autorisé.
+spring:
+  datasource:
+    password: ${POS_DB_PASSWORD:pos}
+
+pos:
+  security:
+    cookie-secure: false
+    cors-origins: ${POS_CORS_ORIGINS:http://localhost:5173}

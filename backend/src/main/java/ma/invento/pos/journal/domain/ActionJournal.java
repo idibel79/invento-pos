@@ -1,0 +1,22 @@
+package ma.invento.pos.journal.domain;
+
+/** Actions sensibles tracées dans le journal (cadrage § 5, Utilisateurs et administration). */
+public enum ActionJournal {
+    INSTALLATION_ADMIN,
+    CONNEXION_ECHOUEE,
+    COMPTE_VERROUILLE,
+    MOT_DE_PASSE_CHANGE,
+    CODE_SECOURS_UTILISE,
+    CODE_SECOURS_RENOUVELE,
+    REINITIALISATION_ADMIN_COMMANDE,
+    UTILISATEUR_CREE,
+    UTILISATEUR_MODIFIE,
+    MOT_DE_PASSE_REINITIALISE,
+    PIN_DEFINI,
+    CAISSE_CREEE,
+    CAISSE_MODIFIEE,
+    PARAMETRE_MODIFIE,
+    PRODUIT_CREE,
+    PRODUIT_MODIFIE,
+    IMPORT_CATALOGUE
+}
