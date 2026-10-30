@@ -1,0 +1,21 @@
+# Build
+target/
+node_modules/
+dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Secrets et configuration locale (jamais dans le dépôt)
+.env
+*.env.local
+*.jks
+*.keystore
+*.p12
+
+# Sauvegardes de base
+backups/
+*.dump
