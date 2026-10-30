@@ -80,6 +80,34 @@ class CalculateurVenteTest {
     }
 
     @Test
+    void cumuler_remise_ligne_et_remise_ticket_compte_comme_une_seule_remise() {
+        PanierCalcule panier = CalculateurVente.calculer(
+                List.of(ligne(1, 1, "100.00", TVA_20, new Remise(TypeRemise.POURCENT, new BigDecimal("10")))),
+                new Remise(TypeRemise.POURCENT, new BigDecimal("10")));
+
+        assertThat(panier.totalTtc()).isEqualByComparingTo("81.00");
+        assertThat(panier.tauxRemiseMax()).isEqualByComparingTo("19.00");
+    }
+
+    @Test
+    void le_reste_d_arrondi_de_la_remise_ticket_ne_rend_aucun_taux_negatif() {
+        // La dernière ligne est remisée à 100 % : le centime d'arrondi va à la ligne la plus forte.
+        PanierCalcule panier = CalculateurVente.calculer(
+                List.of(
+                        ligne(1, 1, "0.10", TVA_20, null),
+                        ligne(2, 1, "0.10", TVA_20, null),
+                        ligne(3, 1, "0.10", TVA_20, null),
+                        ligne(4, 1, "5.00", EXONERE, new Remise(TypeRemise.POURCENT, new BigDecimal("100")))),
+                new Remise(TypeRemise.MONTANT, new BigDecimal("0.01")));
+
+        assertThat(panier.tva())
+                .allSatisfy(t -> assertThat(t.totalTtc().signum()).isNotNegative());
+        assertThat(panier.tva().stream().map(VentilationTva::totalTtc).reduce(BigDecimal.ZERO, BigDecimal::add))
+                .isEqualByComparingTo(panier.totalTtc())
+                .isEqualByComparingTo("0.29");
+    }
+
+    @Test
     void remise_totale_possible_et_panier_a_zero() {
         PanierCalcule panier = CalculateurVente.calculer(
                 List.of(ligne(1, 1, "10.00", TVA_20, new Remise(TypeRemise.POURCENT, new BigDecimal("100")))),

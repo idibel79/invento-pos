@@ -345,6 +345,18 @@ class VenteIT extends IntegrationTest {
         // Au-delà du plafond responsable (30 %), le PIN du responsable ne suffit plus.
         panier.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "35")));
         valider(caissier, UUID.randomUUID().toString(), panier, "65").andExpect(status().isForbidden());
+
+        // Une vente en attente garde l'autorisation accordée, mais pas pour une remise plus forte.
+        panier.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "15")));
+        long attente = mettreEnAttente(caissier, panier);
+        Map<String, Object> reprise = panier(remise(ligne(produit, 1), "POURCENT", "25"));
+        reprise.put("motifRemise", "Client fidèle");
+        reprise.put("venteEnAttenteId", attente);
+        valider(caissier, UUID.randomUUID().toString(), reprise, "75").andExpect(status().isForbidden());
+        reprise.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "15")));
+        valider(caissier, UUID.randomUUID().toString(), reprise, "85")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.valideePar").value(responsable.getId()));
     }
 
     @Test

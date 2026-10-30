@@ -132,9 +132,14 @@ public class AutorisationService {
                     || n.longValue() != demandeurId) {
                 throw new RegleMetierException("Autorisation expirée : faites ressaisir le PIN.");
             }
-            return new Autorisation(
-                    Long.parseLong(jwt.getSubject()),
-                    Role.valueOf(Objects.requireNonNull(jwt.getClaimAsString(CLAIM_ROLE))));
+            // L'autorisateur doit être encore actif, non verrouillé et du même rôle qu'à la saisie du PIN.
+            long autorisateurId = Long.parseLong(jwt.getSubject());
+            Role role = Role.valueOf(Objects.requireNonNull(jwt.getClaimAsString(CLAIM_ROLE)));
+            utilisateurs
+                    .findById(autorisateurId)
+                    .filter(u -> u.isActif() && !u.isVerrouille() && u.getRole() == role)
+                    .orElseThrow(() -> new RegleMetierException("Autorisation retirée : faites ressaisir le PIN."));
+            return new Autorisation(autorisateurId, role);
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
             throw new RegleMetierException("Autorisation invalide : faites ressaisir le PIN.");
         }

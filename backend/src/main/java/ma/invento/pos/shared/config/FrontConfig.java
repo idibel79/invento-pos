@@ -18,6 +18,7 @@ class FrontConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/assets/**")
                 .addResourceLocations("classpath:/static/assets/")
-                .setCacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
+                .setCacheControl(
+                        CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
     }
 }

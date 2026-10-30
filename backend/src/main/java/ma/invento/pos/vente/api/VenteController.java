@@ -3,6 +3,7 @@ package ma.invento.pos.vente.api;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
+import java.util.function.Supplier;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.vente.api.VenteDtos.MiseEnAttenteCommande;
 import ma.invento.pos.vente.api.VenteDtos.PanierCommande;
@@ -10,6 +11,7 @@ import ma.invento.pos.vente.api.VenteDtos.PanierDto;
 import ma.invento.pos.vente.api.VenteDtos.ValidationCommande;
 import ma.invento.pos.vente.api.VenteDtos.VenteDto;
 import ma.invento.pos.vente.application.VenteService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -52,7 +54,7 @@ class VenteController {
             @RequestHeader(CLE) @Pattern(regexp = FORMAT_CLE) String cle,
             @Valid @RequestBody ValidationCommande commande,
             @AuthenticationPrincipal Jwt jwt) {
-        return venteService.valider(commande, cle, UtilisateurConnecte.depuis(jwt));
+        return rejouable(() -> venteService.valider(commande, cle, UtilisateurConnecte.depuis(jwt)));
     }
 
     @PostMapping("/attente")
@@ -61,7 +63,7 @@ class VenteController {
             @RequestHeader(CLE) @Pattern(regexp = FORMAT_CLE) String cle,
             @Valid @RequestBody MiseEnAttenteCommande commande,
             @AuthenticationPrincipal Jwt jwt) {
-        return venteService.mettreEnAttente(commande, cle, UtilisateurConnecte.depuis(jwt));
+        return rejouable(() -> venteService.mettreEnAttente(commande, cle, UtilisateurConnecte.depuis(jwt)));
     }
 
     @GetMapping("/attente")
@@ -79,5 +81,17 @@ class VenteController {
     @PostMapping("/{id}/abandon")
     VenteDto abandonner(@PathVariable long id, @AuthenticationPrincipal Jwt jwt) {
         return venteService.abandonner(id, UtilisateurConnecte.depuis(jwt));
+    }
+
+    /**
+     * Deux envois simultanés de la même clé (relance pendant que le premier est en cours) : le second
+     * bute sur l'unicité de la clé quand le premier est validé. Rejoué, il renvoie la vente enregistrée.
+     */
+    private static VenteDto rejouable(Supplier<VenteDto> operation) {
+        try {
+            return operation.get();
+        } catch (DataIntegrityViolationException e) {
+            return operation.get();
+        }
     }
 }

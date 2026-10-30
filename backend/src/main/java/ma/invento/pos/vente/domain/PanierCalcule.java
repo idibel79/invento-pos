@@ -6,8 +6,8 @@ import java.util.List;
 /**
  * Montants d'un panier, calculés uniquement par {@link CalculateurVente}.
  *
- * @param tauxRemiseMax plus forte remise accordée, en % de son montant de base (ligne ou ticket) :
- *     c'est elle qui est comparée aux plafonds de remise
+ * @param tauxRemiseMax plus forte remise effective d'une ligne (sa remise plus sa part de la remise
+ *     ticket), en % de son montant brut : c'est elle qui est comparée aux plafonds de remise
  */
 public record PanierCalcule(
         List<LigneCalculee> lignes,

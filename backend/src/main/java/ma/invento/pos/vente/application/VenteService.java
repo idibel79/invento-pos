@@ -1,8 +1,10 @@
 package ma.invento.pos.vente.application;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -110,13 +112,13 @@ public class VenteService {
         Vente reprise = commande.venteEnAttenteId() == null
                 ? null
                 : ventes.findById(commande.venteEnAttenteId())
-                        .filter(v -> v.estEnAttente() && v.getCaissierId() == vendeur.id())
+                        .filter(v -> v.estEnAttente() && surSessionCourante(v, vendeur))
                         .orElseThrow(() -> new RessourceIntrouvableException("Vente en attente introuvable."));
         Panier panier = preparer(commande, reprise);
         NiveauAutorisation niveau = niveauRequis(panier.calcul());
         boolean acquise;
         try {
-            valideePar(niveau, commande, vendeur, reprise);
+            valideePar(niveau, panier.calcul(), commande, vendeur, reprise);
             acquise = true;
         } catch (RegleMetierException | OperationInterditeException e) {
             acquise = false;
@@ -143,7 +145,12 @@ public class VenteService {
     @Transactional
     public VenteDto mettreEnAttente(MiseEnAttenteCommande commande, String cle, UtilisateurConnecte vendeur) {
         Optional<Vente> deja = rejouer(cle, vendeur);
-        if (deja.isPresent()) return versDto(deja.get());
+        if (deja.isPresent()) {
+            if (deja.get().getStatut() != StatutVente.EN_ATTENTE) {
+                throw new ConflitException("Cette clé d'idempotence appartient à une autre opération.");
+            }
+            return versDto(deja.get());
+        }
 
         SessionOuverte session = sessions.sessionOuverte(vendeur.id());
         Vente reprise = reprendreVerrouillee(commande.panier().venteEnAttenteId(), session);
@@ -237,12 +244,15 @@ public class VenteService {
     @EventListener
     public void annulerAttentesDeSession(SessionCaisseCloturee evenement) {
         Instant maintenant = Instant.now(clock);
+        List<Vente> annulees = new ArrayList<>();
         for (long id : ventes.findIdsEnAttente(evenement.sessionId())) {
             Vente vente = ventes.findForUpdate(id).orElseThrow();
-            if (!vente.estEnAttente()) continue;
-            stock.liberer(quantites(vente));
-            vente.annulerAttente(maintenant);
+            if (vente.estEnAttente()) annulees.add(vente);
         }
+        // Une seule libération, triée par produit comme les autres opérations de stock (pas
+        // d'interblocage avec une vente concurrente sur une autre caisse).
+        stock.liberer(annulees.stream().flatMap(v -> quantites(v).stream()).toList());
+        annulees.forEach(v -> v.annulerAttente(maintenant));
     }
 
     // ---------------------------------------------------------------- Préparation du panier
@@ -294,12 +304,19 @@ public class VenteService {
         if (motif(commande) == null) {
             throw new RegleMetierException("Indiquez le motif de la remise.");
         }
-        return valideePar(niveau, commande, vendeur, reprise);
+        return valideePar(niveau, panier.calcul(), commande, vendeur, reprise);
     }
 
-    /** Qui couvre le niveau exigé : le vendeur lui-même, le jeton joint, ou celui qui a validé la vente reprise. */
+    /**
+     * Qui couvre le niveau exigé : le vendeur lui-même, le jeton joint, ou celui qui a validé la vente
+     * reprise, tant que la remise ne dépasse pas celle qu'il a acceptée.
+     */
     private Long valideePar(
-            NiveauAutorisation niveau, PanierCommande commande, UtilisateurConnecte vendeur, Vente reprise) {
+            NiveauAutorisation niveau,
+            PanierCalcule calcul,
+            PanierCommande commande,
+            UtilisateurConnecte vendeur,
+            Vente reprise) {
         if (niveau.estCouvertPar(vendeur.role())) {
             return niveau == NiveauAutorisation.AUCUNE ? null : vendeur.id();
         }
@@ -313,7 +330,9 @@ public class VenteService {
                     .filter(Utilisateur::isActif)
                     .map(Utilisateur::getRole)
                     .orElse(Role.CAISSIER);
-            if (niveau.estCouvertPar(role)) return reprise.getValideePar();
+            if (niveau.estCouvertPar(role) && calcul.tauxRemiseMax().compareTo(tauxAccorde(reprise)) <= 0) {
+                return reprise.getValideePar();
+            }
         }
         throw new OperationInterditeException(
                 niveau == NiveauAutorisation.ADMIN
@@ -321,7 +340,24 @@ public class VenteService {
                         : "Cette remise dépasse votre plafond : autorisation d'un responsable requise.");
     }
 
+    /** Remise effective la plus forte de la vente en attente, telle qu'elle a été autorisée. */
+    private static BigDecimal tauxAccorde(Vente vente) {
+        List<LignePanier> lignes = vente.getLignes().stream()
+                .map(l -> new LignePanier(
+                        l.getProduitId(), l.getQuantite(), l.getPrixUnitaire(), l.getTauxTva(), l.getRemise()))
+                .toList();
+        return CalculateurVente.calculer(lignes, vente.getRemiseTicket()).tauxRemiseMax();
+    }
+
     // ---------------------------------------------------------------- Ventes en attente
+
+    /** Vente de la session ouverte du vendeur, sur sa caisse (aperçu, sans verrou). */
+    private boolean surSessionCourante(Vente vente, UtilisateurConnecte vendeur) {
+        return sessions.courante(vendeur.id())
+                .filter(s -> Objects.equals(vente.getCaisseId(), s.caisseId())
+                        && Objects.equals(vente.getSessionCaisseId(), s.id()))
+                .isPresent();
+    }
 
     private Vente reprendreVerrouillee(Long venteId, SessionOuverte session) {
         if (venteId == null) return null;

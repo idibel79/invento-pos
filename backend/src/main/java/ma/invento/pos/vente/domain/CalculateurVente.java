@@ -24,7 +24,6 @@ public final class CalculateurVente {
         List<LigneCalculee> calculees = new ArrayList<>();
         BigDecimal sousTotal = Montants.ZERO;
         BigDecimal remisesLignes = Montants.ZERO;
-        BigDecimal tauxMax = Montants.ZERO;
         for (LignePanier ligne : lignes) {
             BigDecimal brut = Montants.arrondir(ligne.prixUnitaire().multiply(BigDecimal.valueOf(ligne.quantite())));
             BigDecimal remise =
@@ -32,13 +31,24 @@ public final class CalculateurVente {
             calculees.add(new LigneCalculee(ligne, brut, remise));
             sousTotal = sousTotal.add(brut);
             remisesLignes = remisesLignes.add(remise);
-            tauxMax = tauxMax.max(Montants.pourcentage(remise, brut));
         }
         BigDecimal netLignes = sousTotal.subtract(remisesLignes);
         BigDecimal remiseTicketMontant = remiseTicket == null ? Montants.ZERO : remiseTicket.montantSur(netLignes);
-        tauxMax = tauxMax.max(Montants.pourcentage(remiseTicketMontant, netLignes));
 
-        List<VentilationTva> tva = ventiler(calculees, netLignes, remiseTicketMontant);
+        List<BigDecimal> partsTicket = repartir(calculees, netLignes, remiseTicketMontant);
+        // Remise effective de chaque ligne : la sienne plus sa part exacte (avant arrondi) de la
+        // remise ticket, pour que cumuler remise ligne et remise ticket ne contourne pas les plafonds.
+        BigDecimal partTicket = netLignes.signum() == 0
+                ? BigDecimal.ZERO
+                : remiseTicketMontant.divide(netLignes, 10, RoundingMode.HALF_UP);
+        BigDecimal tauxMax = Montants.ZERO;
+        for (LigneCalculee ligne : calculees) {
+            BigDecimal remiseEffective =
+                    ligne.remiseMontant().add(ligne.montantNet().multiply(partTicket));
+            tauxMax = tauxMax.max(Montants.pourcentage(remiseEffective, ligne.montantBrut()));
+        }
+
+        List<VentilationTva> tva = ventiler(calculees, partsTicket);
         BigDecimal totalHt = tva.stream().map(VentilationTva::totalHt).reduce(Montants.ZERO, BigDecimal::add);
         BigDecimal totalTva = tva.stream().map(VentilationTva::totalTva).reduce(Montants.ZERO, BigDecimal::add);
         return new PanierCalcule(
@@ -53,24 +63,35 @@ public final class CalculateurVente {
                 tauxMax);
     }
 
-    /** TTC par taux après répartition de la remise ticket (le reste d'arrondi va à la dernière ligne). */
-    private static List<VentilationTva> ventiler(
+    /**
+     * Part de la remise ticket de chaque ligne, au prorata de son montant net ; le reste d'arrondi
+     * va à la ligne au plus fort montant net, qui peut toujours l'absorber.
+     */
+    private static List<BigDecimal> repartir(
             List<LigneCalculee> lignes, BigDecimal netLignes, BigDecimal remiseTicket) {
+        List<BigDecimal> parts = new ArrayList<>();
+        BigDecimal reste = remiseTicket;
+        int plusForte = 0;
+        for (int i = 0; i < lignes.size(); i++) {
+            BigDecimal net = lignes.get(i).montantNet();
+            BigDecimal part = netLignes.signum() == 0
+                    ? Montants.ZERO
+                    : remiseTicket.multiply(net).divide(netLignes, 2, RoundingMode.HALF_UP);
+            parts.add(part);
+            reste = reste.subtract(part);
+            if (net.compareTo(lignes.get(plusForte).montantNet()) > 0) plusForte = i;
+        }
+        if (!parts.isEmpty()) parts.set(plusForte, parts.get(plusForte).add(reste));
+        return parts;
+    }
+
+    /** TTC par taux après déduction de la part de remise ticket de chaque ligne. */
+    private static List<VentilationTva> ventiler(List<LigneCalculee> lignes, List<BigDecimal> partsTicket) {
         Map<BigDecimal, BigDecimal> ttcParTaux = new TreeMap<>();
-        BigDecimal resteARepartir = remiseTicket;
         for (int i = 0; i < lignes.size(); i++) {
             LigneCalculee ligne = lignes.get(i);
-            BigDecimal part;
-            if (i == lignes.size() - 1) {
-                part = resteARepartir;
-            } else if (netLignes.signum() == 0) {
-                part = Montants.ZERO;
-            } else {
-                part = remiseTicket.multiply(ligne.montantNet()).divide(netLignes, 2, RoundingMode.HALF_UP);
-            }
-            resteARepartir = resteARepartir.subtract(part);
             BigDecimal taux = ligne.ligne().tauxTva().setScale(2, RoundingMode.HALF_UP);
-            ttcParTaux.merge(taux, ligne.montantNet().subtract(part), BigDecimal::add);
+            ttcParTaux.merge(taux, ligne.montantNet().subtract(partsTicket.get(i)), BigDecimal::add);
         }
         List<VentilationTva> ventilation = new ArrayList<>();
         ttcParTaux.forEach((taux, ttc) -> {
