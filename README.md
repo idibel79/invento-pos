@@ -115,14 +115,18 @@ docker compose up -d app
 
 ## Tests en ligne : Supabase + Cloud Run
 
+Pas à pas complet (projet GCP, Workload Identity Federation, secrets, variables GitHub) :
+[docs/deploiement-cloud-run.md](docs/deploiement-cloud-run.md).
+
 - **Supabase** sert uniquement de PostgreSQL. Les tables sont dans le schéma `pos`, que l'API
-  de données de Supabase n'expose pas. Utiliser la connexion directe ou le pooler en mode
-  *session* (port 5432), pas le mode *transaction*. URL JDBC :
-  `jdbc:postgresql://<hôte>:5432/postgres?sslmode=require`.
+  de données de Supabase n'expose pas. Depuis Cloud Run, utiliser le pooler en mode *session*
+  (port 5432, IPv4) : la connexion directe est en IPv6 et le mode *transaction* casse les
+  requêtes préparées. URL JDBC : `jdbc:postgresql://<hôte>:5432/postgres?sslmode=require`.
 - **Cloud Run** : le job `deploy` de la CI s'active quand les variables du dépôt `GCP_PROJECT_ID`,
   `GCP_REGION`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `POS_DB_URL` et
   `POS_DB_USER` sont renseignées, et que les secrets `pos-db-password` et `pos-jwt-secret`
-  existent dans Secret Manager, ainsi qu'un dépôt Artifact Registry `invento-pos`.
+  existent dans Secret Manager, ainsi qu'un dépôt Artifact Registry `invento-pos` et le compte
+  d'exécution `invento-pos-run`.
 
 ## Variables d'environnement
 
