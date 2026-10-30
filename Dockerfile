@@ -3,7 +3,7 @@
 # Multi-architecture : linux/amd64 (Cloud Run, PC) et linux/arm64 (Raspberry Pi).
 
 # Le build du front ne dépend pas de l'architecture cible : il tourne sur celle de la machine.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS front
+FROM --platform=$BUILDPLATFORM node:25-alpine AS front
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
