@@ -28,6 +28,9 @@ jobs:
           cache: maven
       # Tests unitaires + tests d'intégration sur PostgreSQL (Testcontainers, Docker du runner).
       - run: ./mvnw -B verify
+      # Le contrat OpenAPI versionné (source du client TypeScript) doit suivre l'API.
+      - name: Contrat OpenAPI à jour
+        run: git diff --exit-code ../frontend/openapi.json
       - name: Rapport de couverture
         if: always()
         uses: actions/upload-artifact@v4
@@ -36,9 +39,91 @@ jobs:
           path: backend/target/site/jacoco
           if-no-files-found: ignore
 
+  frontend:
+    name: Front (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # Le client TypeScript est généré depuis openapi.json, jamais écrit à la main.
+      - name: Client API généré à jour
+        run: npm run api && git diff --exit-code src/api/schema.d.ts
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: Parcours de vente (Playwright)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: pos
+          POSTGRES_USER: pos
+          POSTGRES_PASSWORD: pos
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pos" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      POS_DB_PASSWORD: pos
+      POS_ADMIN_INITIAL_PASSWORD: Installation-CI-2026
+      # Secret jetable, propre à ce job : la base est détruite à la fin.
+      POS_JWT_SECRET: secret-e2e-ci-uniquement-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build du front, servi par Spring Boot
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          mkdir -p ../backend/src/main/resources/static
+          cp -r dist/. ../backend/src/main/resources/static/
+      - name: Démarrage de l'application
+        working-directory: backend
+        run: |
+          ./mvnw -B -q package -DskipTests -Dspotless.check.skip=true -Djacoco.skip=true
+          nohup java -jar target/invento-pos.jar --spring.profiles.active=dev > app.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:8080/actuator/health && exit 0; sleep 2; done
+          cat app.log; exit 1
+      - name: Navigateur
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Tests Playwright
+        working-directory: frontend
+        run: npx playwright test
+      - name: Rapport Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            frontend/playwright-report
+            backend/app.log
+          if-no-files-found: ignore
+
   image:
     name: Image Docker
-    needs: backend
+    needs: [backend, frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -19,3 +19,9 @@ dist/
 # Sauvegardes de base
 backups/
 *.dump
+
+# Front
+frontend/playwright-report/
+frontend/test-results/
+*.tsbuildinfo
+backend/src/main/resources/static/

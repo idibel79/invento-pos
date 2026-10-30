@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,6 +33,31 @@ public interface ProduitRepository extends JpaRepository<Produit, Long>, JpaSpec
             @Param("codes") Collection<String> codes, @Param("produitId") long produitId);
 
     boolean existsByPid(String pid);
+
+    @EntityGraph(attributePaths = {"tva"})
+    List<Produit> findWithTvaByIdIn(Collection<Long> ids);
+
+    // Mises à jour atomiques du stock : la condition est vérifiée par PostgreSQL sur la ligne
+    // verrouillée, jamais seulement côté Java. La version augmente pour qu'une modification
+    // concurrente de la fiche (verrouillage optimiste) ne réécrive pas un stock périmé.
+
+    /** Réserve {@code quantite} si le stock disponible suffit ; renvoie 0 sinon. */
+    @Modifying(flushAutomatically = true)
+    @Query("update Produit p set p.stockReserve = p.stockReserve + :quantite, p.version = p.version + 1"
+            + " where p.id = :id and p.actif = true and p.stock - p.stockReserve >= :quantite")
+    int reserver(@Param("id") long id, @Param("quantite") int quantite);
+
+    /** Libère une réservation ; renvoie 0 si la réserve est inférieure (incohérence). */
+    @Modifying(flushAutomatically = true)
+    @Query("update Produit p set p.stockReserve = p.stockReserve - :quantite, p.version = p.version + 1"
+            + " where p.id = :id and p.stockReserve >= :quantite")
+    int liberer(@Param("id") long id, @Param("quantite") int quantite);
+
+    /** Sort {@code quantite} du stock si le stock disponible suffit ; renvoie 0 sinon. */
+    @Modifying(flushAutomatically = true)
+    @Query("update Produit p set p.stock = p.stock - :quantite, p.version = p.version + 1"
+            + " where p.id = :id and p.actif = true and p.stock - p.stockReserve >= :quantite")
+    int sortir(@Param("id") long id, @Param("quantite") int quantite);
 
     /** Tous les produits avec leurs codes-barres, pour l'import (une requête par lot de 100). */
     @EntityGraph(attributePaths = {"categorie", "zone", "tva"})

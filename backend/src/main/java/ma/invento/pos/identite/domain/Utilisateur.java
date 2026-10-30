@@ -110,6 +110,11 @@ public class Utilisateur {
         this.essaisPinRates = 0;
     }
 
+    /** PIN correct : le compteur d'essais ratés repart de zéro. */
+    public void pinReussi() {
+        this.essaisPinRates = 0;
+    }
+
     public void modifierProfil(String nom, String prenom, Role role, boolean actif, Set<Long> caisseIds) {
         this.nom = nom;
         this.prenom = prenom;
@@ -142,6 +147,14 @@ public class Utilisateur {
 
     public String getMotDePasseHash() {
         return motDePasseHash;
+    }
+
+    public String getPinHash() {
+        return pinHash;
+    }
+
+    public int getEssaisPinRates() {
+        return essaisPinRates;
     }
 
     public boolean isPinDefini() {

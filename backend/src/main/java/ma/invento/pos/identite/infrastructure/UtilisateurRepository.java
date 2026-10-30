@@ -1,5 +1,6 @@
 package ma.invento.pos.identite.infrastructure;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import ma.invento.pos.identite.domain.Role;
@@ -25,4 +26,13 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Utilisateur u set u.essaisRates = u.essaisRates + 1 where u.id = :id")
     void incrementerEssaisRates(@Param("id") long id);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update Utilisateur u set u.essaisPinRates = u.essaisPinRates + 1 where u.id = :id")
+    void incrementerEssaisPinRates(@Param("id") long id);
+
+    /** Responsables et admin actifs ayant un PIN : ceux qui peuvent autoriser une remise. */
+    @Query("select u from Utilisateur u where u.actif = true and u.pinHash is not null"
+            + " and u.role in :roles order by u.nom, u.prenom")
+    List<Utilisateur> findAutorisateurs(@Param("roles") Collection<Role> roles);
 }

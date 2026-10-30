@@ -1,5 +1,6 @@
 package ma.invento.pos.catalogue.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -31,15 +32,15 @@ public final class CatalogueDtos {
             ReferenceDto zone,
             TvaDto tva,
             BigDecimal ppv,
-            BigDecimal pph,
-            BigDecimal tauxMarge,
+            @Schema(nullable = true) BigDecimal pph,
+            @Schema(nullable = true) BigDecimal tauxMarge,
             int stock,
             int stockReserve,
             int stockDisponible,
             boolean enRupture,
-            Integer stockMin,
-            Integer stockMax,
-            LocalDate datePeremption,
+            @Schema(nullable = true) Integer stockMin,
+            @Schema(nullable = true) Integer stockMax,
+            @Schema(nullable = true) LocalDate datePeremption,
             boolean actif,
             List<String> codesBarres,
             long version) {}

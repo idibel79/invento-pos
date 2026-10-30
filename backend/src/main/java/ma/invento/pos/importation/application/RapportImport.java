@@ -1,5 +1,6 @@
 package ma.invento.pos.importation.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import ma.invento.pos.importation.domain.FormatImport;
 import ma.invento.pos.importation.domain.InventaireDisponible;
@@ -11,7 +12,7 @@ import ma.invento.pos.importation.domain.InventaireDisponible;
 public record RapportImport(
         FormatImport format,
         List<InventaireDisponible> inventaires,
-        InventaireDisponible inventaireRetenu,
+        @Schema(nullable = true) InventaireDisponible inventaireRetenu,
         int lignesLues,
         int produitsCrees,
         int produitsMisAJour,

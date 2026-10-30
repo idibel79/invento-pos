@@ -28,6 +28,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 class SecurityConfig {
 
+    /** Le front n'a besoin que de sa propre origine (aucune police ni script externe). */
+    private static final String CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
+            + " object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemDetailSecurityHandler problemes)
             throws Exception {
@@ -45,9 +49,10 @@ class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/**", "/actuator/**")
                         .authenticated()
-                        // Le reste servira le front React (étape 2).
+                        // Le reste est le front React (fichiers statiques).
                         .anyRequest()
                         .permitAll())
+                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(CSP)))
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter()))
                         .authenticationEntryPoint(problemes)
                         .accessDeniedHandler(problemes))

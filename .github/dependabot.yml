@@ -7,6 +7,15 @@ updates:
     groups:
       spring:
         patterns: ["org.springframework*"]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      react:
+        patterns: ["react", "react-dom", "@types/react*"]
+      lint:
+        patterns: ["eslint*", "@eslint/*", "typescript-eslint", "prettier"]
   - package-ecosystem: docker
     directory: /
     schedule:
