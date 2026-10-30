@@ -194,9 +194,12 @@ jobs:
           image: ${{ env.IMAGE }}
           # Service public (l'application gère ses comptes) ; compte d'exécution dédié qui lit
           # seulement les deux secrets. 2 instances x 5 connexions restent sous la limite du
-          # pooler Supabase ; le démarrage de Spring Boot profite du CPU boost.
+          # pooler Supabase ; le démarrage de Spring Boot profite du CPU boost. La sonde de
+          # démarrage attend la readiness Spring (après les ApplicationRunner, dont la création
+          # de l'admin) : sinon Cloud Run bride le CPU dès que le port est ouvert.
           flags: >-
             --allow-unauthenticated
+            --startup-probe=httpGet.path=/actuator/health/readiness,httpGet.port=8080,periodSeconds=5,timeoutSeconds=3,failureThreshold=24
             --service-account=invento-pos-run@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
             --memory=1Gi
             --cpu-boost
