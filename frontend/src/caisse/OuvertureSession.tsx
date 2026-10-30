@@ -14,7 +14,7 @@ const schema = z.object({
 type Champs = z.infer<typeof schema>;
 
 /** Ouverture de la caisse avec le fond de caisse (espèces présentes au départ). */
-export function OuvertureSession() {
+export function OuvertureSession({ onAdministration }: { onAdministration?: () => void }) {
   const utilisateur = useUtilisateur();
   const { deconnecter } = useAuth();
   const caisses = useCaisses();
@@ -45,7 +45,9 @@ export function OuvertureSession() {
         </p>
         {caisses.isSuccess && autorisees.length === 0 ? (
           <p className="alerte alerte-danger" role="alert">
-            Aucune caisse ne vous est attribuée. Demandez à l'administrateur de vous en affecter une.
+            {onAdministration
+              ? "Aucune caisse active. Créez-en une dans l'administration."
+              : "Aucune caisse ne vous est attribuée. Demandez à l'administrateur de vous en affecter une."}
           </p>
         ) : (
           <>
@@ -79,6 +81,11 @@ export function OuvertureSession() {
           <button type="button" className="bouton bouton-contour" onClick={() => void deconnecter()}>
             Se déconnecter
           </button>
+          {onAdministration && (
+            <button type="button" className="bouton bouton-contour" onClick={onAdministration}>
+              Administration
+            </button>
+          )}
           <button
             type="submit"
             className="bouton bouton-plein"

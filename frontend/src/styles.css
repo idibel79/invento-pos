@@ -998,6 +998,261 @@ button:disabled {
   max-width: calc(100vw - 32px);
 }
 
+/* ------------------------------------------------------------------ Administration */
+
+.ecran-admin {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.onglet {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: var(--gris);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.onglet:hover {
+  color: var(--marine);
+}
+
+.onglet[aria-current="page"] {
+  background: var(--accent-doux);
+  border-color: var(--accent);
+  color: var(--marine);
+}
+
+.admin-corps {
+  flex-grow: 1;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-section {
+  width: min(960px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-tete > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 640px;
+}
+
+.admin-tete > .bouton {
+  flex-shrink: 0;
+  min-width: 170px;
+}
+
+.admin-titre {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--marine);
+}
+
+.admin-carte {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: none;
+  border: 1px solid var(--bordure-carte);
+}
+
+.liste-admin {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ligne-admin {
+  background: var(--surface);
+  border: 1px solid var(--bordure-carte);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ligne-admin.inactive {
+  background: var(--rupture-fond);
+}
+
+.ligne-admin-texte {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ligne-admin-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--marine);
+}
+
+.ligne-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.statut {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.statut-ok {
+  background: var(--succes-fond);
+  color: var(--succes-texte);
+}
+
+.statut-info {
+  background: var(--accent-doux);
+  color: var(--bleu);
+}
+
+.statut-gris {
+  background: var(--rupture-fond);
+  color: var(--gris);
+  border: 1px solid var(--rupture-bordure);
+}
+
+.statut-danger {
+  background: var(--danger-fond);
+  color: var(--danger);
+}
+
+.statut-attention {
+  background: var(--alerte-fond);
+  color: var(--alerte-texte);
+}
+
+.champ input[type="file"] {
+  height: auto;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--gris);
+}
+
+.champ input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--bleu);
+  background: var(--surface);
+  color: var(--bleu);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cases {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cases legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.case {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--fond);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--marine);
+}
+
+.case input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--bleu);
+}
+
+.alerte-succes {
+  background: var(--succes-fond);
+  color: var(--succes-texte);
+  font-weight: 700;
+}
+
+.details-import {
+  font-size: 13px;
+  color: var(--texte);
+}
+
+.details-import summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--marine);
+}
+
+.details-import ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.code-secours {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--marine);
+  user-select: all;
+  word-break: break-all;
+  text-align: center;
+}
+
 /* Tablette / petit écran : le panier passe sous le catalogue. */
 @media (max-width: 960px) {
   .ecran-vente {
@@ -1026,5 +1281,23 @@ button:disabled {
   .entete-utilisateur {
     border-left: none;
     padding-left: 0;
+  }
+
+  .admin-corps {
+    padding: 16px;
+  }
+
+  .admin-tete,
+  .ligne-admin {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ligne-admin .avatar {
+    display: none;
+  }
+
+  .ligne-admin-actions {
+    justify-content: flex-start;
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState } from "react";
 import type { Schemas } from "../api/client";
 import { useAuth, useUtilisateur } from "../auth/AuthContext";
+import { LIBELLES_ROLE } from "../auth/roles";
 import { ClotureDialogue } from "../caisse/ClotureDialogue";
 import { useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
@@ -25,10 +26,14 @@ type Fenetre =
   | { type: "cloture" }
   | { type: "validee"; vente: Schemas["VenteDto"] };
 
-const LIBELLES_ROLE = { CAISSIER: "Caissier", RESPONSABLE: "Responsable", ADMIN: "Admin" } as const;
-
 /** Écran de vente (maquette 1) : catalogue à gauche, ticket en cours à droite. */
-export function EcranVente({ session }: { session: Schemas["SessionCaisseDto"] }) {
+interface Props {
+  session: Schemas["SessionCaisseDto"];
+  /** Présent pour l'admin seulement. */
+  onAdministration?: () => void;
+}
+
+export function EcranVente({ session, onAdministration }: Props) {
   const utilisateur = useUtilisateur();
   const { deconnecter } = useAuth();
   const parametres = useParametres();
@@ -72,6 +77,11 @@ export function EcranVente({ session }: { session: Schemas["SessionCaisseDto"] }
         <button type="button" className="bouton-petit" onClick={() => setFenetre({ type: "cloture" })}>
           Clôturer
         </button>
+        {onAdministration && (
+          <button type="button" className="bouton-petit" onClick={onAdministration}>
+            Administration
+          </button>
+        )}
         <div className="entete-utilisateur">
           <span className="avatar" aria-hidden="true">
             {utilisateur.prenom.charAt(0) || utilisateur.nom.charAt(0)}

@@ -27,3 +27,12 @@ export function heure(iso: string, fuseau: string | undefined): string {
     new Date(iso),
   );
 }
+
+/** Date et heure dans le fuseau de la boutique : 30/10/2026 16:29. */
+export function dateHeure(iso: string, fuseau: string | undefined): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: fuseau,
+  }).format(new Date(iso));
+}

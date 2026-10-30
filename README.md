@@ -55,6 +55,14 @@ Flyway `V1`.
 - Une remise au-delà du plafond du caissier demande le PIN d'un responsable (ou de l'admin au-delà
   du plafond responsable) et un motif, enregistrés au journal. 5 PIN faux verrouillent le compte.
 
+## Écrans d'administration
+
+Bouton « Administration » de l'admin (écran d'ouverture de caisse et écran de vente, le ticket en
+cours est conservé) : caisses (création, activation), utilisateurs (création, rôle, caisses
+attribuées, désactivation, mot de passe temporaire, PIN, déverrouillage), import Excel du catalogue
+(analyse puis import, choix de l'inventaire pour un export Invento) et nouveau code de secours.
+Ils s'appuient uniquement sur les endpoints ci-dessus.
+
 ### Front
 
 ```bash
