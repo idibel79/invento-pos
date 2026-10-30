@@ -56,7 +56,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       # Sur une PR : vérifie seulement que l'image se construit (amd64).
       # Sur main : images amd64 (Cloud Run, PC) + arm64 (Raspberry Pi) publiées sur GHCR.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ github.event_name == 'push' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
