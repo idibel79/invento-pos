@@ -3,6 +3,7 @@ package ma.invento.pos.vente;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,6 +75,17 @@ class VenteIT extends IntegrationTest {
         autreCaisseId = creer("/api/v1/caisses", Map.of("nom", "Autre " + suffixe, "active", true));
         categorieId = creer("/api/v1/categories", Map.of("nom", "Catégorie " + suffixe));
         zoneId = creer("/api/v1/zones", Map.of("nom", "Zone " + suffixe));
+        // Plafonds par défaut (10 % / 30 %) : la base est partagée, ParametreIT les modifie.
+        mvc.perform(put("/api/v1/parametres")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of(
+                                "plafondRemiseCaissier", 10,
+                                "plafondRemiseResponsable", 30,
+                                "boutiqueNom", "Parapharmacie Test",
+                                "boutiqueAdresse", "Rabat",
+                                "fuseauHoraire", "Africa/Casablanca"))))
+                .andExpect(status().isOk());
         tvaId = tvaRepository.findAllByOrderByTauxAsc().stream()
                 .filter(t -> t.getTaux().compareTo(BigDecimal.valueOf(20)) == 0)
                 .findFirst()
