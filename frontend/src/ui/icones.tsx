@@ -57,3 +57,31 @@ export const IconeValide = () => (
     <path d="M8 12.5l2.5 2.5L16 9.5" />
   </svg>
 );
+
+export const IconeUtilisateur = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" {...trait}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+  </svg>
+);
+
+export const IconeCle = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" {...trait}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="M11 12l9-9M17 6l3 3M14 9l2 2" />
+  </svg>
+);
+
+export const IconeImport = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" {...trait}>
+    <path d="M12 3v12M7 10l5 5 5-5" />
+    <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+  </svg>
+);
+
+export const IconeBouclier = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" {...trait}>
+    <path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>
+);

@@ -1,10 +1,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { jetonAdmin } from "./admin";
 
-// Admin créé au premier démarrage avec POS_ADMIN_INITIAL_PASSWORD (voir la CI).
-const MDP_INITIAL_ADMIN = process.env.POS_ADMIN_INITIAL_PASSWORD ?? "Installation-2026";
-const MDP_ADMIN = "Admin-E2E-2026!";
 const MDP_TEMPORAIRE = "Temporaire-2026";
 const MDP_CAISSIER = "Caissier-E2E-2026!";
 const FICHIER_SOBRUS = fileURLToPath(
@@ -17,22 +15,6 @@ interface Produit {
   ppv: number;
   stockDisponible: number;
   codesBarres: string[];
-}
-
-async function jetonAdmin(api: APIRequestContext): Promise<string> {
-  let reponse = await api.post("/api/v1/auth/connexion", { data: { login: "admin", motDePasse: MDP_ADMIN } });
-  if (reponse.ok()) return (await reponse.json()).accessToken;
-  reponse = await api.post("/api/v1/auth/connexion", {
-    data: { login: "admin", motDePasse: MDP_INITIAL_ADMIN },
-  });
-  expect(reponse.ok()).toBeTruthy();
-  const temporaire = (await reponse.json()).accessToken;
-  reponse = await api.post("/api/v1/auth/mot-de-passe", {
-    headers: { Authorization: `Bearer ${temporaire}` },
-    data: { motDePasseActuel: MDP_INITIAL_ADMIN, nouveauMotDePasse: MDP_ADMIN },
-  });
-  expect(reponse.ok()).toBeTruthy();
-  return (await reponse.json()).accessToken;
 }
 
 /** Catalogue Sobrus importé, une caisse et un caissier dédiés à ce passage. */
