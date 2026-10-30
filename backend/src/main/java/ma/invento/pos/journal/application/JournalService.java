@@ -1,5 +1,6 @@
 package ma.invento.pos.journal.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Clock;
 import java.time.Instant;
 import ma.invento.pos.journal.domain.ActionJournal;
@@ -52,7 +53,12 @@ public class JournalService {
         return detail.substring(0, DETAIL_MAX);
     }
 
-    public record JournalDto(Long id, Long utilisateurId, ActionJournal action, String detail, Instant creeLe) {
+    public record JournalDto(
+            Long id,
+            @Schema(nullable = true) Long utilisateurId,
+            ActionJournal action,
+            @Schema(nullable = true) String detail,
+            Instant creeLe) {
         static JournalDto depuis(JournalAction a) {
             return new JournalDto(a.getId(), a.getUtilisateurId(), a.getAction(), a.getDetail(), a.getCreeLe());
         }

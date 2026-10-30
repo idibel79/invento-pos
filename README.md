@@ -1,7 +1,7 @@
 # Invento POS
 
 Caisse web pour les produits gérés dans Invento. Backend Java 21 / Spring Boot 3 (`backend/`),
-front React + TypeScript à venir (`frontend/`, étape 2). Les règles de code et les décisions
+front React + TypeScript / Vite (`frontend/`), servi par Spring Boot dans l'image Docker. Les règles de code et les décisions
 d'architecture sont dans [CLAUDE.md](CLAUDE.md).
 
 ## Démarrer en développement
@@ -34,7 +34,42 @@ cd backend
 
 Le modèle de données complet du cadrage (ventes, lignes, paiements, promotions, sessions de
 caisse, mouvements de stock, mise en attente avec stock réservé) est créé par la migration
-Flyway `V1`. Les écrans de vente l'utiliseront à l'étape 2.
+Flyway `V1`.
+
+## Ce que fait l'étape 2 : l'écran de vente
+
+| Domaine | Endpoints (`/api/v1`) | Accès |
+|---|---|---|
+| Session de caisse | `GET /sessions/courante` (204 si aucune), `POST /sessions` (ouverture avec fond de caisse), `POST /sessions/{id}/cloture` (montant compté, écart) | caissier de la session |
+| Vente | `POST /ventes/calcul` (totaux, remises, TVA calculés par le serveur), `POST /ventes` (encaissement en espèces) | connecté, session ouverte |
+| Mise en attente | `POST /ventes/attente`, `GET /ventes/attente`, `POST /ventes/{id}/reprise`, `POST /ventes/{id}/abandon` | même caisse |
+| Autorisation de remise | `GET /autorisations/autorisateurs`, `POST /autorisations/remise` (PIN d'un responsable ou de l'admin) | connecté |
+
+- `POST /ventes` et `POST /ventes/attente` exigent un en-tête `Idempotency-Key` : un double envoi
+  renvoie la même vente au lieu d'en créer une seconde.
+- Le stock est décrémenté par une mise à jour conditionnelle (`stock - stock_reserve >= quantité`)
+  dans la même transaction que la vente, ses lignes, son paiement et les mouvements de stock.
+- Une vente en attente réserve son stock 5 minutes au plus (reprise sur la même caisse
+  uniquement) ; une tâche planifiée (ShedLock, une seule instance à la fois) l'annule ensuite,
+  et la clôture de la caisse annule celles qui restent.
+- Une remise au-delà du plafond du caissier demande le PIN d'un responsable (ou de l'admin au-delà
+  du plafond responsable) et un motif, enregistrés au journal. 5 PIN faux verrouillent le compte.
+
+### Front
+
+```bash
+cd frontend
+npm ci
+npm run dev        # http://localhost:5173, l'API est relayée vers localhost:8080
+npm run lint       # ESLint + Prettier
+npm test           # Vitest
+npm run build      # build de production (dist/)
+npm run e2e        # Playwright, contre l'app complète sur localhost:8080 (POS_URL sinon)
+```
+
+Le client TypeScript (`src/api/schema.d.ts`) est généré depuis le contrat OpenAPI :
+`./mvnw verify` réécrit `frontend/openapi.json`, puis `npm run api` régénère le client. La CI
+échoue si l'un des deux n'est pas à jour.
 
 ### Import Sobrus et Invento
 

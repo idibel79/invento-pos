@@ -1,0 +1,2326 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Invento POS API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "security" : [ {
+    "bearer" : [ ]
+  } ],
+  "paths" : {
+    "/api/v1/utilisateurs/{id}" : {
+      "put" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "modifier",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModificationUtilisateur"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UtilisateurDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/utilisateurs/{id}/pin" : {
+      "put" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "definirPin",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PinCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/produits/{id}" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "parId",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProduitDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "modifier_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProduitCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProduitDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parametres" : {
+      "get" : {
+        "tags" : [ "parametre-controller" ],
+        "operationId" : "lire",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Parametres"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "parametre-controller" ],
+        "operationId" : "modifier_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ParametresCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Parametres"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/caisses/{id}" : {
+      "put" : {
+        "tags" : [ "caisse-controller" ],
+        "operationId" : "modifier_3",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CaisseCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/zones" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "zones",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReferenceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "creerZone",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReferenceCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReferenceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ventes" : {
+      "post" : {
+        "tags" : [ "vente-controller" ],
+        "operationId" : "valider",
+        "parameters" : [ {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "[A-Za-z0-9-]{8,64}"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ValidationCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VenteDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ventes/{id}/reprise" : {
+      "post" : {
+        "tags" : [ "vente-controller" ],
+        "operationId" : "reprendre",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VenteDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ventes/{id}/abandon" : {
+      "post" : {
+        "tags" : [ "vente-controller" ],
+        "operationId" : "abandonner",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VenteDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ventes/calcul" : {
+      "post" : {
+        "tags" : [ "vente-controller" ],
+        "operationId" : "calculer",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PanierCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PanierDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ventes/attente" : {
+      "get" : {
+        "tags" : [ "vente-controller" ],
+        "operationId" : "enAttente",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VenteDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "vente-controller" ],
+        "operationId" : "mettreEnAttente",
+        "parameters" : [ {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "[A-Za-z0-9-]{8,64}"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MiseEnAttenteCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VenteDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/utilisateurs" : {
+      "get" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "lister",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UtilisateurDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "creer",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreationUtilisateur"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UtilisateurDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/utilisateurs/{id}/mot-de-passe" : {
+      "post" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "reinitialiserMotDePasse",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MotDePasseTemporaire"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/utilisateurs/{id}/deverrouiller" : {
+      "post" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "deverrouiller",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions" : {
+      "post" : {
+        "tags" : [ "session-caisse-controller" ],
+        "operationId" : "ouvrir",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OuvertureCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionCaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/cloture" : {
+      "post" : {
+        "tags" : [ "session-caisse-controller" ],
+        "operationId" : "cloturer",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClotureCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionCaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/produits" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "rechercher",
+        "parameters" : [ {
+          "name" : "recherche",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "zoneId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "categorieId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "disponibilite",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EN_STOCK", "RUPTURE" ]
+          }
+        }, {
+          "name" : "actif",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "description" : "Zero-based page index (0..N)",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "description" : "The size of the page to be returned",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 50,
+            "minimum" : 1
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "designation,ASC" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseProduitDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "creer_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProduitCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProduitDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/catalogue" : {
+      "post" : {
+        "tags" : [ "import-controller" ],
+        "operationId" : "importer",
+        "parameters" : [ {
+          "name" : "inventaire",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "fichier" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "fichier" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RapportImport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/catalogue/analyse" : {
+      "post" : {
+        "tags" : [ "import-controller" ],
+        "operationId" : "analyser",
+        "parameters" : [ {
+          "name" : "inventaire",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "fichier" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "fichier" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RapportImport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/categories" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "categories",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReferenceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "creerCategorie",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReferenceCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReferenceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/caisses" : {
+      "get" : {
+        "tags" : [ "caisse-controller" ],
+        "operationId" : "lister_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CaisseDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "caisse-controller" ],
+        "operationId" : "creer_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CaisseCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/autorisations/remise" : {
+      "post" : {
+        "tags" : [ "autorisation-controller" ],
+        "operationId" : "autoriser",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DemandeAutorisation"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonAutorisation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/secours" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "secours",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RecuperationCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecuperationDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/rafraichir" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "rafraichir",
+        "parameters" : [ {
+          "name" : "pos_refresh",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mot-de-passe" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "changerMotDePasse",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangementMotDePasse"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/deconnexion" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "deconnexion",
+        "parameters" : [ {
+          "name" : "pos_refresh",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/connexion" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "connexion",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Connexion"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/code-secours" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "nouveauCodeSecours",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeSecoursDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tvas" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "tvas",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TvaDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/courante" : {
+      "get" : {
+        "tags" : [ "session-caisse-controller" ],
+        "operationId" : "courante",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionCaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/produits/code-barre/{code}" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "parCodeBarre",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProduitDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journal" : {
+      "get" : {
+        "tags" : [ "journal-controller" ],
+        "operationId" : "lister_2",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "description" : "Zero-based page index (0..N)",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "description" : "The size of the page to be returned",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 50,
+            "minimum" : 1
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseJournalDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/autorisations/autorisateurs" : {
+      "get" : {
+        "tags" : [ "autorisation-controller" ],
+        "operationId" : "autorisateurs",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Autorisateur"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/moi" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "moi",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UtilisateurDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ModificationUtilisateur" : {
+        "type" : "object",
+        "properties" : {
+          "nom" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "prenom" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          },
+          "actif" : {
+            "type" : "boolean"
+          },
+          "caisseIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "uniqueItems" : true
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "caisseIds", "nom", "prenom", "role" ]
+      },
+      "UtilisateurDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "prenom" : {
+            "type" : "string"
+          },
+          "login" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          },
+          "actif" : {
+            "type" : "boolean"
+          },
+          "verrouille" : {
+            "type" : "boolean"
+          },
+          "doitChangerMotDePasse" : {
+            "type" : "boolean"
+          },
+          "pinDefini" : {
+            "type" : "boolean"
+          },
+          "caisseIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "uniqueItems" : true
+          },
+          "derniereConnexion" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "actif", "caisseIds", "derniereConnexion", "doitChangerMotDePasse", "id", "login", "nom", "pinDefini", "prenom", "role", "verrouille", "version" ]
+      },
+      "PinCommande" : {
+        "type" : "object",
+        "properties" : {
+          "pin" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "\\d{4}"
+          }
+        },
+        "required" : [ "pin" ]
+      },
+      "ProduitCommande" : {
+        "type" : "object",
+        "properties" : {
+          "pid" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "designation" : {
+            "type" : "string",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "categorieId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "tvaId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "zoneId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ppv" : {
+            "type" : "number",
+            "minimum" : 0.0
+          },
+          "pph" : {
+            "type" : "number",
+            "minimum" : 0.0
+          },
+          "stockMin" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "stockMax" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "datePeremption" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "actif" : {
+            "type" : "boolean"
+          },
+          "codesBarres" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 64,
+              "minLength" : 0
+            },
+            "maxItems" : 10,
+            "minItems" : 0
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "categorieId", "codesBarres", "designation", "pid", "ppv", "tvaId", "zoneId" ]
+      },
+      "ProduitDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "pid" : {
+            "type" : "string"
+          },
+          "designation" : {
+            "type" : "string"
+          },
+          "categorie" : {
+            "$ref" : "#/components/schemas/ReferenceDto"
+          },
+          "zone" : {
+            "$ref" : "#/components/schemas/ReferenceDto"
+          },
+          "tva" : {
+            "$ref" : "#/components/schemas/TvaDto"
+          },
+          "ppv" : {
+            "type" : "number"
+          },
+          "pph" : {
+            "type" : [ "number", "null" ]
+          },
+          "tauxMarge" : {
+            "type" : [ "number", "null" ]
+          },
+          "stock" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "stockReserve" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "stockDisponible" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "enRupture" : {
+            "type" : "boolean"
+          },
+          "stockMin" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "stockMax" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "datePeremption" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "actif" : {
+            "type" : "boolean"
+          },
+          "codesBarres" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "actif", "categorie", "codesBarres", "datePeremption", "designation", "enRupture", "id", "pid", "pph", "ppv", "stock", "stockDisponible", "stockMax", "stockMin", "stockReserve", "tauxMarge", "tva", "version", "zone" ]
+      },
+      "ReferenceDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "nom" ]
+      },
+      "TvaDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "taux" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "id", "libelle", "taux" ]
+      },
+      "ParametresCommande" : {
+        "type" : "object",
+        "properties" : {
+          "plafondRemiseCaissier" : {
+            "type" : "number",
+            "maximum" : 100,
+            "minimum" : 0
+          },
+          "plafondRemiseResponsable" : {
+            "type" : "number",
+            "maximum" : 100,
+            "minimum" : 0
+          },
+          "boutiqueNom" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "boutiqueAdresse" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "fuseauHoraire" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire", "plafondRemiseCaissier", "plafondRemiseResponsable" ]
+      },
+      "Parametres" : {
+        "type" : "object",
+        "properties" : {
+          "plafondRemiseCaissier" : {
+            "type" : "number"
+          },
+          "plafondRemiseResponsable" : {
+            "type" : "number"
+          },
+          "boutiqueNom" : {
+            "type" : "string"
+          },
+          "boutiqueAdresse" : {
+            "type" : "string"
+          },
+          "fuseauHoraire" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire", "plafondRemiseCaissier", "plafondRemiseResponsable" ]
+      },
+      "CaisseCommande" : {
+        "type" : "object",
+        "properties" : {
+          "nom" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "nom" ]
+      },
+      "CaisseDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "id", "nom" ]
+      },
+      "ReferenceCommande" : {
+        "type" : "object",
+        "properties" : {
+          "nom" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "nom" ]
+      },
+      "LigneCommande" : {
+        "type" : "object",
+        "properties" : {
+          "produitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "quantite" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 9999,
+            "minimum" : 1
+          },
+          "remise" : {
+            "$ref" : "#/components/schemas/RemiseDto"
+          }
+        },
+        "required" : [ "produitId" ]
+      },
+      "PanierCommande" : {
+        "type" : "object",
+        "properties" : {
+          "lignes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LigneCommande"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          },
+          "remiseTicket" : {
+            "$ref" : "#/components/schemas/RemiseDto"
+          },
+          "motifRemise" : {
+            "type" : "string",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "jetonAutorisation" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "venteEnAttenteId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "lignes" ]
+      },
+      "RemiseDto" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "POURCENT", "MONTANT" ]
+          },
+          "valeur" : {
+            "type" : "number",
+            "minimum" : 0.0
+          }
+        },
+        "required" : [ "type", "valeur" ]
+      },
+      "ValidationCommande" : {
+        "type" : "object",
+        "properties" : {
+          "panier" : {
+            "$ref" : "#/components/schemas/PanierCommande"
+          },
+          "especesRecues" : {
+            "type" : "number",
+            "minimum" : 0.0
+          }
+        },
+        "required" : [ "especesRecues", "panier" ]
+      },
+      "LigneDto" : {
+        "type" : "object",
+        "properties" : {
+          "produitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "designation" : {
+            "type" : "string"
+          },
+          "quantite" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "prixUnitaire" : {
+            "type" : "number"
+          },
+          "tauxTva" : {
+            "type" : "number"
+          },
+          "remise" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RemiseDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "montantBrut" : {
+            "type" : "number"
+          },
+          "remiseMontant" : {
+            "type" : "number"
+          },
+          "montantNet" : {
+            "type" : "number"
+          },
+          "stockSuffisant" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "designation", "montantBrut", "montantNet", "prixUnitaire", "produitId", "quantite", "remise", "remiseMontant", "stockSuffisant", "tauxTva" ]
+      },
+      "PaiementDto" : {
+        "type" : "object",
+        "properties" : {
+          "mode" : {
+            "type" : "string",
+            "enum" : [ "ESPECES", "CARTE" ]
+          },
+          "montant" : {
+            "type" : "number"
+          },
+          "montantRecu" : {
+            "type" : [ "number", "null" ]
+          },
+          "rendu" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "mode", "montant", "montantRecu", "rendu" ]
+      },
+      "TotauxDto" : {
+        "type" : "object",
+        "properties" : {
+          "sousTotal" : {
+            "type" : "number"
+          },
+          "remisesLignes" : {
+            "type" : "number"
+          },
+          "remiseTicket" : {
+            "type" : "number"
+          },
+          "totalRemises" : {
+            "type" : "number"
+          },
+          "totalHt" : {
+            "type" : "number"
+          },
+          "totalTva" : {
+            "type" : "number"
+          },
+          "totalTtc" : {
+            "type" : "number"
+          },
+          "tva" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VentilationTvaDto"
+            }
+          }
+        },
+        "required" : [ "remiseTicket", "remisesLignes", "sousTotal", "totalHt", "totalRemises", "totalTtc", "totalTva", "tva" ]
+      },
+      "VenteDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "numero" : {
+            "type" : "string"
+          },
+          "statut" : {
+            "type" : "string",
+            "enum" : [ "EN_ATTENTE", "VALIDEE", "ANNULEE" ]
+          },
+          "caisseId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "caissierId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lignes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LigneDto"
+            }
+          },
+          "remiseTicket" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/RemiseDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "totaux" : {
+            "$ref" : "#/components/schemas/TotauxDto"
+          },
+          "motifRemise" : {
+            "type" : [ "string", "null" ]
+          },
+          "valideePar" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "noteAttente" : {
+            "type" : [ "string", "null" ]
+          },
+          "attenteExpireLe" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "creeLe" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "finaliseeLe" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "paiement" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PaiementDto"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "attenteExpireLe", "caisseId", "caissierId", "creeLe", "finaliseeLe", "id", "lignes", "motifRemise", "noteAttente", "numero", "paiement", "remiseTicket", "statut", "totaux", "valideePar" ]
+      },
+      "VentilationTvaDto" : {
+        "type" : "object",
+        "properties" : {
+          "taux" : {
+            "type" : "number"
+          },
+          "totalHt" : {
+            "type" : "number"
+          },
+          "totalTva" : {
+            "type" : "number"
+          },
+          "totalTtc" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "taux", "totalHt", "totalTtc", "totalTva" ]
+      },
+      "PanierDto" : {
+        "type" : "object",
+        "properties" : {
+          "lignes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LigneDto"
+            }
+          },
+          "totaux" : {
+            "$ref" : "#/components/schemas/TotauxDto"
+          },
+          "tauxRemiseMax" : {
+            "type" : "number"
+          },
+          "autorisationRequise" : {
+            "type" : "string",
+            "enum" : [ "AUCUNE", "RESPONSABLE", "ADMIN" ]
+          },
+          "autorisationAcquise" : {
+            "type" : "boolean"
+          },
+          "stockSuffisant" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "autorisationAcquise", "autorisationRequise", "lignes", "stockSuffisant", "tauxRemiseMax", "totaux" ]
+      },
+      "MiseEnAttenteCommande" : {
+        "type" : "object",
+        "properties" : {
+          "panier" : {
+            "$ref" : "#/components/schemas/PanierCommande"
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 255,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "panier" ]
+      },
+      "CreationUtilisateur" : {
+        "type" : "object",
+        "properties" : {
+          "nom" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "prenom" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "login" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0,
+            "pattern" : "[A-Za-z0-9._-]+"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          },
+          "motDePasseTemporaire" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          },
+          "caisseIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "caisseIds", "login", "motDePasseTemporaire", "nom", "prenom", "role" ]
+      },
+      "MotDePasseTemporaire" : {
+        "type" : "object",
+        "properties" : {
+          "motDePasseTemporaire" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "motDePasseTemporaire" ]
+      },
+      "OuvertureCommande" : {
+        "type" : "object",
+        "properties" : {
+          "caisseId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "fondInitial" : {
+            "type" : "number",
+            "minimum" : 0.0
+          }
+        },
+        "required" : [ "caisseId", "fondInitial" ]
+      },
+      "SessionCaisseDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "caisseId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "caisseNom" : {
+            "type" : "string"
+          },
+          "caissierId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ouverture" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "fermeture" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "fondInitial" : {
+            "type" : "number"
+          },
+          "montantCompte" : {
+            "type" : [ "number", "null" ]
+          },
+          "especesEncaissees" : {
+            "type" : [ "number", "null" ]
+          },
+          "ecart" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "caisseId", "caisseNom", "caissierId", "ecart", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "ouverture" ]
+      },
+      "ClotureCommande" : {
+        "type" : "object",
+        "properties" : {
+          "montantCompte" : {
+            "type" : "number",
+            "minimum" : 0.0
+          }
+        },
+        "required" : [ "montantCompte" ]
+      },
+      "InventaireDisponible" : {
+        "type" : "object",
+        "properties" : {
+          "numero" : {
+            "type" : "string"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "nombreArticles" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "date", "nombreArticles", "numero" ]
+      },
+      "RapportImport" : {
+        "type" : "object",
+        "properties" : {
+          "format" : {
+            "type" : "string",
+            "enum" : [ "SOBRUS", "INVENTO" ]
+          },
+          "inventaires" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/InventaireDisponible"
+            }
+          },
+          "inventaireRetenu" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/InventaireDisponible"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "lignesLues" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "produitsCrees" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "produitsMisAJour" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "mouvementsStock" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "produitsEnStockNegatif" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "produitsSansCodeBarre" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nombreErreurs" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "erreurs" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "nombreAvertissements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "avertissements" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "avertissements", "erreurs", "format", "inventaireRetenu", "inventaires", "lignesLues", "mouvementsStock", "nombreAvertissements", "nombreErreurs", "produitsCrees", "produitsEnStockNegatif", "produitsMisAJour", "produitsSansCodeBarre" ]
+      },
+      "DemandeAutorisation" : {
+        "type" : "object",
+        "properties" : {
+          "autorisateurId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "pin" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "\\d{4}"
+          }
+        },
+        "required" : [ "autorisateurId", "pin" ]
+      },
+      "JetonAutorisation" : {
+        "type" : "object",
+        "properties" : {
+          "jeton" : {
+            "type" : "string"
+          },
+          "autorisateurId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "autorisateur" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          },
+          "expireLe" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "autorisateur", "autorisateurId", "expireLe", "jeton", "role" ]
+      },
+      "RecuperationCommande" : {
+        "type" : "object",
+        "properties" : {
+          "codeSecours" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "nouveauMotDePasse" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "codeSecours", "nouveauMotDePasse" ]
+      },
+      "RecuperationDto" : {
+        "type" : "object",
+        "properties" : {
+          "login" : {
+            "type" : "string"
+          },
+          "nouveauCodeSecours" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "login", "nouveauCodeSecours" ]
+      },
+      "SessionDto" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "utilisateur" : {
+            "$ref" : "#/components/schemas/UtilisateurDto"
+          }
+        },
+        "required" : [ "accessToken", "expiresIn", "utilisateur" ]
+      },
+      "ChangementMotDePasse" : {
+        "type" : "object",
+        "properties" : {
+          "motDePasseActuel" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          },
+          "nouveauMotDePasse" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "motDePasseActuel", "nouveauMotDePasse" ]
+      },
+      "Connexion" : {
+        "type" : "object",
+        "properties" : {
+          "login" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "motDePasse" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "login", "motDePasse" ]
+      },
+      "CodeSecoursDto" : {
+        "type" : "object",
+        "properties" : {
+          "codeSecours" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "codeSecours" ]
+      },
+      "PageResponseProduitDto" : {
+        "type" : "object",
+        "properties" : {
+          "contenu" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProduitDto"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "taille" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "JournalDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "utilisateurId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "action" : {
+            "type" : "string",
+            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "REMISE_AUTORISEE" ]
+          },
+          "detail" : {
+            "type" : [ "string", "null" ]
+          },
+          "creeLe" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "action", "creeLe", "detail", "id", "utilisateurId" ]
+      },
+      "PageResponseJournalDto" : {
+        "type" : "object",
+        "properties" : {
+          "contenu" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/JournalDto"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "taille" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "Autorisateur" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prenom" : {
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          }
+        },
+        "required" : [ "id", "nom", "prenom", "role" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}

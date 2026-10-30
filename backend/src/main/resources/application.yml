@@ -39,6 +39,11 @@ spring:
   threads:
     virtual:
       enabled: true
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
 
 server:
   port: ${PORT:8080}
@@ -62,6 +67,8 @@ management:
 springdoc:
   api-docs:
     path: /v3/api-docs
+  # Réponses typées en JSON dans le contrat (le client TypeScript en dépend).
+  default-produces-media-type: application/json
   swagger-ui:
     path: /swagger-ui.html
 

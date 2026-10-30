@@ -11,6 +11,7 @@ import ma.invento.pos.catalogue.application.CatalogueService;
 import ma.invento.pos.catalogue.infrastructure.ProduitSpecifications.Disponibilite;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.shared.api.PageResponse;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -50,7 +51,8 @@ class CatalogueController {
             @RequestParam(required = false) Long categorieId,
             @RequestParam(required = false) Disponibilite disponibilite,
             @RequestParam(required = false) Boolean actif,
-            @PageableDefault(size = 50, sort = "designation", direction = Sort.Direction.ASC) Pageable pageable,
+            @ParameterObject @PageableDefault(size = 50, sort = "designation", direction = Sort.Direction.ASC)
+                    Pageable pageable,
             @AuthenticationPrincipal Jwt jwt) {
         return catalogueService.rechercher(
                 recherche, zoneId, categorieId, disponibilite, actif, pageable, estAdmin(jwt));

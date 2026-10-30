@@ -130,7 +130,11 @@ class ImportSobrusIT extends IntegrationTest {
                 .contains("Médicament", "Parapharmacie", "Diététique")
                 .doesNotHaveDuplicates();
         assertThat(zones.findAll()).noneMatch(z -> z.getNom().endsWith(" "));
-        assertThat(mouvements.findAll()).allMatch(m -> m.getType() == TypeMouvement.IMPORT);
+        // La base est partagée entre les classes de test : les ventes d'autres tests y laissent des
+        // mouvements VENTE, que l'import ne produit jamais.
+        assertThat(mouvements.findAll())
+                .filteredOn(m -> m.getType() != TypeMouvement.VENTE)
+                .allMatch(m -> m.getType() == TypeMouvement.IMPORT);
         assertThat(journal.findByAction(ActionJournal.IMPORT_CATALOGUE)).isNotEmpty();
 
         // Le scan d'un code-barre importé retrouve le produit.

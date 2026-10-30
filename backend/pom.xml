@@ -25,6 +25,7 @@
         <spotless.version>3.10.4</spotless.version>
         <palantir-java-format.version>2.103.0</palantir-java-format.version>
         <jacoco.version>0.8.16</jacoco.version>
+        <shedlock.version>6.10.0</shedlock.version>
     </properties>
 
     <dependencies>
@@ -70,6 +71,17 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+        </dependency>
+        <!-- Tâches planifiées exécutées par une seule instance de l'API à la fois. -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${shedlock.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>

@@ -7,3 +7,5 @@
 .env
 backups
 *.dump
+frontend/playwright-report
+frontend/test-results
