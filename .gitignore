@@ -25,3 +25,6 @@ frontend/playwright-report/
 frontend/test-results/
 *.tsbuildinfo
 backend/src/main/resources/static/
+
+# Prévisualisation locale (scripts/preview)
+.preview/

@@ -1,0 +1,4 @@
+# Les scripts shell doivent garder des fins de ligne LF, même extraits sous Windows.
+*.sh text eol=lf
+mvnw text eol=lf
+*.ps1 text eol=crlf
