@@ -148,19 +148,24 @@ model, steps). The decisions below were taken after it and override it where the
   (only once the GCP variables are configured).
 - One PR per feature, Conventional Commits (`feat:`, `fix:`, `chore:`…), `main` protected.
 
-### PR validation and merge (standing instruction)
+### Local validation, then commit, PR and merge (standing instruction)
 
-idriss tests every PR in his own browser, on his PC (Windows), before it is merged.
-1. When a PR is opened, give idriss the preview command with the PR number, both forms:
-   `.\scripts\preview.ps1 <n>` (PowerShell) and `scripts/preview.sh <n>` (bash). It fetches the
-   PR, starts PostgreSQL in Docker, runs the API with the `demo` profile (fresh demo data: accounts
-   `admin` / `responsable` / `caissier`, password `demo1234`, two tills, eight products) and the
-   Vite front, and opens the browser. Say what to check in the browser for that PR.
-2. Merge only on idriss's explicit validation. Once he validates, merge right away, without
-   waiting for the CI or the tests to finish (every merge on `main` deploys to Cloud Run).
-3. Without his validation, never merge. If he reports a problem, fix it on the same branch and
-   give him the command again.
-4. Keep `scripts/preview.sh`, `scripts/preview.ps1` and the `demo` profile (`ma.invento.pos.demo`)
+Changes are made directly in idriss's local checkout, on his PC (Windows); he tests them in his
+browser before anything is committed or pushed.
+1. Start from an up-to-date `main` and edit the working tree directly (no commit, push or PR yet).
+2. After a change, start the app yourself (idriss does not run anything): run
+   `.\scripts\preview.ps1` without argument in the background (Docker PostgreSQL, API with the
+   `demo` profile — accounts `admin` / `responsable` / `caissier`, password `demo1234` — and the
+   Vite front). If it is already running, a front change reloads hot; after a backend change,
+   stop it and start it again. Once the API is ready, give idriss the local URL
+   (`http://localhost:5173`) and say what to check.
+3. If he reports a problem, fix it in the working tree and give him the URL again.
+4. Only when idriss explicitly validates ("valide"): branch from an up-to-date `main`, commit
+   (Conventional Commits), push, open the PR, then merge it right away, without waiting for the
+   CI (every merge on `main` deploys to Cloud Run). Without his validation, never commit, push or
+   merge.
+5. To test an existing PR: `.\scripts\preview.ps1 <n>` (or `scripts/preview.sh <n>`).
+6. Keep `scripts/preview.sh`, `scripts/preview.ps1` and the `demo` profile (`ma.invento.pos.demo`)
    working: when a feature needs demo data to be tested, add it to `DonneesDemo`.
 
 ## Skills to use
