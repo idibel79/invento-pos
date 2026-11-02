@@ -51,9 +51,34 @@ foreach ($outil in "git", "docker", "java", "node", "npm") {
 }
 cmd /c "docker info >nul 2>&1"
 if ($LASTEXITCODE -ne 0) { Arreter "Docker ne répond pas : démarrez Docker Desktop." }
-$versionJava = (cmd /c "java -version 2>&1" | Out-String)
-if ($versionJava -notmatch 'version "(\d+)' -or [int]$Matches[1] -lt 21) {
-    Arreter "Java 21 ou plus est requis. Trouvé : $versionJava"
+# Java 21+ : celui du PATH, sinon un JDK 21+ installé à côté (JAVA_HOME, dossiers d'installation
+# habituels). Il est alors utilisé pour cette exécution seulement, sans toucher à la config du PC.
+function Get-VersionJava([string]$Java) {
+    # java -version écrit sur stderr, ce qui ne doit pas arrêter le script.
+    $ErrorActionPreference = "Continue"
+    try { $sortie = (& $Java -version 2>&1 | Out-String) } catch { return 0 }
+    if ($sortie -match 'version "(\d+)') { return [int]$Matches[1] }
+    return 0
+}
+if ((Get-VersionJava "java") -lt 21) {
+    $candidats = @()
+    if ($env:JAVA_HOME) { $candidats += $env:JAVA_HOME }
+    foreach ($racine in "$env:ProgramFiles\Eclipse Adoptium", "$env:ProgramFiles\Java", "$env:ProgramFiles\Microsoft",
+            "$env:ProgramFiles\Amazon Corretto", "$env:ProgramFiles\Zulu", "$env:USERPROFILE\.jdks") {
+        if (Test-Path $racine) {
+            $candidats += Get-ChildItem $racine -Directory | Sort-Object Name -Descending | ForEach-Object FullName
+        }
+    }
+    $jdk = $candidats | Where-Object {
+        (Test-Path "$_\bin\java.exe") -and (Get-VersionJava "$_\bin\java.exe") -ge 21
+    } | Select-Object -First 1
+    if (-not $jdk) {
+        Arreter ("Java 21 ou plus est requis (trouvé : Java $(Get-VersionJava 'java')). Installez-le avec :`n" +
+            "  winget install EclipseAdoptium.Temurin.21.JDK`npuis relancez le script dans un nouveau terminal.")
+    }
+    Write-Host "==> JDK utilisé : $jdk"
+    $env:JAVA_HOME = $jdk
+    $env:Path = "$jdk\bin;$env:Path"
 }
 
 # ---------------------------------------------------------------- Code de la PR

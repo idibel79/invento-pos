@@ -8,7 +8,8 @@ d'architecture sont dans [CLAUDE.md](CLAUDE.md).
 
 Prérequis, une seule fois :
 - **Docker Desktop** (lancé), pour PostgreSQL ;
-- **JDK 21** (`java -version` doit afficher 21 ou plus) ; Maven n'est pas nécessaire (`mvnw`) ;
+- **JDK 21** (`winget install EclipseAdoptium.Temurin.21.JDK`) ; Maven n'est pas nécessaire (`mvnw`).
+  Si un Java plus ancien est dans le PATH, `preview.ps1` utilise le JDK 21 installé à côté ;
 - **Node.js 22** et npm ;
 - **Git**, avec ce dépôt cloné.
 
