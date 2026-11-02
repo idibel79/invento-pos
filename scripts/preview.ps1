@@ -163,7 +163,12 @@ try {
 "@
     Write-Host "==> Front Vite sur http://localhost:5173 (Ctrl+C pour tout arrêter)"
     Push-Location frontend
-    try { npm run dev -- --open } finally { Pop-Location }
+    # Vite lancé par node directement : PowerShell retire le « -- » de « npm run dev -- --open »,
+    # et npm.cmd ajoute la question « Terminer le programme de commandes ? » au Ctrl+C.
+    try {
+        node node_modules\vite\bin\vite.js --open
+        if ($LASTEXITCODE -ne 0) { Write-Host "Vite s'est arrêté (code $LASTEXITCODE)." -ForegroundColor Red }
+    } finally { Pop-Location }
 } finally {
     Write-Host "==> Arrêt de l'API (la base reste démarrée : docker compose stop db pour l'arrêter)"
     # /T : arrête aussi Maven et la JVM de l'application lancés par cmd.exe.
