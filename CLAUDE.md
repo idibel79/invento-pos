@@ -148,15 +148,31 @@ model, steps). The decisions below were taken after it and override it where the
   (only once the GCP variables are configured).
 - One PR per feature, Conventional Commits (`feat:`, `fix:`, `chore:`…), `main` protected.
 
+### PR validation and merge (standing instruction)
+
+idriss tests every PR in his own browser, on his PC (Windows), before it is merged.
+1. When a PR is opened, give idriss the preview command with the PR number, both forms:
+   `.\scripts\preview.ps1 <n>` (PowerShell) and `scripts/preview.sh <n>` (bash). It fetches the
+   PR, starts PostgreSQL in Docker, runs the API with the `demo` profile (fresh demo data: accounts
+   `admin` / `responsable` / `caissier`, password `demo1234`, two tills, eight products) and the
+   Vite front, and opens the browser. Say what to check in the browser for that PR.
+2. Merge only on idriss's explicit validation. Once he validates, merge right away, without
+   waiting for the CI or the tests to finish (every merge on `main` deploys to Cloud Run).
+3. Without his validation, never merge. If he reports a problem, fix it on the same branch and
+   give him the command again.
+4. Keep `scripts/preview.sh`, `scripts/preview.ps1` and the `demo` profile (`ma.invento.pos.demo`)
+   working: when a feature needs demo data to be tested, add it to `DonneesDemo`.
+
 ## Skills to use
 
 - `invento-design`: every front screen (mockup 1, Invento look).
 - `code-review` and `security-review`: before opening each PR.
 - `simplify`: after a feature, on the changed code.
-- `run`: to start the app and check a change for real.
+- `run`: to start the app and check a change for real (`scripts/preview.sh` does it in one step).
 
 ## Commands
 
+- Preview a PR locally (fresh demo data): `scripts/preview.sh <n>` or `.\scripts\preview.ps1 <n>`.
 - Local database: `docker compose up -d db`
 - Run the API: `cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`
 - Full check: `cd backend && ./mvnw verify` (unit tests, Testcontainers integration tests,

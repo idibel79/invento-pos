@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -23,9 +24,13 @@ class JwtConfig {
     private static final int TAILLE_MIN_CLE = 32;
 
     @Bean
-    SecretKey jwtSecretKey(SecurityProperties properties) {
+    SecretKey jwtSecretKey(SecurityProperties properties, Environment environment) {
         String secret = properties.jwtSecret();
         if (secret == null || secret.isBlank()) {
+            // Une variable présente mais vide passe le placeholder de application-prod.yml.
+            if (environment.matchesProfiles("prod")) {
+                throw new IllegalStateException("POS_JWT_SECRET est obligatoire en production.");
+            }
             log.warn("POS_JWT_SECRET absent : clé éphémère générée, les sessions ne survivront pas à un redémarrage.");
             byte[] octets = new byte[TAILLE_MIN_CLE];
             new SecureRandom().nextBytes(octets);
