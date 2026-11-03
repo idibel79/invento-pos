@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
-import { useParametres } from "../caisse/requetes";
+import { useCaisses, useParametres } from "../caisse/requetes";
 import { dh, pourcent } from "../ui/format";
-import { useJournalRemises, useResumeRemises, type FiltreRemises } from "./requetes";
+import { useJournalRemises, useResumeRemises, useUtilisateurs, type FiltreRemises } from "./requetes";
 
 const PERIODES = { "7": "7 derniers jours", "30": "30 derniers jours", tout: "Tout l'historique" } as const;
 const PORTEES = { toutes: "Toutes", LIGNE: "Sur une ligne", TICKET: "Sur le ticket" } as const;
@@ -12,10 +12,16 @@ const PORTEES = { toutes: "Toutes", LIGNE: "Sur une ligne", TICKET: "Sur le tick
 export function JournalRemises() {
   const [periode, setPeriode] = useState<keyof typeof PERIODES>("7");
   const [portee, setPortee] = useState<keyof typeof PORTEES>("toutes");
+  const [caisseId, setCaisseId] = useState<number>();
+  const [vendeurId, setVendeurId] = useState<number>();
   const filtre: FiltreRemises = {
     jours: periode === "tout" ? undefined : Number(periode),
     portee: portee === "toutes" ? undefined : portee,
+    caisseId,
+    vendeurId,
   };
+  const caisses = useCaisses().data ?? [];
+  const vendeurs = useUtilisateurs().data ?? [];
   const remises = useJournalRemises(filtre);
   const resume = useResumeRemises(filtre);
   const fuseau = useParametres().data?.fuseauHoraire;
@@ -39,6 +45,34 @@ export function JournalRemises() {
             {Object.entries(PERIODES).map(([cle, libelle]) => (
               <option key={cle} value={cle}>
                 {libelle}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filtre">
+          <span>Caisse :</span>
+          <select
+            value={caisseId ?? ""}
+            onChange={(e) => setCaisseId(e.target.value ? Number(e.target.value) : undefined)}
+          >
+            <option value="">Toutes</option>
+            {caisses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nom}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filtre">
+          <span>Vendeur :</span>
+          <select
+            value={vendeurId ?? ""}
+            onChange={(e) => setVendeurId(e.target.value ? Number(e.target.value) : undefined)}
+          >
+            <option value="">Tous</option>
+            {vendeurs.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.prenom} {u.nom}
               </option>
             ))}
           </select>
@@ -78,6 +112,7 @@ export function JournalRemises() {
           {[
             "Date",
             "Vente",
+            "Caisse",
             "Vendeur",
             "Autorisée par",
             "Portée",
@@ -143,6 +178,7 @@ function LigneRemise({
       <span role="cell" className="remise-vente">
         {r.venteNumero}
       </span>
+      <span role="cell">{r.caisse}</span>
       <span role="cell">{r.vendeur}</span>
       <span role="cell" className={r.autorisePar ? undefined : "remise-discret"}>
         {r.autorisePar ?? "—"}

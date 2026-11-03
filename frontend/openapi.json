@@ -1136,6 +1136,22 @@
             "enum" : [ "LIGNE", "TICKET" ]
           }
         }, {
+          "name" : "caisseId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "vendeurId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -1192,6 +1208,22 @@
           "schema" : {
             "type" : "string",
             "enum" : [ "LIGNE", "TICKET" ]
+          }
+        }, {
+          "name" : "caisseId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "vendeurId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         } ],
         "responses" : {

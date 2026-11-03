@@ -113,10 +113,12 @@ export function useImporterCatalogue() {
   });
 }
 
-/** Filtres du journal des remises : les n derniers jours (absent : tout), une seule portée (absente : les deux). */
+/** Filtres du journal des remises : les n derniers jours, une portée, une caisse, un vendeur (absent : pas de filtre). */
 export interface FiltreRemises {
   jours?: number;
   portee?: "LIGNE" | "TICKET";
+  caisseId?: number;
+  vendeurId?: number;
 }
 
 const TAILLE_JOURNAL = 50;
