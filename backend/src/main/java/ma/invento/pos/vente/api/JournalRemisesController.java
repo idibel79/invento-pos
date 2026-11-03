@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Journal des remises accordées (ventes validées), consulté par l'admin. Filtres : les {@code jours}
- * derniers jours (absent : tout l'historique) et la portée de la remise (ligne ou ticket).
+ * derniers jours (absent : tout l'historique), la portée de la remise (ligne ou ticket), la caisse et le
+ * vendeur.
  */
 @RestController
 @RequestMapping("/api/v1/remises")
@@ -41,9 +42,11 @@ class JournalRemisesController {
     PageResponse<RemiseJournal> lister(
             @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
             @RequestParam(required = false) Portee portee,
+            @RequestParam(required = false) Long caisseId,
+            @RequestParam(required = false) Long vendeurId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille) {
-        Filtre filtre = filtre(jours, portee);
+        Filtre filtre = filtre(jours, portee, caisseId, vendeurId);
         long total = requete.resumer(filtre).nombre();
         return new PageResponse<>(
                 requete.lister(filtre, page, taille), page, taille, total, (int) ((total + taille - 1) / taille));
@@ -53,11 +56,14 @@ class JournalRemisesController {
     @Transactional(readOnly = true)
     ResumeRemises resumer(
             @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
-            @RequestParam(required = false) Portee portee) {
-        return requete.resumer(filtre(jours, portee));
+            @RequestParam(required = false) Portee portee,
+            @RequestParam(required = false) Long caisseId,
+            @RequestParam(required = false) Long vendeurId) {
+        return requete.resumer(filtre(jours, portee, caisseId, vendeurId));
     }
 
-    private Filtre filtre(Integer jours, Portee portee) {
-        return new Filtre(jours == null ? null : clock.instant().minus(Duration.ofDays(jours)), portee);
+    private Filtre filtre(Integer jours, Portee portee, Long caisseId, Long vendeurId) {
+        return new Filtre(
+                jours == null ? null : clock.instant().minus(Duration.ofDays(jours)), portee, caisseId, vendeurId);
     }
 }

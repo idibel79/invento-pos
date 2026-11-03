@@ -46,8 +46,11 @@ public class JournalRemisesRequete {
         TICKET
     }
 
-    /** Sélection : remises validées depuis une date (null : toutes), d'une seule portée (null : les deux). */
-    public record Filtre(Instant depuis, Portee portee) {}
+    /**
+     * Sélection : remises validées depuis une date, d'une seule portée, d'une caisse et d'un vendeur ; un
+     * critère null ne filtre pas.
+     */
+    public record Filtre(Instant depuis, Portee portee, Long caisseId, Long vendeurId) {}
 
     private final NamedParameterJdbcTemplate jdbc;
     private final String lignes;
@@ -97,16 +100,20 @@ public class JournalRemisesRequete {
 
     /** Union des remises retenues par le filtre ; les conditions sont fixes, seules les valeurs varient. */
     private String union(Filtre filtre) {
-        String date = filtre.depuis() == null ? "" : " and v.finalisee_le >= :depuis";
+        String conditions = (filtre.depuis() == null ? "" : " and v.finalisee_le >= :depuis")
+                + (filtre.caisseId() == null ? "" : " and v.caisse_id = :caisseId")
+                + (filtre.vendeurId() == null ? "" : " and v.caissier_id = :vendeurId");
         List<String> parties = new ArrayList<>();
-        if (filtre.portee() != Portee.TICKET) parties.add(lignes + date);
-        if (filtre.portee() != Portee.LIGNE) parties.add(tickets + date);
+        if (filtre.portee() != Portee.TICKET) parties.add(lignes + conditions);
+        if (filtre.portee() != Portee.LIGNE) parties.add(tickets + conditions);
         return String.join(" union all ", parties);
     }
 
     private static MapSqlParameterSource parametres(Filtre filtre) {
         MapSqlParameterSource parametres = new MapSqlParameterSource();
         if (filtre.depuis() != null) parametres.addValue("depuis", Timestamp.from(filtre.depuis()));
+        if (filtre.caisseId() != null) parametres.addValue("caisseId", filtre.caisseId());
+        if (filtre.vendeurId() != null) parametres.addValue("vendeurId", filtre.vendeurId());
         return parametres;
     }
 

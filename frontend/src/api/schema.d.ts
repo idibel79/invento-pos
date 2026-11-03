@@ -1892,6 +1892,8 @@ export interface operations {
             query?: {
                 jours?: number;
                 portee?: "LIGNE" | "TICKET";
+                caisseId?: number;
+                vendeurId?: number;
                 page?: number;
                 taille?: number;
             };
@@ -1917,6 +1919,8 @@ export interface operations {
             query?: {
                 jours?: number;
                 portee?: "LIGNE" | "TICKET";
+                caisseId?: number;
+                vendeurId?: number;
             };
             header?: never;
             path?: never;
