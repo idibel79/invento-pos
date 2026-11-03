@@ -1,7 +1,8 @@
 import type { Dispatch } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
-import { dh, decimal, pourcent } from "../ui/format";
+import { dh, pourcent } from "../ui/format";
+import { IconeCorbeille } from "../ui/icones";
 import { nombreArticles, type ActionPanier, type EtatPanier, type Remise } from "./panier";
 
 interface Props {
@@ -33,6 +34,9 @@ export function PanierPanel({
     : false;
   const pret = apercu !== undefined && !calcul.isFetching && apercu.stockSuffisant && !autorisationManquante;
   const articles = nombreArticles(panier);
+  // Une seule remise par vente (règle vérifiée par le serveur) : remises sur les lignes ou remise ticket.
+  const remiseSurLignes = panier.lignes.some((l) => l.remise !== null);
+  const remiseTicket = panier.remiseTicket !== null;
 
   return (
     <aside className="panier" aria-label="Vente en cours">
@@ -46,19 +50,14 @@ export function PanierPanel({
             {panier.autorisePar ? ` · remise autorisée par ${panier.autorisePar}` : ""}
           </div>
         </div>
-        <div className="panier-actions">
-          <button type="button" className="bouton-petit" onClick={onRemiseTicket} disabled={vide}>
-            {panier.remiseTicket ? `Ticket ${libelleRemise(panier.remiseTicket)}` : "Remise ticket"}
-          </button>
-          <button
-            type="button"
-            className="bouton-petit danger"
-            onClick={() => dispatch({ type: "vider" })}
-            disabled={vide && panier.venteEnAttenteId === null}
-          >
-            Vider
-          </button>
-        </div>
+        <button
+          type="button"
+          className="bouton-petit danger"
+          onClick={() => dispatch({ type: "vider" })}
+          disabled={vide && panier.venteEnAttenteId === null}
+        >
+          Vider
+        </button>
       </div>
 
       <div className="panier-lignes">
@@ -67,7 +66,20 @@ export function PanierPanel({
           const calculee = lignesCalculees.get(ligne.produitId);
           return (
             <div className="ligne" key={ligne.produitId}>
-              <div className="ligne-nom">{ligne.designation}</div>
+              <div className="ligne-haut">
+                <button
+                  type="button"
+                  className="bouton-supprimer"
+                  aria-label={`Retirer ${ligne.designation} du ticket`}
+                  title="Retirer l'article"
+                  onClick={() => dispatch({ type: "retirer", produitId: ligne.produitId })}
+                >
+                  <IconeCorbeille />
+                </button>
+                <span className="ligne-nom" title={ligne.designation}>
+                  {ligne.designation}
+                </span>
+              </div>
               <div className="ligne-detail">
                 <div className="quantite">
                   <button
@@ -90,13 +102,16 @@ export function PanierPanel({
                     +
                   </button>
                 </div>
-                <span className="ligne-prix">× {decimal(calculee?.prixUnitaire ?? ligne.prixUnitaire)}</span>
+                <span className="ligne-prix">{dh(calculee?.prixUnitaire ?? ligne.prixUnitaire)} l'unité</span>
                 <button
                   type="button"
                   className={`bouton-remise${ligne.remise ? " active" : ""}`}
+                  aria-label={`Remise sur ${ligne.designation}`}
                   onClick={() => onRemiseLigne(ligne.produitId)}
+                  disabled={remiseTicket}
+                  title={remiseTicket ? "Retirez d'abord la remise sur le ticket" : undefined}
                 >
-                  {ligne.remise ? `− ${libelleRemise(ligne.remise)}` : "% Remise"}
+                  {ligne.remise ? `Remise − ${libelleRemise(ligne.remise)}` : "Remise"}
                 </button>
                 <span className="ligne-total">
                   {calculee && calculee.remiseMontant > 0 && <s>{dh(calculee.montantBrut)}</s>}
@@ -125,34 +140,53 @@ export function PanierPanel({
             {apercu.autorisationRequise === "ADMIN" ? "de l'admin" : "d'un responsable"} requise.
           </p>
         )}
-        <div className="total-ligne">
-          <span>Remises</span>
-          <span>{apercu ? dh(apercu.totaux.totalRemises) : "–"}</span>
-        </div>
-        <div className="total-ligne">
-          <span>Total HT</span>
-          <span>{apercu ? dh(apercu.totaux.totalHt) : "–"}</span>
-        </div>
-        {(apercu?.totaux.tva ?? [])
-          .filter((t) => t.taux > 0)
-          .map((t) => (
-            <div className="total-ligne" key={t.taux}>
-              <span>TVA {pourcent(t.taux)}</span>
-              <span>{dh(t.totalTva)}</span>
-            </div>
-          ))}
-        <div className="total-ttc">
-          <span>Total TTC</span>
-          <strong data-testid="total-ttc">{apercu ? dh(apercu.totaux.totalTtc) : vide ? dh(0) : "…"}</strong>
+        <div className="bloc-totaux">
+          <div className="total-ligne">
+            <span>Remises</span>
+            <span>{apercu ? dh(apercu.totaux.totalRemises) : "–"}</span>
+          </div>
+          <div className="total-ligne">
+            <span>Total HT</span>
+            <span>{apercu ? dh(apercu.totaux.totalHt) : "–"}</span>
+          </div>
+          {(apercu?.totaux.tva ?? [])
+            .filter((t) => t.taux > 0)
+            .map((t) => (
+              <div className="total-ligne" key={t.taux}>
+                <span>TVA {pourcent(t.taux)}</span>
+                <span>{dh(t.totalTva)}</span>
+              </div>
+            ))}
+          <div className="total-ttc">
+            <span>Total TTC</span>
+            <strong data-testid="total-ttc">
+              {apercu ? dh(apercu.totaux.totalTtc) : vide ? dh(0) : "…"}
+            </strong>
+          </div>
         </div>
         <div className="rangee-boutons">
+          <button
+            type="button"
+            className="bouton bouton-contour"
+            onClick={onRemiseTicket}
+            disabled={vide || remiseSurLignes}
+            title={remiseSurLignes ? "Retirez d'abord les remises sur les lignes" : undefined}
+          >
+            {panier.remiseTicket ? `Remise ticket ${libelleRemise(panier.remiseTicket)}` : "Remise ticket"}
+          </button>
           <button type="button" className="bouton bouton-contour" onClick={onAttente} disabled={!pret}>
             Mettre en attente
           </button>
-          <button type="button" className="bouton bouton-plein" onClick={onEncaisser} disabled={!pret}>
-            {apercu ? `Encaisser ${dh(apercu.totaux.totalTtc)}` : "Encaisser"}
-          </button>
         </div>
+        <button
+          type="button"
+          className="bouton bouton-plein bouton-encaisser"
+          onClick={onEncaisser}
+          disabled={!pret}
+        >
+          <span>Encaisser</span>
+          {apercu && <span>{dh(apercu.totaux.totalTtc)} ›</span>}
+        </button>
       </div>
     </aside>
   );

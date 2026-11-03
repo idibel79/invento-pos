@@ -3,7 +3,6 @@ import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, lireMontant } from "../ui/format";
-import { IconeBillet } from "../ui/icones";
 import { useValiderVente } from "./requetes";
 
 interface Props {
@@ -13,14 +12,12 @@ interface Props {
   onFermer: () => void;
 }
 
-/** Montants ronds proposés au-dessus du total (billets courants). */
-export function montantsProposes(total: number): number[] {
-  const proposes = new Set<number>();
-  for (const pas of [10, 50, 100, 200]) {
-    const arrondi = Math.ceil(total / pas) * pas;
-    if (arrondi > total) proposes.add(arrondi);
-  }
-  return [...proposes].sort((a, b) => a - b).slice(0, 3);
+/** Billets en circulation : chaque clic ajoute le billet au montant reçu. */
+export const BILLETS = [20, 50, 100, 200] as const;
+
+/** Montant reçu après l'ajout d'un billet (un montant vide compte pour zéro). */
+export function ajouterBillet(recu: number | null, billet: number): number {
+  return Math.round(((recu ?? 0) + billet) * 100) / 100;
 }
 
 /**
@@ -41,15 +38,25 @@ export function EncaissementDialogue({ commande, total, onValidee, onFermer }: P
   }
 
   return (
-    <Dialogue titre="Encaissement" icone={<IconeBillet />} onFermer={onFermer}>
-      <div className="encadre">
-        <span className="libelle">Total à payer</span>
-        <span className="encadre-montant">{dh(total)}</span>
+    <Dialogue titre="Encaissement" sousTitre="Paiement en espèces" onFermer={onFermer}>
+      <div className="total-a-payer">
+        <span>Total à payer</span>
+        <strong>{dh(total)}</strong>
       </div>
-      <div className="choix" role="group" aria-label="Mode de paiement">
-        <button type="button" aria-pressed="true">
-          Espèces
-        </button>
+      <div className="champ">
+        <span className="libelle">Billets reçus (chaque clic s'ajoute)</span>
+        <div className="billets" role="group" aria-label="Billets reçus">
+          {BILLETS.map((b) => (
+            <button
+              key={b}
+              type="button"
+              aria-label={`Ajouter un billet de ${b} DH`}
+              onClick={() => setSaisie((s) => decimal(ajouterBillet(s === "" ? null : lireMontant(s), b)))}
+            >
+              + {b} DH
+            </button>
+          ))}
+        </div>
       </div>
       <label className="libelle" htmlFor="montant-recu">
         Montant reçu
@@ -58,6 +65,7 @@ export function EncaissementDialogue({ commande, total, onValidee, onFermer }: P
         <input
           id="montant-recu"
           inputMode="decimal"
+          autoComplete="off"
           value={saisie}
           onChange={(e) => setSaisie(e.target.value)}
           placeholder={decimal(total)}
@@ -65,18 +73,16 @@ export function EncaissementDialogue({ commande, total, onValidee, onFermer }: P
         />
         <span>DH</span>
       </div>
-      <div className="choix compact" role="group" aria-label="Montants proposés">
-        <button type="button" aria-pressed={recu === total} onClick={() => choisir(total)}>
+      <div className="raccourcis-montant">
+        <button type="button" onClick={() => choisir(total)}>
           Exact
         </button>
-        {montantsProposes(total).map((m) => (
-          <button key={m} type="button" aria-pressed={recu === m} onClick={() => choisir(m)}>
-            {m}
-          </button>
-        ))}
+        <button type="button" onClick={() => setSaisie("")}>
+          Effacer
+        </button>
       </div>
       {rendu !== null && (
-        <div className={`rendu${suffisant ? "" : " manque"}`}>
+        <div className={`rendu${suffisant ? "" : " manque"}`} aria-live="polite">
           <span className="libelle">{suffisant ? "Rendu monnaie" : "Il manque"}</span>
           <strong>{dh(Math.abs(suffisant ? Math.max(rendu, 0) : rendu))}</strong>
         </div>

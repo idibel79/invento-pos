@@ -2,8 +2,10 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 interface Props {
   titre: string;
+  /** Ligne de contexte sous le titre (ticket, produit, caisse). */
+  sousTitre?: string;
+  /** Conservés pour les appelants ; la fenêtre classique n'affiche plus d'icône. */
   icone?: ReactNode;
-  /** Teinte du rond de l'icône. */
   ton?: "info" | "danger" | "succes";
   onFermer: () => void;
   children: ReactNode;
@@ -11,10 +13,10 @@ interface Props {
 }
 
 /**
- * Popup de la charte Invento : voile marine à 42 %, carte arrondie 24 px, icône dans un rond
- * teinté, titre centré. Échap ferme, le focus reste dans la popup.
+ * Popup « fenêtre classique » : titre à gauche avec bouton de fermeture, contenu, puis la rangée de
+ * boutons en pied gris (dernier enfant). Échap ferme, le focus reste dans la popup.
  */
-export function Dialogue({ titre, icone, ton = "info", onFermer, children, largeur = 520 }: Props) {
+export function Dialogue({ titre, sousTitre, onFermer, children, largeur = 460 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -34,14 +36,15 @@ export function Dialogue({ titre, icone, ton = "info", onFermer, children, large
       }}
     >
       <div className="dialogue-tete">
-        {icone && (
-          <span className={`dialogue-icone ton-${ton}`} aria-hidden="true">
-            {icone}
-          </span>
-        )}
-        <h2 className="titre-popup">{titre}</h2>
+        <div>
+          <h2 className="titre-popup">{titre}</h2>
+          {sousTitre && <p className="dialogue-sous-titre">{sousTitre}</p>}
+        </div>
+        <button type="button" className="dialogue-fermer" aria-label="Fermer" onClick={onFermer}>
+          ×
+        </button>
       </div>
-      {children}
+      <div className="dialogue-corps">{children}</div>
     </dialog>
   );
 }

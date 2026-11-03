@@ -80,13 +80,12 @@ class CalculateurVenteTest {
     }
 
     @Test
-    void cumuler_remise_ligne_et_remise_ticket_compte_comme_une_seule_remise() {
-        PanierCalcule panier = CalculateurVente.calculer(
-                List.of(ligne(1, 1, "100.00", TVA_20, new Remise(TypeRemise.POURCENT, new BigDecimal("10")))),
-                new Remise(TypeRemise.POURCENT, new BigDecimal("10")));
-
-        assertThat(panier.totalTtc()).isEqualByComparingTo("81.00");
-        assertThat(panier.tauxRemiseMax()).isEqualByComparingTo("19.00");
+    void remise_ligne_et_remise_ticket_ne_se_cumulent_pas() {
+        assertThatThrownBy(() -> CalculateurVente.calculer(
+                        List.of(ligne(1, 1, "100.00", TVA_20, new Remise(TypeRemise.POURCENT, new BigDecimal("10")))),
+                        new Remise(TypeRemise.POURCENT, new BigDecimal("10"))))
+                .isInstanceOf(RegleMetierException.class)
+                .hasMessageContaining("Une seule remise");
     }
 
     @Test

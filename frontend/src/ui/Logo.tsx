@@ -1,12 +1,24 @@
+/** Icône de l'app Invento (le « i » code-barres de l'icône Android), sur sa tuile bleu marine. */
+export function IconeInvento() {
+  return (
+    <span className="logo-icone" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 64 64" fill="none">
+        <circle cx="19" cy="18.5" r="3.4" className="logo-accent" />
+        <rect x="16.5" y="25" width="5" height="22" rx="1" className="logo-trait" />
+        <rect x="25" y="17" width="2.5" height="30" rx="1" className="logo-trait" />
+        <rect x="30.5" y="17" width="5.5" height="30" rx="1" className="logo-trait" />
+        <rect x="39" y="17" width="2.5" height="30" rx="1" className="logo-trait" />
+        <rect x="44.5" y="17" width="4" height="30" rx="1" className="logo-trait" />
+        <rect x="12" y="31" width="40" height="2.6" rx="1.3" className="logo-accent" />
+      </svg>
+    </span>
+  );
+}
+
 export function Logo() {
   return (
     <div className="logo">
-      <span className="logo-icone" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 7h18l-2 11H5z" strokeLinejoin="round" />
-          <path d="M8 7V5a4 4 0 0 1 8 0v2" strokeLinecap="round" />
-        </svg>
-      </span>
+      <IconeInvento />
       <span className="logo-texte">Invento POS</span>
     </div>
   );
