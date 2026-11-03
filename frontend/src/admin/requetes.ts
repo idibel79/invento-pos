@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schemas } from "../api/client";
 import { appel } from "../api/erreurs";
 import { cles } from "../caisse/requetes";
@@ -110,5 +110,34 @@ export function useImporterCatalogue() {
       void queryClient.invalidateQueries({ queryKey: ["zones"] });
       void queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
+  });
+}
+
+/** Filtres du journal des remises : les n derniers jours (absent : tout), une seule portée (absente : les deux). */
+export interface FiltreRemises {
+  jours?: number;
+  portee?: "LIGNE" | "TICKET";
+}
+
+const TAILLE_JOURNAL = 50;
+
+export function useJournalRemises(filtre: FiltreRemises) {
+  return useInfiniteQuery({
+    queryKey: ["journal-remises", filtre],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      appel(
+        api.GET("/api/v1/remises", {
+          params: { query: { ...filtre, page: pageParam, taille: TAILLE_JOURNAL } },
+        }),
+      ),
+    getNextPageParam: (derniere) => (derniere.page + 1 < derniere.totalPages ? derniere.page + 1 : undefined),
+  });
+}
+
+export function useResumeRemises(filtre: FiltreRemises) {
+  return useQuery({
+    queryKey: ["journal-remises", "resume", filtre],
+    queryFn: () => appel(api.GET("/api/v1/remises/resume", { params: { query: filtre } })),
   });
 }

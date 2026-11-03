@@ -5,6 +5,7 @@ import { Logo } from "../ui/Logo";
 import { Caisses } from "./Caisses";
 import { CodeSecours } from "./CodeSecours";
 import { ImportCatalogue } from "./ImportCatalogue";
+import { JournalRemises } from "./JournalRemises";
 import { Utilisateurs } from "./Utilisateurs";
 
 const ONGLETS = {
@@ -12,6 +13,7 @@ const ONGLETS = {
   utilisateurs: "Utilisateurs",
   import: "Import du catalogue",
   securite: "Code de secours",
+  journal: "Journal",
 } as const;
 type Onglet = keyof typeof ONGLETS;
 
@@ -63,6 +65,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         {onglet === "utilisateurs" && <Utilisateurs />}
         {onglet === "import" && <ImportCatalogue />}
         {onglet === "securite" && <CodeSecours />}
+        {onglet === "journal" && <JournalRemises />}
       </main>
     </div>
   );
