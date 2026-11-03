@@ -19,7 +19,7 @@ export function AttenteDialogue({ commande, onMiseEnAttente, onFermer }: Props) 
 
   return (
     <Dialogue titre="Mettre la vente en attente" icone={<IconeHorloge />} onFermer={onFermer}>
-      <p className="texte-secondaire">
+      <p className="alerte alerte-attention">
         Le panier est conservé et le stock réservé pendant 5 minutes. Passé ce délai, ou à la clôture de la
         caisse, la vente est annulée. Elle se reprend uniquement sur cette caisse.
       </p>

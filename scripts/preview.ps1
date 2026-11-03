@@ -131,7 +131,7 @@ New-Item -ItemType Directory -Force .preview | Out-Null
 Write-Host "==> API Spring Boot (profils dev + demo), journal : .preview\backend.log"
 $env:POS_DB_URL = "jdbc:postgresql://localhost:5432/$Base"
 $env:SPRING_PROFILES_ACTIVE = "dev,demo"
-$backend = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "mvnw.cmd -q spring-boot:run > ..\.preview\backend.log 2>&1" `
+$backend = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", ".\mvnw.cmd -q spring-boot:run > ..\.preview\backend.log 2>&1" `
     -WorkingDirectory backend -WindowStyle Hidden -PassThru
 Remove-Item Env:POS_DB_URL, Env:SPRING_PROFILES_ACTIVE
 

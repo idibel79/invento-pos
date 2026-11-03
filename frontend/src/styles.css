@@ -1,59 +1,83 @@
-/* Charte Invento (maquette 1) : couleurs du thème uniquement, versions claire et sombre. */
+/* Direction « Table pro » : interface neutre (gris), une seule couleur d'action (bleu Invento), chiffres alignés. */
 :root {
-  --marine: #0b2a6b;
-  --texte: #0f1a33;
-  --gris: #55627a;
-  --gris-clair: #8a95ab;
-  --fond: #f4f6fb;
+  --texte-fort: #111827;
+  --texte: #111827;
+  --gris: #4b5563;
+  --gris-clair: #6b7280;
+  --fond: #f3f4f6;
   --surface: #ffffff;
-  --bordure: #dde3f0;
-  --bordure-carte: #e1e7f3;
-  --bleu: #1652d9;
-  --accent: #cedeff;
-  --accent-doux: #e6eeff;
-  --sur-bleu: #ffffff;
-  --danger: #c42b2b;
-  --danger-fond: #fdecec;
-  --danger-bordure: #f3c9c9;
-  --succes: #16653a;
-  --succes-texte: #1d6b3e;
-  --succes-fond: #e5f6ec;
-  --alerte: #8a4b00;
-  --alerte-texte: #6b3a00;
-  --alerte-fond: #fff1dc;
-  --rupture-fond: #eef0f5;
-  --rupture-bordure: #c3cad8;
-  --voile: rgba(15, 26, 51, 0.42);
-  --ombre: 0 10px 30px rgba(15, 26, 51, 0.25);
+  --carte: #ffffff;
+  --champ: #ffffff;
+  --bordure: #e5e7eb;
+  --bordure-carte: #e5e7eb;
+  --bordure-forte: #7d8594;
+  --ligne-survol: #dbe6ff;
+  --designation: #0b2a6b;
+  --primaire: #1249c4;
+  --primaire-survol: #0d3aa3;
+  --accent: #d1d5db;
+  --accent-doux: #eef3ff;
+  --sur-primaire: #ffffff;
+  --danger: #b91c1c;
+  --danger-fond: #fef2f2;
+  --danger-bordure: #fecaca;
+  --succes: #047857;
+  --succes-texte: #065f46;
+  --succes-fond: #ecfdf5;
+  --alerte: #b45309;
+  --alerte-texte: #92400e;
+  --alerte-fond: #fffbeb;
+  --rupture-fond: #f9fafb;
+  --rupture-bordure: #e5e7eb;
+  --barre-fond: #071c48;
+  --barre-texte: #f9fafb;
+  --barre-doux: #c3d0ee;
+  --barre-bordure: #2a4785;
+  --barre-bouton-bordure: #7d93cf;
+  --barre-attente-fond: #451a03;
+  --barre-attente-bordure: #b45309;
+  --barre-attente-texte: #fcd34d;
+  --voile: rgba(17, 24, 39, 0.45);
+  --ombre: 0 12px 32px rgba(17, 24, 39, 0.18);
+  --police: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --police-mono: var(--police);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --marine: #dce6ff;
-    --texte: #dce6ff;
-    --gris: #a9b6d3;
-    --gris-clair: #8a95ab;
-    --fond: #07152f;
-    --surface: #0e1f44;
-    --bordure: #15295a;
-    --bordure-carte: #1c3369;
-    --bleu: #8db0ff;
-    --accent: #2a4785;
-    --accent-doux: #15295a;
-    --sur-bleu: #07152f;
+    --texte-fort: #f3f4f6;
+    --texte: #e5e7eb;
+    --gris: #a1a9b6;
+    --gris-clair: #8b93a1;
+    --fond: #0b0d12;
+    --surface: #15181e;
+    --carte: #15181e;
+    --champ: #11141a;
+    --bordure: #262a33;
+    --bordure-carte: #262a33;
+    --bordure-forte: #6b7385;
+    --ligne-survol: #26365e;
+    --designation: #c3d0ee;
+    --primaire: #6b93ff;
+    --primaire-survol: #8eadff;
+    --accent: #374151;
+    --accent-doux: #1e2a44;
+    --sur-primaire: #0b0d12;
     --danger: #ff8a8a;
-    --danger-fond: #3a1620;
-    --danger-bordure: #6b2a35;
-    --succes: #7fdca4;
-    --succes-texte: #7fdca4;
-    --succes-fond: #12382a;
-    --alerte: #ffc27a;
-    --alerte-texte: #ffd7a3;
-    --alerte-fond: #3a2a12;
-    --rupture-fond: #0b1a3a;
-    --rupture-bordure: #2a3d68;
-    --voile: rgba(0, 0, 0, 0.55);
+    --danger-fond: #3a1d1f;
+    --danger-bordure: #5a2a2e;
+    --succes: #4ade80;
+    --succes-texte: #86efac;
+    --succes-fond: #12321f;
+    --alerte: #fbbf24;
+    --alerte-texte: #fcd34d;
+    --alerte-fond: #2e2410;
+    --rupture-fond: #11141a;
+    --rupture-bordure: #262a33;
+    --barre-fond: #0b1f4d;
+    --barre-bordure: #2a4785;
+    --voile: rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
 }
@@ -66,12 +90,8 @@ body {
   margin: 0;
   background: var(--fond);
   color: var(--texte);
-  font-family:
-    Roboto,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--police);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -93,7 +113,7 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 3px solid var(--bleu);
+  outline: 3px solid var(--primaire);
   outline-offset: 2px;
 }
 
@@ -117,7 +137,7 @@ button:disabled {
 }
 
 .libelle {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.6px;
   color: var(--gris);
@@ -141,11 +161,11 @@ button:disabled {
 .champ select,
 .champ textarea {
   height: 50px;
-  border: 1.5px solid var(--accent);
-  border-radius: 12px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
   padding: 0 14px;
   font-size: 15px;
-  background: var(--surface);
+  background: var(--champ);
 }
 
 .champ textarea {
@@ -158,7 +178,7 @@ button:disabled {
 .champ input:focus,
 .champ select:focus,
 .champ textarea:focus {
-  border: 2px solid var(--bleu);
+  border: 2px solid var(--primaire);
   outline: none;
 }
 
@@ -166,13 +186,14 @@ button:disabled {
   display: flex;
   align-items: center;
   height: 56px;
-  border: 2px solid var(--bleu);
-  border-radius: 14px;
+  border: 2px solid var(--primaire);
+  border-radius: 8px;
   padding: 0 16px;
-  background: var(--surface);
+  background: var(--champ);
 }
 
 .champ-montant input {
+  font-family: var(--police-mono);
   flex: 1;
   min-width: 0;
   border: none;
@@ -180,7 +201,7 @@ button:disabled {
   background: transparent;
   font-size: 24px;
   font-weight: 800;
-  color: var(--marine);
+  color: var(--texte-fort);
   height: auto;
   padding: 0;
 }
@@ -198,7 +219,7 @@ button:disabled {
 
 .alerte {
   margin: 0;
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 12px 14px;
   font-size: 13px;
   line-height: 1.4;
@@ -237,7 +258,7 @@ button:disabled {
 .bouton {
   min-height: 50px;
   padding: 6px 12px;
-  border-radius: 14px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -246,31 +267,39 @@ button:disabled {
 
 .bouton-plein {
   border: none;
-  background: var(--bleu);
-  color: var(--sur-bleu);
+  background: var(--primaire);
+  color: var(--sur-primaire);
 }
 
 .bouton-contour {
-  border: 1.5px solid var(--bleu);
-  background: var(--surface);
-  color: var(--bleu);
+  border: 1.5px solid var(--bordure-forte);
+  background: transparent;
+  color: var(--texte-fort);
+}
+
+.bouton-contour:hover:not(:disabled) {
+  border-color: var(--primaire);
+}
+
+.bouton-plein:hover:not(:disabled) {
+  background: var(--primaire-survol);
 }
 
 .bouton-danger {
   border: 1.5px solid var(--danger-bordure);
-  background: var(--surface);
+  background: transparent;
   color: var(--danger);
 }
 
 .bouton-petit {
   min-height: 36px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   font-size: 12.5px;
   font-weight: 700;
-  border: 1.5px solid var(--accent);
-  background: var(--surface);
-  color: var(--bleu);
+  border: 1px solid var(--bordure-forte);
+  background: transparent;
+  color: var(--texte-fort);
 }
 
 .bouton-petit.danger {
@@ -287,18 +316,18 @@ button:disabled {
 
 .choix button {
   min-height: 50px;
-  border-radius: 12px;
-  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  border: 1px solid var(--bordure-forte);
   background: var(--surface);
-  color: var(--marine);
+  color: var(--texte-fort);
   font-size: 13px;
   font-weight: 700;
 }
 
 .choix button[aria-pressed="true"] {
-  border-color: var(--bleu);
-  background: var(--bleu);
-  color: var(--sur-bleu);
+  border-color: var(--primaire);
+  background: var(--primaire);
+  color: var(--sur-primaire);
 }
 
 .choix.compact button {
@@ -309,7 +338,7 @@ button:disabled {
 
 .choix.compact button[aria-pressed="true"] {
   background: var(--accent-doux);
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 /* ------------------------------------------------------------------ Mise en page */
@@ -324,7 +353,7 @@ button:disabled {
 
 .carte {
   background: var(--surface);
-  border-radius: 24px;
+  border-radius: 12px;
   box-shadow: var(--ombre);
 }
 
@@ -346,9 +375,10 @@ button:disabled {
 .logo-icone {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
-  background: #1652d9;
-  color: #ffffff;
+  border-radius: 10px;
+  /* Tuile de l'icône Android Invento : toujours bleu marine, en clair comme en sombre. */
+  background: #0b2a6b;
+  border: 1px solid #7d93cf;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -357,7 +387,7 @@ button:disabled {
 .logo-texte {
   font-size: 20px;
   font-weight: 900;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .chargement {
@@ -368,14 +398,7 @@ button:disabled {
   color: var(--gris);
 }
 
-/* ------------------------------------------------------------------ Écran de vente */
-
-.ecran-vente {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
+/* En-tête de l'administration. */
 .entete {
   min-height: 68px;
   flex-shrink: 0;
@@ -395,7 +418,7 @@ button:disabled {
 .pastille {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--marine);
+  color: var(--primaire);
   background: var(--accent-doux);
   padding: 6px 12px;
   border-radius: 999px;
@@ -403,11 +426,6 @@ button:disabled {
 
 .entete-espace {
   flex-grow: 1;
-}
-
-.entete-session {
-  font-size: 13px;
-  color: var(--gris);
 }
 
 .entete-utilisateur {
@@ -423,51 +441,193 @@ button:disabled {
   height: 36px;
   border-radius: 50%;
   background: var(--accent);
-  color: var(--marine);
+  color: var(--texte-fort);
   font-weight: 800;
   font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.utilisateur-nom {
-  font-size: 13.5px;
+/* ------------------------------------------------------------------ Écran de vente */
+
+/* Barre de caisse en haut, puis tableau des produits et ticket côte à côte. */
+.ecran-vente {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.barre-haut {
+  min-height: 72px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 20px;
+  background: var(--barre-fond);
+  color: var(--barre-texte);
+}
+
+/* Sur la barre sombre, le contour de focus passe en clair pour rester visible. */
+.barre-haut :focus-visible {
+  outline-color: var(--barre-texte);
+}
+
+.barre-marque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--marine);
 }
 
-.utilisateur-role {
-  font-size: 11.5px;
-  color: var(--gris);
+.logo-accent {
+  fill: #3fd0f5;
+}
+
+.logo-trait {
+  fill: #ffffff;
+}
+
+/* Dans la barre sombre, l'icône est sur une tuile blanche : traits marine, accents bleu Invento. */
+.barre-marque .logo-icone {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.barre-marque .logo-trait {
+  fill: #0b2a6b;
+}
+
+.barre-marque .logo-accent {
+  fill: #1652d9;
+}
+
+.barre-marque .logo-icone svg {
+  width: 30px;
+  height: 30px;
+}
+
+.barre-session {
+  padding-left: 16px;
+  border-left: 1px solid var(--barre-bordure);
+  font-size: 14.5px;
+  color: var(--barre-doux);
+}
+
+.barre-session strong {
+  color: var(--barre-texte);
+  font-weight: 600;
+}
+
+.barre-espace {
+  flex-grow: 1;
+}
+
+.barre-bouton {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: 1px solid var(--barre-bouton-bordure);
+  background: transparent;
+  color: var(--barre-texte);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.barre-bouton:hover {
+  border-color: var(--barre-doux);
+}
+
+/* Une vente attend : le bouton passe en ambre pour ne pas oublier le client (stock réservé 5 min). */
+.barre-attente.signalee {
+  border-color: var(--barre-attente-bordure);
+  background: var(--barre-attente-fond);
+  color: var(--barre-attente-texte);
+  font-weight: 600;
+}
+
+.barre-utilisateur {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 16px;
+  border-left: 1px solid var(--barre-bordure);
+}
+
+.barre-utilisateur > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+}
+
+.barre-utilisateur .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+  background: var(--barre-bordure);
+  color: var(--barre-texte);
+}
+
+.barre-utilisateur .utilisateur-nom {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--barre-texte);
+}
+
+.barre-utilisateur .utilisateur-role {
+  font-size: 12.5px;
+  color: var(--barre-doux);
 }
 
 .corps-vente {
   flex-grow: 1;
-  display: flex;
   min-height: 0;
+  display: flex;
 }
 
 .catalogue {
   flex-grow: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px 20px 20px 24px;
-  min-width: 0;
-  overflow-y: auto;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.barre-outils {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .recherche {
-  height: 52px;
-  background: var(--surface);
-  border: 2px solid var(--bleu);
-  border-radius: 14px;
+  flex: 1 1 260px;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 16px;
-  color: var(--bleu);
+  padding: 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  color: var(--gris-clair);
+}
+
+.recherche:focus-within {
+  border-color: var(--primaire);
+  box-shadow: 0 0 0 3px var(--accent-doux);
+}
+
+.recherche svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .recherche input {
@@ -475,288 +635,484 @@ button:disabled {
   min-width: 0;
   border: none;
   outline: none;
-  font-size: 15px;
   background: transparent;
+  font-size: 14px;
   color: var(--texte);
 }
 
+.recherche-effacer {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--fond);
+  color: var(--gris);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.recherche-effacer:hover {
+  background: var(--bordure);
+  color: var(--texte-fort);
+}
+
 .badge-douchette {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--bleu);
-  background: var(--accent-doux);
-  padding: 4px 8px;
-  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--succes);
   white-space: nowrap;
 }
 
-.filtres {
+.badge-douchette::before {
+  content: "● ";
+}
+
+.filtre {
+  height: 40px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.puces {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.puce {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1.5px solid var(--accent);
-  background: var(--surface);
-  color: var(--marine);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.puce[aria-pressed="true"] {
-  border-color: var(--bleu);
-  background: var(--bleu);
-  color: var(--sur-bleu);
-}
-
-.grille-produits {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 12px;
-}
-
-.carte-produit {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
-  text-align: left;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 1.5px solid var(--bordure-carte);
-}
-
-.carte-produit:hover:not(:disabled) {
-  border-color: var(--bleu);
-}
-
-.carte-produit:disabled {
-  background: var(--rupture-fond);
-  border: 1.5px dashed var(--rupture-bordure);
-  opacity: 1;
-}
-
-.carte-produit-haut,
-.carte-produit-bas {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  width: 100%;
-  gap: 8px;
+  gap: 6px;
+  padding: 0 4px 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--gris);
 }
 
-.carte-produit-zone {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--gris);
+.filtre select {
+  height: 36px;
+  max-width: 170px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texte);
+  cursor: pointer;
+}
+
+/* Tableau des produits : colonnes alignées, une ligne par produit. */
+.tableau-produits {
+  flex-grow: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+}
+
+.tableau-entete,
+.ligne-produit {
+  display: grid;
+  grid-template-columns: var(--colonnes);
+  align-items: center;
+  min-width: max-content;
+  padding: 0 0 0 6px;
+}
+
+/* Pas de trait entre les colonnes : il n'apparaît (en bleu) que pendant le réglage d'une largeur. */
+.tableau-entete > :nth-child(-n + 5),
+.ligne-produit > :nth-child(-n + 5) {
+  align-self: stretch;
+  padding: 0 10px;
+  border-right: 1px solid transparent;
+}
+
+.ligne-produit > :nth-child(-n + 5) {
+  line-height: 44px;
+}
+
+/* Au survol (ou pendant le réglage) de la poignée d'un en-tête, tout le trait de la colonne passe en bleu. */
+.tableau-produits:has(.entete-colonne:nth-child(1) > .separateur:is(:hover, .actif, :focus-visible))
+  :is(.tableau-entete, .ligne-produit)
+  > :nth-child(1) {
+  border-right-color: var(--primaire);
+}
+.tableau-produits:has(.entete-colonne:nth-child(2) > .separateur:is(:hover, .actif, :focus-visible))
+  :is(.tableau-entete, .ligne-produit)
+  > :nth-child(2) {
+  border-right-color: var(--primaire);
+}
+.tableau-produits:has(.entete-colonne:nth-child(3) > .separateur:is(:hover, .actif, :focus-visible))
+  :is(.tableau-entete, .ligne-produit)
+  > :nth-child(3) {
+  border-right-color: var(--primaire);
+}
+.tableau-produits:has(.entete-colonne:nth-child(4) > .separateur:is(:hover, .actif, :focus-visible))
+  :is(.tableau-entete, .ligne-produit)
+  > :nth-child(4) {
+  border-right-color: var(--primaire);
+}
+.tableau-produits:has(.entete-colonne:nth-child(5) > .separateur:is(:hover, .actif, :focus-visible))
+  :is(.tableau-entete, .ligne-produit)
+  > :nth-child(5) {
+  border-right-color: var(--primaire);
+}
+
+.tableau-entete {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 36px;
+  background: var(--rupture-fond);
+  border-bottom: 1px solid var(--bordure);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
+  color: var(--gris-clair);
 }
 
-.carte-produit-nom {
+.ligne-produit {
+  width: 100%;
+  min-width: max-content;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--texte);
+  font-size: 15.5px;
+  text-align: left;
+}
+
+.ligne-produit:hover:not(:disabled) {
+  background: var(--ligne-survol);
+}
+
+.ligne-produit:disabled {
+  opacity: 1;
+  color: var(--gris-clair);
+}
+
+.ligne-produit:disabled .ligne-produit-nom {
+  color: var(--gris-clair);
+}
+
+.ligne-produit-nom {
+  color: var(--designation);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ligne-produit-zone {
   font-size: 14px;
-  font-weight: 800;
-  color: var(--marine);
-  line-height: 1.25;
-  min-height: 36px;
+  color: var(--gris-clair);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.carte-produit:disabled .carte-produit-nom,
-.carte-produit:disabled .carte-produit-prix {
-  color: var(--gris);
+.ligne-produit-prix {
+  font-weight: 600;
 }
 
-.carte-produit-prix {
-  font-size: 18px;
-  font-weight: 900;
-  color: var(--bleu);
+/* En-tête de colonne : la poignée sur son bord droit règle la largeur de la colonne. */
+.entete-colonne {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
-.carte-produit-tva {
-  font-size: 11px;
-  color: var(--gris);
+.entete-tri {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.entete-tri.actif {
+  color: var(--texte-fort);
+}
+
+.entete-tri:hover {
+  color: var(--primaire);
+}
+
+.icone-tri {
+  flex-shrink: 0;
+  fill: var(--bordure-forte);
+}
+
+.icone-tri .tri-actif {
+  fill: var(--texte-fort);
+}
+
+.entete-colonne.a-droite {
+  justify-content: flex-end;
+}
+
+.entete-colonne .separateur {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -3px;
+  margin: 0;
+  width: 5px;
+}
+
+/* La poignée reste invisible : c'est le trait de la colonne (1 px) qui passe en bleu. */
+.entete-colonne .separateur:hover,
+.entete-colonne .separateur.actif,
+.entete-colonne .separateur:focus-visible {
+  background: transparent;
+}
+
+.a-droite {
+  text-align: right;
 }
 
 .stock {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
-  white-space: nowrap;
+  font-size: 14px;
+  color: var(--gris);
+}
+
+.stock-faible {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.stock-moyen {
+  color: var(--alerte);
+  font-weight: 600;
 }
 
 .stock-ok {
   color: var(--succes);
-  background: var(--succes-fond);
-}
-
-.stock-bas {
-  color: var(--alerte);
-  background: var(--alerte-fond);
+  font-weight: 600;
 }
 
 .stock-rupture {
   color: var(--danger);
-  background: var(--danger-fond);
+  font-weight: 600;
+}
+
+.tableau-suite {
+  width: 100%;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--primaire);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .vide {
   padding: 32px 16px;
   text-align: center;
-  color: var(--gris);
+  color: var(--gris-clair);
   font-size: 14px;
+}
+
+/* Bord à tirer pour changer la largeur d'une colonne du tableau. */
+.separateur {
+  width: 6px;
+  margin: 0 -3px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.separateur:hover,
+.separateur.actif,
+.separateur:focus-visible {
+  background: var(--primaire);
+  outline: none;
+}
+
+.separateur.actif {
+  user-select: none;
 }
 
 /* ------------------------------------------------------------------ Panier */
 
 .panier {
-  width: 430px;
+  width: 420px;
   flex-shrink: 0;
+  min-height: 0;
   background: var(--surface);
   border-left: 1px solid var(--bordure);
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 
 .panier-tete {
-  padding: 18px 22px 12px;
+  min-height: 56px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--bordure);
 }
 
 .panier-titre {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--marine);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--texte-fort);
 }
 
 .panier-sous-titre {
-  font-size: 12px;
-  color: var(--gris);
-}
-
-.panier-actions {
-  display: flex;
-  gap: 8px;
+  font-size: 12.5px;
+  color: var(--gris-clair);
 }
 
 .panier-lignes {
   flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 16px 8px;
-  overflow-y: auto;
-  min-height: 0;
 }
 
 .ligne {
-  background: var(--fond);
-  border-radius: 14px;
-  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.ligne-detail {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
 }
 
 .ligne-nom {
   font-size: 13.5px;
-  font-weight: 800;
-  color: var(--marine);
-  line-height: 1.25;
-}
-
-.ligne-detail {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-weight: 500;
+  color: var(--texte-fort);
+  line-height: 1.3;
+  /* Nom sur une seule ligne (complet au survol), quantité, prix et remise en dessous. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quantite {
   display: flex;
   align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--bordure);
-  border-radius: 10px;
+  height: 32px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
 }
 
 .quantite button {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border: none;
   background: transparent;
-  color: var(--bleu);
-  font-size: 18px;
-  font-weight: 700;
+  color: var(--gris);
+  font-size: 16px;
 }
 
 .quantite span {
-  min-width: 28px;
+  flex-grow: 1;
   text-align: center;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--marine);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--texte-fort);
 }
 
 .ligne-prix {
   font-size: 12px;
-  color: var(--gris);
+  color: var(--gris-clair);
+}
+
+.ligne-haut {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bouton-supprimer {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  margin-left: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gris-clair);
+}
+
+.bouton-supprimer:hover {
+  background: var(--danger-fond);
+  color: var(--danger);
 }
 
 .bouton-remise {
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 8px;
-  border: 1px dashed #a9bce6;
-  background: transparent;
-  color: var(--bleu);
-  font-size: 11.5px;
-  font-weight: 700;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--bordure-forte);
+  background: var(--surface);
+  color: var(--texte-fort);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bouton-remise:hover {
+  border-color: var(--primaire);
+  color: var(--primaire);
 }
 
 .bouton-remise.active {
-  border-style: solid;
-  background: var(--accent-doux);
+  border-color: var(--succes);
+  background: var(--succes-fond);
+  color: var(--succes-texte);
+  font-weight: 600;
 }
 
 .ligne-total {
-  margin-left: auto;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--texte);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texte-fort);
   text-align: right;
+  white-space: nowrap;
 }
 
 .ligne-total s {
   display: block;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--gris);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--gris-clair);
 }
 
 .ligne-alerte {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--danger);
 }
 
 .panier-pied {
-  padding: 16px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px 20px;
   border-top: 1px solid var(--bordure);
+}
+
+.bloc-totaux {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -773,32 +1129,45 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-top: 4px;
+  margin: 6px 0 4px;
   font-size: 15px;
-  font-weight: 800;
-  color: var(--marine);
+  font-weight: 600;
+  color: var(--texte-fort);
 }
 
 .total-ttc strong {
-  font-size: 28px;
-  font-weight: 900;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .panier-pied .rangee-boutons {
-  margin-top: 10px;
+  gap: 8px;
 }
 
 .panier-pied .rangee-boutons .bouton {
+  min-height: 42px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.bouton-encaisser {
   min-height: 56px;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 /* ------------------------------------------------------------------ Popups */
 
+/* Fenêtre classique : en-tête à gauche avec ×, contenu, pied gris avec les boutons à droite. */
 .dialogue {
   border: none;
-  padding: 22px 18px 16px;
-  border-radius: 24px;
+  padding: 0;
+  border-radius: 8px;
   background: var(--surface);
   color: var(--texte);
   box-shadow: var(--ombre);
@@ -809,7 +1178,6 @@ button:disabled {
 .dialogue[open] {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .dialogue::backdrop {
@@ -818,55 +1186,145 @@ button:disabled {
 
 .dialogue-tete {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--bordure);
 }
 
-.dialogue-icone {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+.dialogue .titre-popup {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--texte-fort);
+}
+
+.dialogue-sous-titre {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--gris-clair);
+}
+
+.dialogue-fermer {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gris-clair);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dialogue-fermer:hover {
+  background: var(--fond);
+  color: var(--texte-fort);
+}
+
+.dialogue-corps {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-doux);
-  color: var(--bleu);
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
 }
 
-.dialogue-icone.ton-danger {
-  background: var(--danger-fond);
-  color: var(--danger);
+/* La dernière rangée de boutons devient le pied de la fenêtre : boutons à droite, largeur au contenu. */
+.dialogue-corps > .rangee-boutons:last-child {
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 6px -20px -20px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--bordure);
+  background: var(--rupture-fond);
 }
 
-.dialogue-icone.ton-succes {
-  background: var(--succes-fond);
-  color: var(--succes);
+.dialogue-corps > .rangee-boutons:last-child > .bouton {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13.5px;
 }
 
-.dialogue .rangee-boutons {
-  margin-top: 4px;
+.bouton-plein.danger {
+  background: var(--danger);
+  color: var(--sur-primaire);
+}
+
+/* Total en tête de l'encaissement. */
+.total-a-payer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13.5px;
+  color: var(--gris);
+}
+
+.total-a-payer strong {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--texte-fort);
+}
+
+.billets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.billets button {
+  min-height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--bordure-forte);
+  background: var(--surface);
+  color: var(--texte-fort);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.billets button:hover {
+  border-color: var(--primaire);
+  color: var(--primaire);
+}
+
+.raccourcis-montant {
+  display: flex;
+  gap: 6px;
+}
+
+.raccourcis-montant button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--bordure-forte);
+  background: var(--surface);
+  color: var(--texte);
+  font-size: 13px;
 }
 
 .encadre {
-  background: var(--accent-doux);
-  border-radius: 16px;
-  padding: 14px;
+  background: var(--fond);
+  border-radius: 6px;
+  padding: 12px 14px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: space-between;
+  align-items: baseline;
   gap: 2px;
 }
 
 .encadre-montant {
+  font-family: var(--police-mono);
   font-size: 32px;
   font-weight: 900;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .encadre-gris {
   background: var(--fond);
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -876,7 +1334,7 @@ button:disabled {
 .encadre-produit {
   font-size: 16px;
   font-weight: 800;
-  color: var(--marine);
+  color: var(--texte-fort);
   line-height: 1.25;
 }
 
@@ -885,12 +1343,12 @@ button:disabled {
   justify-content: space-between;
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .rendu {
   background: var(--succes-fond);
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
@@ -902,6 +1360,7 @@ button:disabled {
 }
 
 .rendu strong {
+  font-family: var(--police-mono);
   font-size: 26px;
   font-weight: 900;
   color: var(--succes);
@@ -937,6 +1396,7 @@ button:disabled {
 }
 
 .prix-remise strong {
+  font-family: var(--police-mono);
   font-size: 20px;
   font-weight: 900;
   color: var(--succes);
@@ -947,47 +1407,12 @@ button:disabled {
   color: var(--succes-texte);
 }
 
-.liste-attente {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.attente {
-  background: var(--fond);
-  border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.attente-tete {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-weight: 800;
-  color: var(--marine);
-}
-
-.compte-a-rebours {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--alerte);
-  background: var(--alerte-fond);
-  padding: 3px 8px;
-  border-radius: 999px;
-}
-
 .message-flottant {
   position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--marine);
+  background: var(--texte-fort);
   color: var(--surface);
   padding: 12px 18px;
   border-radius: 14px;
@@ -996,6 +1421,261 @@ button:disabled {
   box-shadow: var(--ombre);
   z-index: 10;
   max-width: calc(100vw - 32px);
+}
+
+/* Contenu des popups au style « fenêtre classique » : libellés en phrase, choix en onglets compacts,
+   encadrés neutres. */
+.dialogue .libelle {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gris);
+}
+
+.dialogue .choix {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--fond);
+}
+
+.dialogue .choix button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gris);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dialogue .choix button[aria-pressed="true"] {
+  /* Contour 3:1 : l'onglet choisi ne se distingue pas que par un fond presque blanc. */
+  border-color: var(--bordure-forte);
+  background: var(--surface);
+  color: var(--texte-fort);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.15);
+}
+
+.dialogue .encadre-gris {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.dialogue .encadre-produit {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.dialogue .encadre-ligne {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gris);
+}
+
+.dialogue .encadre-ligne span:last-child {
+  color: var(--texte-fort);
+  font-weight: 600;
+}
+
+.dialogue .prix-remise {
+  height: 40px;
+  border-radius: 6px;
+  background: var(--fond);
+}
+
+.dialogue .prix-remise strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--texte-fort);
+}
+
+.dialogue .prix-remise span {
+  color: var(--succes);
+}
+
+/* Champ de montant sobre : fond blanc, bord gris, sans cadre bleu. */
+.dialogue .champ-montant {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.dialogue .champ-montant:focus-within {
+  /* Pas de cadre bleu pendant la saisie (demande d'idriss) : le cadre se fonce seulement. */
+  border-color: var(--texte-fort);
+}
+
+/* Remise saisie, montant de la remise et prix remisé : trois champs de même largeur. */
+.dialogue .deux-colonnes > .champ-remise {
+  flex: 1 1 0;
+}
+
+.dialogue .prix-remise .montant-remise {
+  color: var(--succes);
+}
+
+/* Un seul champ : l'input interne ne garde ni bordure ni fond (la règle .champ input ne s'applique pas ici). */
+.dialogue .champ-montant input {
+  width: 100%;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  appearance: none;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Le remplissage automatique du navigateur peint un fond bleu arrondi dans le champ : on le masque. */
+.dialogue .champ-montant input:-webkit-autofill,
+.dialogue .champ-montant input:autofill {
+  -webkit-text-fill-color: var(--texte-fort);
+  box-shadow: 0 0 0 40px var(--surface) inset;
+}
+
+.dialogue .champ-montant input:focus,
+.dialogue .champ-montant input:focus-visible {
+  border: none;
+  /* Le cadre du champ suffit : aucun second contour arrondi autour de la saisie. */
+  outline: none;
+  box-shadow: none;
+}
+
+.dialogue .rendu,
+.dialogue .encadre {
+  border-radius: 6px;
+}
+
+.dialogue .alerte {
+  border-radius: 6px;
+}
+
+/* Ventes en attente : tableau, la plus urgente en premier. */
+.tableau-attente {
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.attente-ligne {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 100px 110px 190px;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.attente-ligne:last-child {
+  border-bottom: none;
+}
+
+.attente-entete {
+  min-height: 36px;
+  padding: 0 16px;
+  background: var(--rupture-fond);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gris-clair);
+}
+
+.attente-numero,
+.attente-total {
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
+.attente-articles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.attente-articles > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attente-autres,
+.attente-note {
+  font-size: 12.5px;
+  color: var(--gris-clair);
+}
+
+.attente-temps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--alerte);
+}
+
+.attente-temps.urgent {
+  color: var(--danger);
+}
+
+.attente-barre {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fond);
+  overflow: hidden;
+}
+
+.attente-barre > span {
+  display: block;
+  height: 100%;
+  background: currentColor;
+}
+
+.attente-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+
+.bouton-lien {
+  min-height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primaire);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bouton-lien.danger {
+  color: var(--danger);
+}
+
+.bouton-lien:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.bouton.bouton-compact {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
 /* ------------------------------------------------------------------ Administration */
@@ -1024,13 +1704,13 @@ button:disabled {
 }
 
 .onglet:hover {
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .onglet[aria-current="page"] {
   background: var(--accent-doux);
   border-color: var(--accent);
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .admin-corps {
@@ -1070,7 +1750,7 @@ button:disabled {
   margin: 0;
   font-size: 22px;
   font-weight: 900;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .admin-carte {
@@ -1120,7 +1800,7 @@ button:disabled {
   gap: 6px;
   font-size: 15px;
   font-weight: 800;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .ligne-admin-actions {
@@ -1144,7 +1824,7 @@ button:disabled {
 
 .statut-info {
   background: var(--accent-doux);
-  color: var(--bleu);
+  color: var(--primaire);
 }
 
 .statut-gris {
@@ -1175,9 +1855,9 @@ button:disabled {
   min-height: 36px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1.5px solid var(--bleu);
+  border: 1.5px solid var(--primaire);
   background: var(--surface);
-  color: var(--bleu);
+  color: var(--primaire);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -1210,13 +1890,13 @@ button:disabled {
   background: var(--fond);
   font-size: 14px;
   font-weight: 600;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .case input {
   width: 18px;
   height: 18px;
-  accent-color: var(--bleu);
+  accent-color: var(--primaire);
 }
 
 .alerte-succes {
@@ -1233,7 +1913,7 @@ button:disabled {
 .details-import summary {
   cursor: pointer;
   font-weight: 700;
-  color: var(--marine);
+  color: var(--texte-fort);
 }
 
 .details-import ul {
@@ -1244,16 +1924,17 @@ button:disabled {
 }
 
 .code-secours {
+  font-family: var(--police-mono);
   font-size: 24px;
   font-weight: 900;
   letter-spacing: 2px;
-  color: var(--marine);
+  color: var(--texte-fort);
   user-select: all;
   word-break: break-all;
   text-align: center;
 }
 
-/* Tablette / petit écran : le panier passe sous le catalogue. */
+/* Tablette / petit écran : tableau des produits puis ticket l'un sous l'autre. */
 @media (max-width: 960px) {
   .ecran-vente {
     height: auto;
@@ -1264,6 +1945,10 @@ button:disabled {
     flex-direction: column;
   }
 
+  .separateur {
+    display: none;
+  }
+
   .panier {
     width: 100%;
     border-left: none;
@@ -1272,6 +1957,10 @@ button:disabled {
 
   .catalogue {
     padding: 16px;
+  }
+
+  .tableau-produits {
+    max-height: 70vh;
   }
 
   .entete {

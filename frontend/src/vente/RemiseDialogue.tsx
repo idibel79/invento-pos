@@ -41,6 +41,8 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
   const autoriser = useAutoriserRemise();
 
   const ligneCalculee = apercu?.lignes.find((l) => l.produitId === produitId);
+  // Aperçu prêt : remise et prix remisé de la ligne (ou du ticket) recalculés par le serveur.
+  const calculPret = apercu !== undefined && (ligneCalculee !== undefined || produitId === null);
   const motifManquant = niveau !== "AUCUNE" && motif.trim() === "";
   const pinIncomplet = pinRequis && (autorisateurId === "" || !/^\d{4}$/.test(pin));
   const possible = apercu !== undefined && !essai.isFetching && !motifManquant && !pinIncomplet;
@@ -99,7 +101,7 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
       </div>
 
       <div className="deux-colonnes">
-        <div className="champ">
+        <div className="champ champ-remise">
           <label className="libelle" htmlFor="valeur-remise">
             Remise
           </label>
@@ -107,6 +109,7 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
             <input
               id="valeur-remise"
               inputMode="decimal"
+              autoComplete="off"
               value={saisie}
               onChange={(e) => setSaisie(e.target.value)}
               autoFocus
@@ -114,17 +117,22 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
             <span>{type === "POURCENT" ? "%" : "DH"}</span>
           </div>
         </div>
-        <div className="champ">
+        <div className="champ champ-remise">
+          <span className="libelle">Montant de la remise</span>
+          <div className="prix-remise" aria-live="polite">
+            <strong className="montant-remise">
+              {calculPret
+                ? `− ${dh(ligneCalculee ? ligneCalculee.remiseMontant : apercu.totaux.remiseTicket)}`
+                : "…"}
+            </strong>
+          </div>
+        </div>
+        <div className="champ champ-remise">
           <span className="libelle">{produitId === null ? "Total remisé" : "Prix remisé"}</span>
           <div className="prix-remise" aria-live="polite">
-            {apercu && (ligneCalculee || produitId === null) ? (
-              <>
-                <strong>{dh(ligneCalculee ? ligneCalculee.montantNet : apercu.totaux.totalTtc)}</strong>
-                <span>− {dh(ligneCalculee ? ligneCalculee.remiseMontant : apercu.totaux.remiseTicket)}</span>
-              </>
-            ) : (
-              <span>…</span>
-            )}
+            <strong>
+              {calculPret ? dh(ligneCalculee ? ligneCalculee.montantNet : apercu.totaux.totalTtc) : "…"}
+            </strong>
           </div>
         </div>
       </div>

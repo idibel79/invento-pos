@@ -8,7 +8,7 @@ import { Dialogue } from "../ui/Dialogue";
 import { dh, heure, pourcent } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeValide } from "../ui/icones";
-import { Logo } from "../ui/Logo";
+import { IconeInvento } from "../ui/Logo";
 import { AttenteDialogue } from "./AttenteDialogue";
 import { Catalogue } from "./Catalogue";
 import { EncaissementDialogue } from "./EncaissementDialogue";
@@ -26,7 +26,7 @@ type Fenetre =
   | { type: "cloture" }
   | { type: "validee"; vente: Schemas["VenteDto"] };
 
-/** Écran de vente (maquette 1) : catalogue à gauche, ticket en cours à droite. */
+/** Écran de vente (direction « Table pro ») : barre de caisse en haut, tableau des produits, ticket à droite. */
 interface Props {
   session: Schemas["SessionCaisseDto"];
   /** Présent pour l'admin seulement. */
@@ -60,49 +60,62 @@ export function EcranVente({ session, onAdministration }: Props) {
 
   const fermer = () => setFenetre(null);
   const nombreEnAttente = enAttente.data?.length ?? 0;
+  // La vente reprise dans le panier reste réservée côté serveur jusqu'à l'encaissement, mais n'est plus « en attente » pour le caissier.
+  const nombreAReprendre = (enAttente.data ?? []).filter((v) => v.id !== panier.venteEnAttenteId).length;
   const total = calcul.data?.totaux.totalTtc ?? 0;
 
   return (
     <div className="ecran-vente">
-      <header className="entete">
-        <Logo />
-        <span className="pastille">{session.caisseNom}</span>
-        <span className="entete-espace" />
-        <span className="entete-session">
-          Session ouverte à {heure(session.ouverture, fuseau)} · fond {dh(session.fondInitial)}
+      <header className="barre-haut">
+        <span className="barre-marque">
+          <IconeInvento />
+          Invento POS
         </span>
-        <button type="button" className="bouton-petit" onClick={() => setFenetre({ type: "liste-attente" })}>
-          En attente ({nombreEnAttente})
+        <span className="barre-session">
+          <strong>{session.caisseNom}</strong> · ouverte à {heure(session.ouverture, fuseau)} · fond{" "}
+          {dh(session.fondInitial)}
+        </span>
+        <span className="barre-espace" />
+        <button
+          type="button"
+          className={`barre-bouton barre-attente${nombreAReprendre > 0 ? " signalee" : ""}`}
+          aria-label={`En attente (${nombreAReprendre})`}
+          onClick={() => setFenetre({ type: "liste-attente" })}
+        >
+          {nombreAReprendre > 0
+            ? `${nombreAReprendre} vente${nombreAReprendre > 1 ? "s" : ""} en attente`
+            : "Aucune vente en attente"}
         </button>
-        <button type="button" className="bouton-petit" onClick={() => setFenetre({ type: "cloture" })}>
-          Clôturer
+        <button type="button" className="barre-bouton" onClick={() => setFenetre({ type: "cloture" })}>
+          Clôturer la caisse
         </button>
         {onAdministration && (
-          <button type="button" className="bouton-petit" onClick={onAdministration}>
+          <button type="button" className="barre-bouton" onClick={onAdministration}>
             Administration
           </button>
         )}
-        <div className="entete-utilisateur">
+        <span className="barre-utilisateur">
           <span className="avatar" aria-hidden="true">
-            {utilisateur.prenom.charAt(0) || utilisateur.nom.charAt(0)}
+            {utilisateur.prenom.charAt(0)}
+            {utilisateur.nom.charAt(0)}
           </span>
-          <div>
-            <div className="utilisateur-nom">
+          <span>
+            <span className="utilisateur-nom">
               {utilisateur.prenom} {utilisateur.nom}
-            </div>
-            <div className="utilisateur-role">
+            </span>
+            <span className="utilisateur-role">
               {LIBELLES_ROLE[utilisateur.role]}
               {plafond !== undefined && ` · remise max ${pourcent(plafond)}`} ·{" "}
               {heure(new Date(maintenant).toISOString(), fuseau)}
-            </div>
-          </div>
-          <button type="button" className="bouton-petit" onClick={() => void deconnecter()}>
+            </span>
+          </span>
+          <button type="button" className="barre-bouton" onClick={() => void deconnecter()}>
             Déconnexion
           </button>
-        </div>
+        </span>
       </header>
 
-      <div className="corps-vente">
+      <main className="corps-vente">
         <Catalogue onAjouter={(p) => dispatch({ type: "ajouter", produit: p })} onMessage={setMessage} />
         <PanierPanel
           panier={panier}
@@ -113,7 +126,7 @@ export function EcranVente({ session, onAdministration }: Props) {
           onAttente={() => setFenetre({ type: "attente" })}
           onEncaisser={() => setFenetre({ type: "encaissement" })}
         />
-      </div>
+      </main>
 
       {fenetre?.type === "encaissement" && (
         <EncaissementDialogue
@@ -143,6 +156,7 @@ export function EcranVente({ session, onAdministration }: Props) {
       {fenetre?.type === "liste-attente" && (
         <VentesEnAttenteDialogue
           panierVide={panier.lignes.length === 0}
+          venteRepriseId={panier.venteEnAttenteId}
           onFermer={fermer}
           onReprise={(vente) => {
             dispatch({ type: "reprendre", vente });

@@ -6,14 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.vente.domain.PanierCalcule.LigneCalculee;
 import ma.invento.pos.vente.domain.PanierCalcule.VentilationTva;
 
 /**
  * Seul calcul des montants d'une vente (aperçu du panier, mise en attente et validation).
  *
- * <p>Les prix publics sont TTC. Chaque ligne peut porter une remise, puis la remise ticket
- * s'applique au total des lignes remisées. Pour ventiler la TVA, la remise ticket est répartie
+ * <p>Les prix publics sont TTC. Une vente porte au plus un type de remise : des remises sur ses
+ * lignes, ou une remise ticket sur le total, jamais les deux. Pour ventiler la TVA, la remise ticket est répartie
  * sur les lignes au prorata de leur montant ; le HT se déduit du TTC par taux.
  */
 public final class CalculateurVente {
@@ -21,6 +22,10 @@ public final class CalculateurVente {
     private CalculateurVente() {}
 
     public static PanierCalcule calculer(List<LignePanier> lignes, Remise remiseTicket) {
+        if (remiseTicket != null && lignes.stream().anyMatch(l -> l.remise() != null)) {
+            throw new RegleMetierException(
+                    "Une seule remise par vente : retirez les remises des lignes ou la remise sur le ticket.");
+        }
         List<LigneCalculee> calculees = new ArrayList<>();
         BigDecimal sousTotal = Montants.ZERO;
         BigDecimal remisesLignes = Montants.ZERO;

@@ -77,6 +77,7 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
         <input
           id="montant-compte"
           inputMode="decimal"
+          autoComplete="off"
           placeholder={decimal(0)}
           value={saisie}
           onChange={(e) => setSaisie(e.target.value)}
@@ -95,7 +96,7 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
         </button>
         <button
           type="button"
-          className="bouton bouton-plein"
+          className="bouton bouton-plein danger"
           disabled={montant === null || cloturer.isPending}
           onClick={() => montant !== null && cloturer.mutate({ id: session.id, montantCompte: montant })}
         >

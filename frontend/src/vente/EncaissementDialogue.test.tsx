@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EncaissementDialogue, montantsProposes } from "./EncaissementDialogue";
+import { ajouterBillet, EncaissementDialogue } from "./EncaissementDialogue";
 
 const espaces = (texte: string | null) => (texte ?? "").replace(/[\u202f\u00a0]/g, " ");
 
@@ -24,9 +24,10 @@ function afficher(onValidee = vi.fn()) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("EncaissementDialogue", () => {
-  it("propose des montants ronds au-dessus du total", () => {
-    expect(montantsProposes(260.6)).toEqual([270, 300, 400]);
-    expect(montantsProposes(50)).toEqual([100, 200]);
+  it("ajoute chaque billet au montant reçu", () => {
+    expect(ajouterBillet(null, 200)).toBe(200);
+    expect(ajouterBillet(200, 50)).toBe(250);
+    expect(ajouterBillet(0.1, 20)).toBe(20.1);
   });
 
   it("affiche le rendu ou le manque", async () => {
@@ -36,7 +37,7 @@ describe("EncaissementDialogue", () => {
     expect(espaces(screen.getByText(/Il manque/).nextSibling?.textContent ?? null)).toBe("10,60 DH");
     expect(screen.getByRole("button", { name: "Valider la vente" })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole("button", { name: "300" }));
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter un billet de 50 DH" }));
     expect(espaces(screen.getByText("Rendu monnaie").nextSibling?.textContent ?? null)).toBe("39,40 DH");
   });
 

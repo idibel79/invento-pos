@@ -32,7 +32,7 @@ model, steps). The decisions below were taken after it and override it where the
 - **Admin recovery:** a single admin, created on first start with a temporary password (to change
   at first login) and a recovery code shown once, stored hashed, single use. A server command
   `--reset-admin` sets a new temporary password. Both are written to the audit journal.
-- **Front:** based on mockup 1 (Invento look), not the dark counter mockup.
+- **Front:** direction « Table pro » (November 2026, page « Refonte v2 · 3 directions » of the mockups canvas, after a design critique): neutral grey interface, a single action colour (Invento blue) kept for Encaisser and links, thin dark top bar (till, pending sales, close, user), products in a dense table (designation, zone, category, stock, price; columns resizable with full-height dividers) with Zone/Category drop-down filters, sober ticket with a large total and a full-width Encaisser button, small radii, tabular figures (Inter / Segoe UI). Light and dark versions follow the system setting; the ticket column has a fixed width. Theme colours are the CSS variables at the top of `frontend/src/styles.css`.
 
 ## Clean Code and Architecture Rules — Invento POS
 
@@ -81,7 +81,7 @@ model, steps). The decisions below were taken after it and override it where the
 - Do not duplicate server data across multiple client stores.
 - Do not consider frontend calculations or validations authoritative.
 - Keep the UI responsive during API calls and failures.
-- Visuals follow mockup 1 (Invento) and the `invento-design` skill.
+- Visuals follow the « Table pro » direction through the theme variables of `frontend/src/styles.css` (`invento-design` skill for popups and common components).
 
 ### State and business consistency
 - The backend is the source of truth for prices, discounts, VAT, payments and stock.
@@ -157,7 +157,11 @@ browser before anything is committed or pushed.
    `.\scripts\preview.ps1` without argument in the background (Docker PostgreSQL, API with the
    `demo` profile — accounts `admin` / `responsable` / `caissier`, password `demo1234` — and the
    Vite front). If it is already running, a front change reloads hot; after a backend change,
-   stop it and start it again. Once the API is ready, give idriss the local URL
+   stop it and start it again **with `-GarderDonnees`**: without it the script drops the
+   `pos_preview` database and recreates fresh demo data, which erases what idriss imported or
+   entered (only start without it when he asks for a fresh demo base). Launch it detached
+   (`Start-Process powershell -File scripts\preview.ps1 …`) so you can keep answering him while it
+   starts. Once the API is ready, give idriss the local URL
    (`http://localhost:5173`) and say what to check.
 3. If he reports a problem, fix it in the working tree and give him the URL again.
 4. Only when idriss explicitly validates ("valide"): branch from an up-to-date `main`, commit
@@ -170,7 +174,14 @@ browser before anything is committed or pushed.
 
 ## Skills to use
 
-- `invento-design`: every front screen (mockup 1, Invento look).
+- **Design requests (standing instruction):** every design request (screen, popup, component) goes
+  through the Design plugin (`design:design-critique` on the existing screen first,
+  `design:accessibility-review` before integration) and is presented like invento-v2: **3 proposals
+  with a recommendation**, drawn in the Claude Design canvas « Invento POS – maquettes », one page per
+  subject. Integrate into the app only after idriss has chosen. Small, precise tweaks he dictates
+  (a colour, a spacing, a column) are applied directly.
+
+- `invento-design`: popups and common components, within the « Table pro » direction.
 - `code-review` and `security-review`: before opening each PR.
 - `simplify`: after a feature, on the changed code.
 - `run`: to start the app and check a change for real (`scripts/preview.sh` does it in one step).

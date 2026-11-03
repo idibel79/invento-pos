@@ -20,10 +20,23 @@ export function useCategories() {
   });
 }
 
+export interface TriCatalogue {
+  champ: "designation" | "ppv";
+  ordre: "asc" | "desc";
+}
+
 export interface FiltresCatalogue {
   recherche: string;
   zoneId: number | null;
   categorieId: number | null;
+  /** Tri fait par le serveur, sur toutes les pages ; null : ordre par défaut (désignation A → Z). */
+  tri: TriCatalogue | null;
+}
+
+/** Critères envoyés à l'API ; à prix égal, l'ordre alphabétique départage pour une liste stable. */
+function ordreDeTri(tri: TriCatalogue | null): string[] {
+  if (tri === null) return ["designation,asc"];
+  return tri.champ === "designation" ? [`designation,${tri.ordre}`] : [`ppv,${tri.ordre}`, "designation,asc"];
 }
 
 /** Grille du catalogue (produits actifs), par pages de 24. */
@@ -42,7 +55,7 @@ export function useProduits(filtres: FiltresCatalogue) {
               actif: true,
               page: pageParam,
               size: TAILLE_PAGE,
-              sort: ["designation,asc"],
+              sort: ordreDeTri(filtres.tri),
             },
           },
         }),
