@@ -726,7 +726,9 @@ export interface components {
         };
         ValidationCommande: {
             panier: components["schemas"]["PanierCommande"];
-            especesRecues: number;
+            /** @enum {string|null} */
+            mode?: "ESPECES" | "CARTE" | null;
+            especesRecues?: number | null;
         };
         LigneDto: {
             /** Format: int64 */

@@ -1786,12 +1786,16 @@
           "panier" : {
             "$ref" : "#/components/schemas/PanierCommande"
           },
+          "mode" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ESPECES", "CARTE" ]
+          },
           "especesRecues" : {
-            "type" : "number",
+            "type" : [ "number", "null" ],
             "minimum" : 0.0
           }
         },
-        "required" : [ "especesRecues", "panier" ]
+        "required" : [ "panier" ]
       },
       "LigneDto" : {
         "type" : "object",

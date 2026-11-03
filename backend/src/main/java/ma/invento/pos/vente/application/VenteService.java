@@ -49,6 +49,7 @@ import ma.invento.pos.vente.api.VenteDtos.VentilationTvaDto;
 import ma.invento.pos.vente.domain.CalculateurVente;
 import ma.invento.pos.vente.domain.LignePanier;
 import ma.invento.pos.vente.domain.LigneVente;
+import ma.invento.pos.vente.domain.ModePaiement;
 import ma.invento.pos.vente.domain.NiveauAutorisation;
 import ma.invento.pos.vente.domain.PanierCalcule;
 import ma.invento.pos.vente.domain.PanierCalcule.LigneCalculee;
@@ -167,7 +168,7 @@ public class VenteService {
         return versDto(vente, panier.produits());
     }
 
-    /** Validation et encaissement en espèces ; la monnaie à rendre est calculée ici. */
+    /** Validation et encaissement (espèces ou carte) ; la monnaie à rendre est calculée ici. */
     @Transactional
     public VenteDto valider(ValidationCommande commande, String cle, UtilisateurConnecte vendeur) {
         Optional<Vente> deja = rejouer(cle, vendeur);
@@ -187,7 +188,13 @@ public class VenteService {
 
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
         vente.remplirPanier(panier.calcul(), remiseTicket(commande.panier()), motif(commande.panier()), valideePar);
-        vente.validerEnEspeces(commande.especesRecues(), cle, maintenant);
+        if (commande.mode() == ModePaiement.CARTE) {
+            vente.validerParCarte(cle, maintenant);
+        } else if (commande.especesRecues() == null) {
+            throw new RegleMetierException("Indiquez le montant reçu en espèces.");
+        } else {
+            vente.validerEnEspeces(commande.especesRecues(), cle, maintenant);
+        }
         ventes.save(vente);
         stock.sortirPourVente(quantites(panier), vente.getNumero(), vendeur.id(), maintenant);
         if (valideePar != null) {

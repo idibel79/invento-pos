@@ -121,6 +121,19 @@ public class Vente {
         if (totalTtc.signum() > 0) {
             paiements.add(new Paiement(this, ModePaiement.ESPECES, totalTtc, especesRecues));
         }
+        finaliser(cleIdempotence, maintenant);
+    }
+
+    /** Encaissement par carte : le terminal débite le total exact, sans monnaie rendue. */
+    public void validerParCarte(String cleIdempotence, Instant maintenant) {
+        verifierModifiable();
+        if (totalTtc.signum() > 0) {
+            paiements.add(new Paiement(this, ModePaiement.CARTE, totalTtc, null));
+        }
+        finaliser(cleIdempotence, maintenant);
+    }
+
+    private void finaliser(String cleIdempotence, Instant maintenant) {
         this.statut = StatutVente.VALIDEE;
         this.cleIdempotence = cleIdempotence;
         this.noteAttente = null;

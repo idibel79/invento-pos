@@ -54,7 +54,7 @@ describe("EncaissementDialogue", () => {
     vi.stubGlobal("fetch", fetchSimule);
     const onValidee = afficher();
 
-    await userEvent.click(screen.getByRole("button", { name: "Exact" }));
+    await userEvent.click(screen.getByRole("button", { name: "Montant exact" }));
     await userEvent.click(screen.getByRole("button", { name: "Valider la vente" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Le serveur a rencontré une erreur");
 
@@ -66,7 +66,39 @@ describe("EncaissementDialogue", () => {
     expect(seconde?.headers.get("Idempotency-Key")).toBe(premiere?.headers.get("Idempotency-Key"));
     expect(await seconde?.json()).toEqual({
       panier: { lignes: [{ produitId: 7, quantite: 2 }] },
+      mode: "ESPECES",
       especesRecues: 260.6,
     });
+  });
+
+  it("saisit le montant au pavé numérique", async () => {
+    afficher();
+    for (const touche of ["3", "0", "0", "Virgule", "5"]) {
+      await userEvent.click(screen.getByRole("button", { name: touche }));
+    }
+    expect(screen.getByLabelText("Montant reçu")).toHaveValue("300,5");
+    await userEvent.click(screen.getByRole("button", { name: "Effacer le dernier chiffre" }));
+    expect(screen.getByLabelText("Montant reçu")).toHaveValue("300,");
+  });
+
+  it("valide un paiement par carte sans montant reçu", async () => {
+    const corps: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (requete: Request) => {
+        corps.push(await requete.json());
+        return new Response(JSON.stringify({ id: 1, numero: "C1-000001" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+    const onValidee = afficher();
+
+    await userEvent.click(screen.getByRole("button", { name: "Carte bancaire" }));
+    expect(screen.queryByLabelText("Montant reçu")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Valider le paiement par carte" }));
+    await waitFor(() => expect(onValidee).toHaveBeenCalled());
+    expect(corps).toEqual([{ panier: { lignes: [{ produitId: 7, quantite: 2 }] }, mode: "CARTE" }]);
   });
 });

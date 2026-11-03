@@ -30,6 +30,21 @@ class VenteTest {
     }
 
     @Test
+    void validation_par_carte_debite_le_total_sans_rendu() {
+        Vente vente = venteDe("26.20");
+        vente.validerParCarte("cle-carte", T0);
+
+        assertThat(vente.getStatut()).isEqualTo(StatutVente.VALIDEE);
+        assertThat(vente.getCleIdempotence()).isEqualTo("cle-carte");
+        assertThat(vente.getPaiements()).singleElement().satisfies(p -> {
+            assertThat(p.getMode()).isEqualTo(ModePaiement.CARTE);
+            assertThat(p.getMontant()).isEqualByComparingTo("26.20");
+            assertThat(p.getMontantRecu()).isNull();
+            assertThat(p.getRendu()).isNull();
+        });
+    }
+
+    @Test
     void refuse_un_montant_recu_insuffisant() {
         Vente vente = venteDe("26.20");
         assertThatThrownBy(() -> vente.validerEnEspeces(new BigDecimal("26.19"), "cle", T0))

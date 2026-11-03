@@ -1253,13 +1253,73 @@ button:disabled {
   color: var(--sur-primaire);
 }
 
-/* Total en tête de l'encaissement. */
+/* Encaissement (proposition A « Calculatrice ») : total, montant reçu et rendu empilés à gauche,
+   pavé numérique à droite, bouton Valider pleine largeur. */
+.modes-paiement {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--fond);
+  border-radius: 8px;
+}
+
+.modes-paiement button {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--gris);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modes-paiement button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--texte-fort);
+  font-weight: 600;
+}
+
+.encaissement {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.encaissement-carte {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 700px) {
+  .encaissement {
+    grid-template-columns: 1fr;
+  }
+}
+
+.encaissement-saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.encaissement-consigne {
+  margin: 0;
+  color: var(--gris);
+  font-size: 14px;
+}
+
 .total-a-payer {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  font-size: 13.5px;
+  padding: 14px 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  font-size: 14px;
   color: var(--gris);
 }
 
@@ -1267,7 +1327,30 @@ button:disabled {
   font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: var(--texte-fort);
+  color: var(--primaire);
+}
+
+.dialogue .encaissement .champ-montant {
+  height: 64px;
+}
+
+.dialogue .encaissement .champ-montant input {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.encaissement .rendu strong {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.rendu.vide {
+  background: var(--fond);
+}
+
+.rendu.vide .libelle,
+.rendu.vide strong {
+  color: var(--gris);
 }
 
 .billets {
@@ -1277,13 +1360,22 @@ button:disabled {
 }
 
 .billets button {
-  min-height: 44px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border-radius: 6px;
   border: 1px solid var(--bordure-forte);
   background: var(--surface);
   color: var(--texte-fort);
   font-size: 15px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.billet-image {
+  flex: none;
 }
 
 .billets button:hover {
@@ -1291,19 +1383,55 @@ button:disabled {
   color: var(--primaire);
 }
 
-.raccourcis-montant {
-  display: flex;
-  gap: 6px;
+/* Pavé numérique tactile : 3 colonnes de grosses touches, actions en bas. */
+.pave-numerique {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 64px;
+  gap: 8px;
 }
 
-.raccourcis-montant button {
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 6px;
-  border: 1px solid var(--bordure-forte);
+.pave-numerique button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--fond);
+  color: var(--texte-fort);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pave-numerique button:active {
+  background: var(--accent-doux);
+}
+
+.pave-numerique .pave-action {
+  border-color: var(--bordure-forte);
   background: var(--surface);
-  color: var(--texte);
-  font-size: 13px;
+  font-size: 15px;
+}
+
+.pave-numerique .pave-large {
+  grid-column: span 2;
+}
+
+.rangee-encaissement {
+  display: flex;
+  gap: 12px;
+}
+
+.rangee-encaissement .bouton {
+  min-height: 56px;
+  padding: 0 24px;
+  font-size: 15px;
+}
+
+.rangee-encaissement .bouton-plein {
+  flex: 1;
+  font-size: 17px;
 }
 
 .encadre {

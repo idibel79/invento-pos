@@ -51,10 +51,17 @@ public final class VenteDtos {
             @NotNull @Valid PanierCommande panier,
             @Size(max = 255) String note) {}
 
+    /**
+     * Demande de validation.
+     *
+     * @param mode espèces si absent
+     * @param especesRecues montant remis par le client, obligatoire en espèces
+     */
     public record ValidationCommande(
             @NotNull @Valid PanierCommande panier,
+            @Schema(nullable = true) ModePaiement mode,
 
-            @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
+            @Schema(nullable = true) @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
             BigDecimal especesRecues) {}
 
     public record LigneDto(
