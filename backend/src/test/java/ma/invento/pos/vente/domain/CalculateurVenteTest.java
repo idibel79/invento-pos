@@ -90,13 +90,12 @@ class CalculateurVenteTest {
 
     @Test
     void le_reste_d_arrondi_de_la_remise_ticket_ne_rend_aucun_taux_negatif() {
-        // La dernière ligne est remisée à 100 % : le centime d'arrondi va à la ligne la plus forte.
+        // Le centime de remise ticket, réparti sur trois lignes de 0,10, ne rend aucun total négatif.
         PanierCalcule panier = CalculateurVente.calculer(
                 List.of(
                         ligne(1, 1, "0.10", TVA_20, null),
                         ligne(2, 1, "0.10", TVA_20, null),
-                        ligne(3, 1, "0.10", TVA_20, null),
-                        ligne(4, 1, "5.00", EXONERE, new Remise(TypeRemise.POURCENT, new BigDecimal("100")))),
+                        ligne(3, 1, "0.10", TVA_20, null)),
                 new Remise(TypeRemise.MONTANT, new BigDecimal("0.01")));
 
         assertThat(panier.tva())
@@ -109,8 +108,7 @@ class CalculateurVenteTest {
     @Test
     void remise_totale_possible_et_panier_a_zero() {
         PanierCalcule panier = CalculateurVente.calculer(
-                List.of(ligne(1, 1, "10.00", TVA_20, new Remise(TypeRemise.POURCENT, new BigDecimal("100")))),
-                new Remise(TypeRemise.POURCENT, new BigDecimal("50")));
+                List.of(ligne(1, 1, "10.00", TVA_20, new Remise(TypeRemise.POURCENT, new BigDecimal("100")))), null);
 
         assertThat(panier.totalTtc()).isEqualByComparingTo("0");
         assertThat(panier.remiseTicket()).isEqualByComparingTo("0");

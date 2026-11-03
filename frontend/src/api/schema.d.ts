@@ -484,6 +484,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/remises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/remises/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["resumer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/produits/code-barre/{code}": {
         parameters: {
             query?: never;
@@ -507,7 +539,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_2"];
+        get: operations["lister_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -878,6 +910,42 @@ export interface components {
         };
         CodeSecoursDto: {
             codeSecours: string;
+        };
+        PageResponseRemiseJournal: {
+            contenu: components["schemas"]["RemiseJournal"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            taille: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        RemiseJournal: {
+            venteNumero: string;
+            /** Format: date-time */
+            le: string;
+            caisse: string;
+            vendeur: string;
+            autorisePar: string;
+            /** @enum {string} */
+            portee: "LIGNE" | "TICKET";
+            produit: string;
+            /** Format: int32 */
+            quantite: number;
+            /** @enum {string} */
+            type: "POURCENT" | "MONTANT";
+            valeur: number;
+            montant: number;
+            motif: string;
+        };
+        ResumeRemises: {
+            /** Format: int64 */
+            nombre: number;
+            montantTotal: number;
+            /** Format: int64 */
+            autorisees: number;
         };
         PageResponseProduitDto: {
             contenu: components["schemas"]["ProduitDto"][];
@@ -1819,6 +1887,54 @@ export interface operations {
             };
         };
     };
+    lister_2: {
+        parameters: {
+            query?: {
+                jours?: number;
+                portee?: "LIGNE" | "TICKET";
+                page?: number;
+                taille?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseRemiseJournal"];
+                };
+            };
+        };
+    };
+    resumer: {
+        parameters: {
+            query?: {
+                jours?: number;
+                portee?: "LIGNE" | "TICKET";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeRemises"];
+                };
+            };
+        };
+    };
     parCodeBarre: {
         parameters: {
             query?: never;
@@ -1841,7 +1957,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
+    lister_3: {
         parameters: {
             query?: {
                 /** @description Zero-based page index (0..N) */
