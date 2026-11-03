@@ -102,7 +102,7 @@ test("vente en espèces, vente mise en attente puis reprise, clôture de caisse"
   const encaissement = page.getByRole("dialog", { name: "Encaissement" });
   await encaissement.getByLabel("Montant reçu").fill("1000");
   await expect(encaissement.getByText("Rendu monnaie")).toBeVisible();
-  await encaissement.getByRole("button", { name: "Valider la vente" }).click();
+  await encaissement.getByRole("button", { name: /^Valider · rendre/ }).click();
 
   const validee = page.getByRole("dialog", { name: /Vente C\d+-\d+ validée/ });
   await expect(validee).toBeVisible();
@@ -134,7 +134,7 @@ test("vente en espèces, vente mise en attente puis reprise, clôture de caisse"
   await expect(panier.getByText(attente.designation)).toBeVisible();
 
   await panier.getByRole("button", { name: /^Encaisser / }).click();
-  await encaissement.getByRole("button", { name: "Exact" }).click();
+  await encaissement.getByRole("button", { name: "Montant exact" }).click();
   await encaissement.getByRole("button", { name: "Valider la vente" }).click();
   await expect(page.getByRole("dialog", { name: /validée/ })).toBeVisible();
   await page.getByRole("button", { name: "Nouvelle vente" }).click();

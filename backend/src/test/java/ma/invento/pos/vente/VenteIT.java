@@ -134,6 +134,33 @@ class VenteIT extends IntegrationTest {
     }
 
     @Test
+    void vente_par_carte_decremente_le_stock_sans_rendu() throws Exception {
+        String caissier = caissierSur(caisseId);
+        ouvrirSession(caissier, caisseId);
+        long produit = produit("26.20", 5);
+
+        mvc.perform(post("/api/v1/ventes")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("panier", panier(ligne(produit, 2)), "mode", "CARTE"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paiement.mode").value("CARTE"))
+                .andExpect(jsonPath("$.paiement.montant").value(52.40))
+                .andExpect(jsonPath("$.paiement.rendu").doesNotExist());
+        assertThat(stock(produit)).isEqualTo(3);
+
+        mvc.perform(post("/api/v1/ventes")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("panier", panier(ligne(produit, 1))))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Indiquez le montant reçu en espèces."));
+        assertThat(stock(produit)).isEqualTo(3);
+    }
+
+    @Test
     void stock_insuffisant_bloque_toute_la_vente() throws Exception {
         String caissier = caissierSur(caisseId);
         ouvrirSession(caissier, caisseId);

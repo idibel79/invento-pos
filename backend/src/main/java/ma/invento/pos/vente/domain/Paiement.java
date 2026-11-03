@@ -35,12 +35,13 @@ public class Paiement {
 
     protected Paiement() {}
 
+    /** {@code montantRecu} n'existe qu'en espèces ; la carte débite le montant exact. */
     Paiement(Vente vente, ModePaiement mode, BigDecimal montant, BigDecimal montantRecu) {
         this.vente = vente;
         this.mode = mode;
         this.montant = montant;
         this.montantRecu = montantRecu;
-        this.rendu = montantRecu.subtract(montant);
+        this.rendu = montantRecu == null ? null : montantRecu.subtract(montant);
     }
 
     public ModePaiement getMode() {
