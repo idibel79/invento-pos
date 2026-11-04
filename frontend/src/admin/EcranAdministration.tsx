@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useAuth, useUtilisateur } from "../auth/AuthContext";
-import { LIBELLES_ROLE } from "../auth/roles";
-import { Logo } from "../ui/Logo";
+import { useParametres } from "../caisse/requetes";
+import { heure } from "../ui/format";
+import { useMaintenant } from "../ui/hooks";
+import { IconeInvento } from "../ui/Logo";
+import { MenuUtilisateur } from "../vente/MenuUtilisateur";
 import { Caisses } from "./Caisses";
 import { CodeSecours } from "./CodeSecours";
 import { ImportCatalogue } from "./ImportCatalogue";
@@ -19,47 +21,41 @@ type Onglet = keyof typeof ONGLETS;
 
 /** Écrans réservés à l'admin ; le serveur vérifie le rôle sur chaque appel. */
 export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
-  const utilisateur = useUtilisateur();
-  const { deconnecter } = useAuth();
   const [onglet, setOnglet] = useState<Onglet>("caisses");
+  const fuseau = useParametres().data?.fuseauHoraire;
+  const maintenant = useMaintenant(30_000);
 
   return (
     <div className="ecran-admin">
-      <header className="entete">
-        <Logo />
-        <span className="pastille">Administration</span>
-        <nav className="onglets" aria-label="Administration">
-          {(Object.keys(ONGLETS) as Onglet[]).map((cle) => (
-            <button
-              key={cle}
-              type="button"
-              className="onglet"
-              aria-current={onglet === cle ? "page" : undefined}
-              onClick={() => setOnglet(cle)}
-            >
-              {ONGLETS[cle]}
-            </button>
-          ))}
-        </nav>
-        <span className="entete-espace" />
-        <button type="button" className="bouton-petit" onClick={onQuitter}>
+      <header className="barre-haut">
+        <span className="barre-marque">
+          <IconeInvento />
+          Invento POS
+        </span>
+        <span className="barre-session">
+          <strong>Administration</strong>
+          <span>réservée à l'admin</span>
+        </span>
+        <span className="barre-espace" />
+        <button type="button" className="barre-bouton" onClick={onQuitter}>
           Retour à la caisse
         </button>
-        <div className="entete-utilisateur">
-          <span className="avatar" aria-hidden="true">
-            {utilisateur.prenom.charAt(0) || utilisateur.nom.charAt(0)}
-          </span>
-          <div>
-            <div className="utilisateur-nom">
-              {utilisateur.prenom} {utilisateur.nom}
-            </div>
-            <div className="utilisateur-role">{LIBELLES_ROLE[utilisateur.role]}</div>
-          </div>
-          <button type="button" className="bouton-petit" onClick={() => void deconnecter()}>
-            Déconnexion
-          </button>
-        </div>
+        <span className="barre-heure">{heure(new Date(maintenant).toISOString(), fuseau)}</span>
+        <MenuUtilisateur plafond={undefined} />
       </header>
+      <nav className="admin-onglets" aria-label="Administration">
+        {(Object.keys(ONGLETS) as Onglet[]).map((cle) => (
+          <button
+            key={cle}
+            type="button"
+            className="admin-onglet"
+            aria-current={onglet === cle ? "page" : undefined}
+            onClick={() => setOnglet(cle)}
+          >
+            {ONGLETS[cle]}
+          </button>
+        ))}
+      </nav>
       <main className="admin-corps">
         {onglet === "caisses" && <Caisses />}
         {onglet === "utilisateurs" && <Utilisateurs />}
