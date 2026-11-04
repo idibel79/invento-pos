@@ -10,13 +10,15 @@ interface Props {
   onFermer: () => void;
   children: ReactNode;
   largeur?: number;
+  /** Classe ajoutée à la popup, pour un réglage propre à un écran. */
+  classe?: string;
 }
 
 /**
  * Popup « fenêtre classique » : titre à gauche avec bouton de fermeture, contenu, puis la rangée de
  * boutons en pied gris (dernier enfant). Échap ferme, le focus reste dans la popup.
  */
-export function Dialogue({ titre, sousTitre, onFermer, children, largeur = 460 }: Props) {
+export function Dialogue({ titre, sousTitre, onFermer, children, largeur = 460, classe }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function Dialogue({ titre, sousTitre, onFermer, children, largeur = 460 }
   return (
     <dialog
       ref={ref}
-      className="dialogue"
+      className={classe ? `dialogue ${classe}` : "dialogue"}
       aria-label={titre}
       style={{ width: `min(${largeur}px, calc(100vw - 32px))` }}
       onCancel={(e) => {

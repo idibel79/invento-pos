@@ -37,6 +37,7 @@
   --barre-attente-fond: #451a03;
   --barre-attente-bordure: #b45309;
   --barre-attente-texte: #fcd34d;
+  --barre-tiroir-fond: #0d2a63;
   --voile: rgba(17, 24, 39, 0.45);
   --ombre: 0 12px 32px rgba(17, 24, 39, 0.18);
   --police: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -77,6 +78,7 @@
     --rupture-bordure: #262a33;
     --barre-fond: #0b1f4d;
     --barre-bordure: #2a4785;
+    --barre-tiroir-fond: #12306e;
     --voile: rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
@@ -515,14 +517,60 @@ button:disabled {
 }
 
 .barre-session {
+  display: flex;
+  flex-direction: column;
   padding-left: 16px;
   border-left: 1px solid var(--barre-bordure);
-  font-size: 14.5px;
+  font-size: 12.5px;
   color: var(--barre-doux);
 }
 
 .barre-session strong {
+  font-size: 15px;
   color: var(--barre-texte);
+  font-weight: 600;
+}
+
+/* Fond + espèces encaissées : ce qui doit se trouver dans le tiroir, à côté de la clôture. */
+.barre-tiroir {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  padding: 0 6px 0 14px;
+  border: 1px solid var(--barre-bordure);
+  border-radius: 8px;
+  background: var(--barre-tiroir-fond);
+}
+
+.barre-tiroir-total {
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--barre-doux);
+}
+
+.barre-tiroir-total strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--barre-texte);
+}
+
+.barre-tiroir-detail {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--barre-doux);
+}
+
+.barre-tiroir .barre-bouton {
+  margin-left: 10px;
+}
+
+.barre-heure {
+  padding-left: 16px;
+  border-left: 1px solid var(--barre-bordure);
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -554,16 +602,66 @@ button:disabled {
 }
 
 .barre-utilisateur {
+  position: relative;
+}
+
+.barre-utilisateur-bouton {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-left: 16px;
-  border-left: 1px solid var(--barre-bordure);
+  min-height: 48px;
+  padding: 0 10px 0 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--barre-texte);
+  text-align: left;
 }
 
-.barre-utilisateur > span:nth-child(2) {
+.barre-utilisateur-bouton:hover,
+.barre-utilisateur-bouton[aria-expanded="true"] {
+  border-color: var(--barre-bouton-bordure);
+}
+
+.barre-utilisateur-texte {
   display: flex;
   flex-direction: column;
+}
+
+.menu-deroulant {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--ombre);
+}
+
+.menu-element {
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--texte);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.menu-element:hover,
+.menu-element:focus-visible {
+  background: var(--accent-doux);
+}
+
+.menu-element.danger {
+  color: var(--danger);
 }
 
 .barre-utilisateur .avatar {
@@ -997,10 +1095,8 @@ button:disabled {
   font-weight: 500;
   color: var(--designation);
   line-height: 1.3;
-  /* Nom sur une seule ligne (complet au survol), quantité, prix et remise en dessous. */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Nom complet (retour à la ligne s'il dépasse), quantité, prix et remise en dessous. */
+  overflow-wrap: anywhere;
 }
 
 .quantite {
@@ -1691,6 +1787,34 @@ button:disabled {
 .dialogue .encadre-ligne span:last-child {
   color: var(--texte-fort);
   font-weight: 600;
+}
+
+/* Clôture : textes un cran plus grands que les autres popups. */
+.dialogue.cloture .titre-popup {
+  font-size: 18px;
+}
+
+.dialogue.cloture .dialogue-sous-titre,
+.dialogue.cloture .alerte {
+  font-size: 14px;
+}
+
+.dialogue.cloture .encadre-ligne,
+.dialogue.cloture .libelle {
+  font-size: 15px;
+}
+
+.dialogue.cloture .champ-montant input {
+  font-size: 24px;
+}
+
+.dialogue.cloture .rendu strong {
+  font-size: 28px;
+}
+
+.dialogue .encadre-total {
+  padding-top: 8px;
+  border-top: 1px solid var(--bordure);
 }
 
 .dialogue .prix-remise {

@@ -290,6 +290,9 @@ class VenteIT extends IntegrationTest {
                 .andExpect(status().isCreated());
         mettreEnAttente(caissier, panier(ligne(produit, 2)));
         assertThat(stockReserve(produit)).isEqualTo(2);
+        mvc.perform(get("/api/v1/sessions/courante").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.especesEncaissees").value(30.00));
 
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissierSur(caisseId)))

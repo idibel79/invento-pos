@@ -1,17 +1,17 @@
 import { useEffect, useReducer, useState } from "react";
 import type { Schemas } from "../api/client";
-import { useAuth, useUtilisateur } from "../auth/AuthContext";
-import { LIBELLES_ROLE } from "../auth/roles";
+import { useUtilisateur } from "../auth/AuthContext";
 import { ClotureDialogue } from "../caisse/ClotureDialogue";
 import { useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
-import { dh, heure, pourcent } from "../ui/format";
+import { decimal, dh, heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeValide } from "../ui/icones";
 import { IconeInvento } from "../ui/Logo";
 import { AttenteDialogue } from "./AttenteDialogue";
 import { Catalogue } from "./Catalogue";
 import { EncaissementDialogue } from "./EncaissementDialogue";
+import { MenuUtilisateur } from "./MenuUtilisateur";
 import { panierVide, reducteurPanier, versCommande } from "./panier";
 import { PanierPanel } from "./PanierPanel";
 import { RemiseDialogue } from "./RemiseDialogue";
@@ -35,7 +35,6 @@ interface Props {
 
 export function EcranVente({ session, onAdministration }: Props) {
   const utilisateur = useUtilisateur();
-  const { deconnecter } = useAuth();
   const parametres = useParametres();
   const [panier, dispatch] = useReducer(reducteurPanier, panierVide);
   const commande = versCommande(panier);
@@ -63,6 +62,7 @@ export function EcranVente({ session, onAdministration }: Props) {
   // La vente reprise dans le panier reste réservée côté serveur jusqu'à l'encaissement, mais n'est plus « en attente » pour le caissier.
   const nombreAReprendre = (enAttente.data ?? []).filter((v) => v.id !== panier.venteEnAttenteId).length;
   const total = calcul.data?.totaux.totalTtc ?? 0;
+  const especes = session.especesEncaissees ?? 0;
 
   return (
     <div className="ecran-vente">
@@ -72,8 +72,26 @@ export function EcranVente({ session, onAdministration }: Props) {
           Invento POS
         </span>
         <span className="barre-session">
-          <strong>{session.caisseNom}</strong> · ouverte à {heure(session.ouverture, fuseau)} · fond{" "}
-          {dh(session.fondInitial)}
+          <strong>{session.caisseNom}</strong>
+          <span>ouverte à {heure(session.ouverture, fuseau)}</span>
+        </span>
+        <span className="barre-tiroir">
+          <span className="barre-tiroir-total">
+            <span>Espèces dans le tiroir</span>
+            <strong>{dh(session.fondInitial + especes)}</strong>
+          </span>
+          <span className="barre-tiroir-detail">
+            fond {decimal(session.fondInitial)}
+            <br />+ encaissé {decimal(especes)}
+          </span>
+          <button
+            type="button"
+            className="barre-bouton"
+            aria-label="Clôturer la caisse"
+            onClick={() => setFenetre({ type: "cloture" })}
+          >
+            Clôturer
+          </button>
         </span>
         <span className="barre-espace" />
         <button
@@ -86,33 +104,13 @@ export function EcranVente({ session, onAdministration }: Props) {
             ? `${nombreAReprendre} vente${nombreAReprendre > 1 ? "s" : ""} en attente`
             : "Aucune vente en attente"}
         </button>
-        <button type="button" className="barre-bouton" onClick={() => setFenetre({ type: "cloture" })}>
-          Clôturer la caisse
-        </button>
         {onAdministration && (
           <button type="button" className="barre-bouton" onClick={onAdministration}>
             Administration
           </button>
         )}
-        <span className="barre-utilisateur">
-          <span className="avatar" aria-hidden="true">
-            {utilisateur.prenom.charAt(0)}
-            {utilisateur.nom.charAt(0)}
-          </span>
-          <span>
-            <span className="utilisateur-nom">
-              {utilisateur.prenom} {utilisateur.nom}
-            </span>
-            <span className="utilisateur-role">
-              {LIBELLES_ROLE[utilisateur.role]}
-              {plafond !== undefined && ` · remise max ${pourcent(plafond)}`} ·{" "}
-              {heure(new Date(maintenant).toISOString(), fuseau)}
-            </span>
-          </span>
-          <button type="button" className="barre-bouton" onClick={() => void deconnecter()}>
-            Déconnexion
-          </button>
-        </span>
+        <span className="barre-heure">{heure(new Date(maintenant).toISOString(), fuseau)}</span>
+        <MenuUtilisateur plafond={plafond} />
       </header>
 
       <main className="corps-vente">

@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schemas } from "../api/client";
 import { appel } from "../api/erreurs";
+import { cles } from "../caisse/requetes";
 
 const cleAttente = ["ventes-en-attente"] as const;
 
@@ -35,11 +36,16 @@ function useInvalidationVente() {
 }
 
 export function useValiderVente() {
+  const queryClient = useQueryClient();
   const invalider = useInvalidationVente();
   return useMutation({
     mutationFn: ({ cle, corps }: { cle: string; corps: Schemas["ValidationCommande"] }) =>
       appel(api.POST("/api/v1/ventes", { params: { header: { "Idempotency-Key": cle } }, body: corps })),
-    onSuccess: invalider,
+    onSuccess: () => {
+      invalider();
+      // Espèces encaissées affichées dans la barre de caisse.
+      void queryClient.invalidateQueries({ queryKey: cles.sessionCourante });
+    },
   });
 }
 

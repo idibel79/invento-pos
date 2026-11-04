@@ -71,13 +71,21 @@ public class SessionCaisseService {
                 utilisateur.id(),
                 ActionJournal.SESSION_OUVERTE,
                 caisse.getNom() + ", fond " + fondInitial.toPlainString() + " DH");
-        return SessionCaisseDto.depuis(session, caisse.getNom(), null);
+        return SessionCaisseDto.depuis(session, caisse.getNom(), BigDecimal.ZERO);
     }
 
     @Transactional(readOnly = true)
     public Optional<SessionCaisseDto> courante(long utilisateurId) {
         return sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
                 .map(s -> SessionCaisseDto.depuis(s, nomCaisse(s.getCaisseId()), null));
+    }
+
+    /** Session ouverte avec les espèces encaissées jusqu'ici, pour la barre de caisse. */
+    @Transactional(readOnly = true)
+    public Optional<SessionCaisseDto> couranteAvecEspeces(long utilisateurId) {
+        return sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
+                .map(s -> SessionCaisseDto.depuis(
+                        s, nomCaisse(s.getCaisseId()), encaissements.especesEncaissees(s.getId())));
     }
 
     /** Session ouverte de l'utilisateur, verrouillée jusqu'à la fin de la transaction appelante. */
