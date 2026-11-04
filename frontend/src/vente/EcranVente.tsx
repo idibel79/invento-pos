@@ -132,6 +132,7 @@ export function EcranVente({ session, onAdministration }: Props) {
         <EncaissementDialogue
           commande={commande}
           total={total}
+          apercu={calcul.data}
           onFermer={fermer}
           onValidee={(vente) => {
             dispatch({ type: "vider" });
