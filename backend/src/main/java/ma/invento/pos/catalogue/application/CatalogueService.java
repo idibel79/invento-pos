@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
+import ma.invento.pos.catalogue.api.CatalogueDtos.BornesPrixDto;
 import ma.invento.pos.catalogue.api.CatalogueDtos.ProduitCommande;
 import ma.invento.pos.catalogue.api.CatalogueDtos.ProduitDto;
 import ma.invento.pos.catalogue.api.CatalogueDtos.ReferenceDto;
@@ -59,12 +60,23 @@ public class CatalogueService {
             String recherche,
             Long zoneId,
             Long categorieId,
+            BigDecimal prixMin,
+            BigDecimal prixMax,
             Disponibilite disponibilite,
             Boolean actif,
             Pageable pageable,
             boolean voirPrixAchat) {
-        var spec = ProduitSpecifications.criteres(recherche, zoneId, categorieId, disponibilite, actif);
+        var spec =
+                ProduitSpecifications.criteres(recherche, zoneId, categorieId, prixMin, prixMax, disponibilite, actif);
         return PageResponse.of(produits.findAll(spec, pageable), versDto(voirPrixAchat));
+    }
+
+    @Transactional(readOnly = true)
+    public BornesPrixDto bornesPrix() {
+        var bornes = produits.bornesPrix();
+        return bornes.getMin() == null
+                ? new BornesPrixDto(BigDecimal.ZERO, BigDecimal.ZERO)
+                : new BornesPrixDto(bornes.getMin(), bornes.getMax());
     }
 
     @Transactional(readOnly = true)

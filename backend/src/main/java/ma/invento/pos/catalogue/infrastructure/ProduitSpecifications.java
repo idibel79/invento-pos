@@ -2,6 +2,7 @@ package ma.invento.pos.catalogue.infrastructure;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Subquery;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -20,13 +21,21 @@ public final class ProduitSpecifications {
     private ProduitSpecifications() {}
 
     public static Specification<Produit> criteres(
-            String recherche, Long zoneId, Long categorieId, Disponibilite disponibilite, Boolean actif) {
+            String recherche,
+            Long zoneId,
+            Long categorieId,
+            BigDecimal prixMin,
+            BigDecimal prixMax,
+            Disponibilite disponibilite,
+            Boolean actif) {
         List<Specification<Produit>> specs = new ArrayList<>();
         if (recherche != null && !recherche.isBlank()) specs.add(recherche(recherche.trim()));
         if (zoneId != null)
             specs.add((root, query, cb) -> cb.equal(root.get("zone").get("id"), zoneId));
         if (categorieId != null)
             specs.add((root, query, cb) -> cb.equal(root.get("categorie").get("id"), categorieId));
+        if (prixMin != null) specs.add((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("ppv"), prixMin));
+        if (prixMax != null) specs.add((root, query, cb) -> cb.lessThanOrEqualTo(root.get("ppv"), prixMax));
         if (disponibilite != null) specs.add(disponibilite(disponibilite));
         if (actif != null) specs.add((root, query, cb) -> cb.equal(root.get("actif"), actif));
         return Specification.allOf(specs);

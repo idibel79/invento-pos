@@ -652,6 +652,20 @@
             "format" : "int64"
           }
         }, {
+          "name" : "prixMin",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "number"
+          }
+        }, {
+          "name" : "prixMax",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "number"
+          }
+        }, {
           "name" : "disponibilite",
           "in" : "query",
           "required" : false,
@@ -1277,6 +1291,24 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ProduitDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/produits/bornes-prix" : {
+      "get" : {
+        "tags" : [ "catalogue-controller" ],
+        "operationId" : "bornesPrix",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BornesPrixDto"
                 }
               }
             }
@@ -2504,6 +2536,18 @@
           }
         },
         "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "BornesPrixDto" : {
+        "type" : "object",
+        "properties" : {
+          "min" : {
+            "type" : "number"
+          },
+          "max" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "max", "min" ]
       },
       "JournalDto" : {
         "type" : "object",

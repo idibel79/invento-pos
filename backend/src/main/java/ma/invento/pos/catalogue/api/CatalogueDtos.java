@@ -20,6 +20,9 @@ public final class CatalogueDtos {
 
     public record TvaDto(Long id, String libelle, BigDecimal taux) {}
 
+    /** Prix de vente extrêmes du catalogue actif, bornes du curseur de prix ; 0 si aucun produit. */
+    public record BornesPrixDto(BigDecimal min, BigDecimal max) {}
+
     /**
      * Produit tel que vu par la caisse. {@code pph} (prix d'achat) et {@code tauxMarge} ne sont
      * renseignés que pour l'admin.
