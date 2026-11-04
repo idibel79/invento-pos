@@ -838,6 +838,7 @@ export interface components {
             montantCompte: number | null;
             especesEncaissees: number | null;
             ecart: number | null;
+            clotureForcee: boolean;
         };
         ClotureCommande: {
             montantCompte: number;
@@ -966,7 +967,7 @@ export interface components {
             /** Format: int64 */
             utilisateurId: number | null;
             /** @enum {string} */
-            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "REMISE_AUTORISEE";
+            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "REMISE_AUTORISEE";
             detail: string | null;
             /** Format: date-time */
             creeLe: string;

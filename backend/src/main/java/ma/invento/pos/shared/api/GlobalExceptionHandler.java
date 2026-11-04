@@ -51,7 +51,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(RegleMetierException.class)
     ProblemDetail regleMetier(RegleMetierException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        if (e.getCode() != null) problem.setProperty("code", e.getCode());
+        return problem;
     }
 
     @ExceptionHandler(ConflitException.class)

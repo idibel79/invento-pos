@@ -13,8 +13,14 @@ const schema = z.object({
 });
 type Champs = z.infer<typeof schema>;
 
+interface Props {
+  /** Raison du retour à cet écran (session clôturée d'office), s'il y en a une. */
+  avis?: string | null;
+  onAdministration?: () => void;
+}
+
 /** Ouverture de la caisse avec le fond de caisse (espèces présentes au départ). */
-export function OuvertureSession({ onAdministration }: { onAdministration?: () => void }) {
+export function OuvertureSession({ avis, onAdministration }: Props) {
   const utilisateur = useUtilisateur();
   const { deconnecter } = useAuth();
   const caisses = useCaisses();
@@ -43,6 +49,11 @@ export function OuvertureSession({ onAdministration }: { onAdministration?: () =
         <p className="texte-secondaire">
           Bonjour {utilisateur.prenom}. Comptez les espèces présentes dans le tiroir avant de commencer.
         </p>
+        {avis && (
+          <p className="alerte alerte-attention" role="alert">
+            {avis}
+          </p>
+        )}
         {caisses.isSuccess && autorisees.length === 0 ? (
           <p className="alerte alerte-danger" role="alert">
             {onAdministration

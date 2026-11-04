@@ -26,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SessionCaisseService {
 
+    /** Code d'erreur quand le vendeur n'a plus de session ouverte : l'écran revient à l'ouverture. */
+    public static final String SESSION_FERMEE = "SESSION_FERMEE";
+
     private final SessionCaisseRepository sessions;
     private final CaisseRepository caisses;
     private final UtilisateurRepository utilisateurs;
@@ -91,11 +94,32 @@ public class SessionCaisseService {
     /** Session ouverte de l'utilisateur, verrouillée jusqu'à la fin de la transaction appelante. */
     @Transactional(propagation = Propagation.MANDATORY)
     public SessionOuverte sessionOuverte(long utilisateurId) {
-        SessionCaisse session = sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
-                .flatMap(s -> sessions.findForUpdate(s.getId()))
-                .filter(SessionCaisse::estOuverte)
-                .orElseThrow(() -> new RegleMetierException("Ouvrez une session de caisse pour vendre."));
+        SessionCaisse session =
+                sessions.findOuverteDuCaissierForUpdate(utilisateurId).orElseThrow(() -> sessionFermee(utilisateurId));
+        // Par défense : la désactivation clôture déjà la session dans la même transaction.
+        Caisse caisse = caisses.findById(session.getCaisseId()).orElseThrow();
+        if (!caisse.isActive()) {
+            throw new RegleMetierException(
+                    "La caisse " + caisse.getNom() + " a été désactivée : la session est clôturée.", SESSION_FERMEE);
+        }
         return new SessionOuverte(session.getId(), session.getCaisseId());
+    }
+
+    /**
+     * Caisse désactivée par l'admin : sa session ouverte est clôturée sans comptage et ses ventes en
+     * attente annulées, dans la transaction de la désactivation.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cloturerDOffice(long caisseId, long adminId) {
+        sessions.findOuverteDeLaCaisseForUpdate(caisseId).ifPresent(session -> {
+            evenements.publishEvent(new SessionCaisseCloturee(session.getId()));
+            session.cloturerDOffice(Instant.now(clock));
+            journal.enregistrer(
+                    adminId,
+                    ActionJournal.SESSION_CLOTUREE_D_OFFICE,
+                    nomCaisse(caisseId) + ", caisse désactivée : session de l'utilisateur " + session.getCaissierId()
+                            + " clôturée sans comptage");
+        });
     }
 
     /** Clôture par le caissier de la session (ou l'admin) : ventes en attente annulées, écart calculé. */
@@ -107,7 +131,7 @@ public class SessionCaisseService {
             throw new OperationInterditeException("Seul le caissier de la session peut la clôturer.");
         }
         if (!session.estOuverte()) {
-            throw new RegleMetierException("Cette session de caisse est déjà clôturée.");
+            throw new RegleMetierException("Cette session de caisse est déjà clôturée.", SESSION_FERMEE);
         }
         evenements.publishEvent(new SessionCaisseCloturee(sessionId));
         BigDecimal especes = encaissements.especesEncaissees(sessionId);
@@ -119,6 +143,16 @@ public class SessionCaisseService {
                 caisse + ", compté " + montantCompte.toPlainString() + " DH, écart "
                         + session.getEcart().toPlainString() + " DH");
         return SessionCaisseDto.depuis(session, caisse, especes);
+    }
+
+    /** Plus de session ouverte : le message précise si la dernière a été clôturée d'office. */
+    private RegleMetierException sessionFermee(long utilisateurId) {
+        return sessions.findFirstByCaissierIdOrderByOuvertureDesc(utilisateurId)
+                .filter(SessionCaisse::isClotureForcee)
+                .map(s -> new RegleMetierException(
+                        "La caisse " + nomCaisse(s.getCaisseId()) + " a été désactivée : la session est clôturée.",
+                        SESSION_FERMEE))
+                .orElseGet(() -> new RegleMetierException("Ouvrez une session de caisse pour vendre.", SESSION_FERMEE));
     }
 
     private boolean caisseAutorisee(long utilisateurId, long caisseId) {
@@ -144,7 +178,8 @@ public class SessionCaisseService {
             BigDecimal fondInitial,
             @Schema(nullable = true) BigDecimal montantCompte,
             @Schema(nullable = true) BigDecimal especesEncaissees,
-            @Schema(nullable = true) BigDecimal ecart) {
+            @Schema(nullable = true) BigDecimal ecart,
+            boolean clotureForcee) {
 
         static SessionCaisseDto depuis(SessionCaisse s, String caisseNom, BigDecimal especesEncaissees) {
             return new SessionCaisseDto(
@@ -157,7 +192,8 @@ public class SessionCaisseService {
                     s.getFondInitial(),
                     s.getMontantCompte(),
                     especesEncaissees,
-                    s.getEcart());
+                    s.getEcart(),
+                    s.isClotureForcee());
         }
     }
 }

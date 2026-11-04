@@ -15,10 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class CaisseService {
 
     private final CaisseRepository caisses;
+    private final SessionCaisseService sessions;
     private final JournalService journal;
 
-    public CaisseService(CaisseRepository caisses, JournalService journal) {
+    public CaisseService(CaisseRepository caisses, SessionCaisseService sessions, JournalService journal) {
         this.caisses = caisses;
+        this.sessions = sessions;
         this.journal = journal;
     }
 
@@ -46,8 +48,10 @@ public class CaisseService {
         if (caisses.existsByNomIgnoreCaseAndIdNot(propre, id)) {
             throw new ConflitException("La caisse " + propre + " existe déjà.");
         }
+        boolean desactivee = caisse.isActive() && !active;
         caisse.modifier(propre, active);
         journal.enregistrer(adminId, ActionJournal.CAISSE_MODIFIEE, propre + (active ? "" : " (désactivée)"));
+        if (desactivee) sessions.cloturerDOffice(id, adminId);
         return CaisseDto.depuis(caisse);
     }
 

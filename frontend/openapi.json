@@ -2122,9 +2122,12 @@
           },
           "ecart" : {
             "type" : [ "number", "null" ]
+          },
+          "clotureForcee" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "caisseId", "caisseNom", "caissierId", "ecart", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "ouverture" ]
+        "required" : [ "caisseId", "caisseNom", "caissierId", "clotureForcee", "ecart", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "ouverture" ]
       },
       "ClotureCommande" : {
         "type" : "object",
@@ -2476,7 +2479,7 @@
           },
           "action" : {
             "type" : "string",
-            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "REMISE_AUTORISEE" ]
+            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "REMISE_AUTORISEE" ]
           },
           "detail" : {
             "type" : [ "string", "null" ]

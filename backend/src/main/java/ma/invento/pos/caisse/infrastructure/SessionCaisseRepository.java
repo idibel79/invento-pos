@@ -18,4 +18,18 @@ public interface SessionCaisseRepository extends JpaRepository<SessionCaisse, Lo
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SessionCaisse s where s.id = :id")
     Optional<SessionCaisse> findForUpdate(@Param("id") long id);
+
+    /**
+     * Session ouverte du caissier, verrouillée. Le filtre sur la fermeture est réévalué par
+     * PostgreSQL après l'attente du verrou : une session clôturée entre-temps n'est pas renvoyée.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from SessionCaisse s where s.caissierId = :caissierId and s.fermeture is null")
+    Optional<SessionCaisse> findOuverteDuCaissierForUpdate(@Param("caissierId") long caissierId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from SessionCaisse s where s.caisseId = :caisseId and s.fermeture is null")
+    Optional<SessionCaisse> findOuverteDeLaCaisseForUpdate(@Param("caisseId") long caisseId);
+
+    Optional<SessionCaisse> findFirstByCaissierIdOrderByOuvertureDesc(Long caissierId);
 }

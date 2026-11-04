@@ -28,6 +28,31 @@ class SessionCaisseTest {
     }
 
     @Test
+    void cloture_d_office_ferme_sans_comptage_ni_ecart() {
+        SessionCaisse session = new SessionCaisse(1, 2, new BigDecimal("500.00"), T0);
+
+        session.cloturerDOffice(T0.plusSeconds(600));
+
+        assertThat(session.estOuverte()).isFalse();
+        assertThat(session.isClotureForcee()).isTrue();
+        assertThat(session.getFermeture()).isEqualTo(T0.plusSeconds(600));
+        assertThat(session.getMontantCompte()).isNull();
+        assertThat(session.getEcart()).isNull();
+        assertThatThrownBy(() -> session.cloturerDOffice(T0)).isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(() -> session.cloturer(BigDecimal.ZERO, BigDecimal.ZERO, T0))
+                .isInstanceOf(RegleMetierException.class);
+    }
+
+    @Test
+    void cloture_normale_n_est_pas_forcee_et_ne_peut_plus_etre_forcee() {
+        SessionCaisse session = new SessionCaisse(1, 2, BigDecimal.ZERO, T0);
+        session.cloturer(BigDecimal.ZERO, BigDecimal.ZERO, T0.plusSeconds(60));
+
+        assertThat(session.isClotureForcee()).isFalse();
+        assertThatThrownBy(() -> session.cloturerDOffice(T0)).isInstanceOf(RegleMetierException.class);
+    }
+
+    @Test
     void refuse_les_montants_negatifs() {
         assertThatThrownBy(() -> new SessionCaisse(1, 2, new BigDecimal("-1"), T0))
                 .isInstanceOf(RegleMetierException.class);

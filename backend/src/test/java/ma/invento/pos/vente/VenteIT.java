@@ -314,6 +314,76 @@ class VenteIT extends IntegrationTest {
     }
 
     @Test
+    void desactiver_la_caisse_cloture_la_session_d_office_et_bloque_les_ventes() throws Exception {
+        String caissier = caissierSur(caisseId);
+        long sessionId = ouvrirSession(caissier, caisseId);
+        long produit = produit("30.00", 4);
+        long attente = mettreEnAttente(caissier, panier(ligne(produit, 2)));
+        assertThat(stockReserve(produit)).isEqualTo(2);
+
+        modifierCaisse(caisseId, false);
+
+        Map<String, Object> session = jdbc.queryForMap("select * from pos.session_caisse where id = ?", sessionId);
+        assertThat(session.get("fermeture")).isNotNull();
+        assertThat(session.get("cloture_forcee")).isEqualTo(true);
+        assertThat(session.get("montant_compte")).isNull();
+        assertThat(session.get("ecart")).isNull();
+        assertThat(jdbc.queryForObject("select statut from pos.vente where id = ?", String.class, attente))
+                .isEqualTo("ANNULEE");
+        assertThat(stockReserve(produit)).isZero();
+        assertThat(stock(produit)).isEqualTo(4);
+        assertThat(journalActions.findAll()).anySatisfy(j -> {
+            assertThat(j.getAction()).isEqualTo(ActionJournal.SESSION_CLOTUREE_D_OFFICE);
+            assertThat(j.getDetail()).startsWith("Caisse " + suffixe);
+        });
+
+        mvc.perform(get("/api/v1/sessions/courante").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isNoContent());
+        valider(caissier, UUID.randomUUID().toString(), panier(ligne(produit, 1)), "50")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SESSION_FERMEE"))
+                .andExpect(jsonPath("$.detail")
+                        .value("La caisse Caisse " + suffixe + " a été désactivée : la session est clôturée."));
+        mvc.perform(post("/api/v1/ventes/" + attente + "/reprise").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SESSION_FERMEE"));
+        mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"montantCompte\": 0}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("SESSION_FERMEE"));
+        assertThat(stock(produit)).isEqualTo(4);
+
+        // Réactiver ne rouvre rien : le caissier doit ouvrir une nouvelle session.
+        modifierCaisse(caisseId, true);
+        mvc.perform(get("/api/v1/sessions/courante").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isNoContent());
+        ouvrirSession(caissier, caisseId);
+        valider(caissier, UUID.randomUUID().toString(), panier(ligne(produit, 1)), "50")
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void desactiver_une_caisse_sans_session_ne_cloture_rien() throws Exception {
+        String caissier = caissierSur(autreCaisseId);
+        long sessionAutre = ouvrirSession(caissier, autreCaisseId);
+        modifierCaisse(caisseId, false);
+        // Déjà inactive : aucune nouvelle clôture.
+        modifierCaisse(caisseId, false);
+
+        assertThat(journalActions.findAll().stream()
+                        .filter(j -> j.getDetail() != null && j.getDetail().startsWith("Caisse " + suffixe))
+                        .map(j -> j.getAction())
+                        .toList())
+                .containsExactlyInAnyOrder(
+                        ActionJournal.CAISSE_CREEE, ActionJournal.CAISSE_MODIFIEE, ActionJournal.CAISSE_MODIFIEE);
+        assertThat(jdbc.queryForObject(
+                        "select fermeture is null from pos.session_caisse where id = ?", Boolean.class, sessionAutre))
+                .isTrue();
+    }
+
+    @Test
     void sessions_une_par_caisse_et_par_caissier_sur_une_caisse_autorisee() throws Exception {
         String caissier = caissierSur(caisseId);
         mvc.perform(post("/api/v1/sessions")
@@ -488,6 +558,16 @@ class VenteIT extends IntegrationTest {
                         .andReturn())
                 .get("id")
                 .asLong();
+    }
+
+    private void modifierCaisse(long caisse, boolean active) throws Exception {
+        String nom = caisse == caisseId ? "Caisse " + suffixe : "Autre " + suffixe;
+        mvc.perform(put("/api/v1/caisses/" + caisse)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("nom", nom, "active", active))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(active));
     }
 
     private String caissierSur(long caisse) throws Exception {
