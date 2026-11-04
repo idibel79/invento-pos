@@ -64,7 +64,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Vente au comptoir : aperçu du panier, validation en espèces, mise en attente avec stock réservé,
- * reprise sur la même caisse, abandon et échéance. Chaque opération qui touche au stock tient
+ * reprise sur la même caisse (qui libère la réservation), abandon et échéance. Chaque opération qui touche au stock tient
  * dans une seule transaction (vente, lignes, paiement, stock et mouvements).
  */
 @Service
@@ -113,7 +113,7 @@ public class VenteService {
         Vente reprise = commande.venteEnAttenteId() == null
                 ? null
                 : ventes.findById(commande.venteEnAttenteId())
-                        .filter(v -> v.estEnAttente() && surSessionCourante(v, vendeur))
+                        .filter(v -> (v.estEnAttente() || v.estReprise()) && surSessionCourante(v, vendeur))
                         .orElseThrow(() -> new RessourceIntrouvableException("Vente en attente introuvable."));
         Panier panier = preparer(commande, reprise);
         NiveauAutorisation niveau = niveauRequis(panier.calcul());
@@ -124,7 +124,8 @@ public class VenteService {
         } catch (RegleMetierException | OperationInterditeException e) {
             acquise = false;
         }
-        Map<Long, Integer> reservees = reprise == null ? Map.of() : quantitesParProduit(reprise);
+        Map<Long, Integer> reservees =
+                reprise == null || !reprise.estEnAttente() ? Map.of() : quantitesParProduit(reprise);
         List<LigneDto> lignes = panier.calcul().lignes().stream()
                 .map(l -> {
                     Produit p = panier.produits().get(l.ligne().produitId());
@@ -158,7 +159,7 @@ public class VenteService {
         Panier panier = preparer(commande.panier(), reprise);
         Long valideePar = autoriserRemise(panier, commande.panier(), vendeur, reprise);
         Instant maintenant = Instant.now(clock);
-        if (reprise != null) stock.liberer(quantites(reprise));
+        if (reprise != null && reprise.estEnAttente()) stock.liberer(quantites(reprise));
 
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
         vente.remplirPanier(panier.calcul(), remiseTicket(commande.panier()), motif(commande.panier()), valideePar);
@@ -184,7 +185,7 @@ public class VenteService {
         Panier panier = preparer(commande.panier(), reprise);
         Long valideePar = autoriserRemise(panier, commande.panier(), vendeur, reprise);
         Instant maintenant = Instant.now(clock);
-        if (reprise != null) stock.liberer(quantites(reprise));
+        if (reprise != null && reprise.estEnAttente()) stock.liberer(quantites(reprise));
 
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
         vente.remplirPanier(panier.calcul(), remiseTicket(commande.panier()), motif(commande.panier()), valideePar);
@@ -208,21 +209,28 @@ public class VenteService {
         return versDto(vente, panier.produits());
     }
 
-    /** Le client est revenu : la vente est rechargée sur la caisse et sa réservation prolongée. */
+    /**
+     * Le client est revenu : la vente est rechargée dans le ticket, quitte l'attente et libère son
+     * stock. Elle garde ses prix et sa remise autorisée jusqu'à l'encaissement ; sans encaissement,
+     * elle est annulée quand le ticket est vidé ou à la clôture.
+     */
     @Transactional
     public VenteDto reprendre(long venteId, UtilisateurConnecte vendeur) {
         SessionOuverte session = sessions.sessionOuverte(vendeur.id());
         Vente vente = reprendreVerrouillee(venteId, session);
-        vente.prolongerAttente(Instant.now(clock).plus(DUREE_ATTENTE));
+        if (vente.estEnAttente()) {
+            stock.liberer(quantites(vente));
+            vente.reprendre();
+        }
         return versDto(vente);
     }
 
-    /** Le client ne revient pas : la vente est abandonnée et son stock libéré. */
+    /** Le client ne revient pas (ou le ticket repris est vidé) : la vente est abandonnée, son stock libéré. */
     @Transactional
     public VenteDto abandonner(long venteId, UtilisateurConnecte vendeur) {
         SessionOuverte session = sessions.sessionOuverte(vendeur.id());
         Vente vente = reprendreVerrouillee(venteId, session);
-        stock.liberer(quantites(vente));
+        if (vente.estEnAttente()) stock.liberer(quantites(vente));
         vente.annulerAttente(Instant.now(clock));
         return versDto(vente);
     }
@@ -247,18 +255,21 @@ public class VenteService {
         return true;
     }
 
-    /** Clôture de session : les ventes encore en attente sont annulées dans la même transaction. */
+    /** Clôture de session : les ventes en attente ou reprises non encaissées sont annulées dans la même transaction. */
     @EventListener
     public void annulerAttentesDeSession(SessionCaisseCloturee evenement) {
         Instant maintenant = Instant.now(clock);
         List<Vente> annulees = new ArrayList<>();
-        for (long id : ventes.findIdsEnAttente(evenement.sessionId())) {
+        for (long id : ventes.findIdsNonFinalisees(evenement.sessionId())) {
             Vente vente = ventes.findForUpdate(id).orElseThrow();
-            if (vente.estEnAttente()) annulees.add(vente);
+            if (vente.estEnAttente() || vente.estReprise()) annulees.add(vente);
         }
-        // Une seule libération, triée par produit comme les autres opérations de stock (pas
-        // d'interblocage avec une vente concurrente sur une autre caisse).
-        stock.liberer(annulees.stream().flatMap(v -> quantites(v).stream()).toList());
+        // Une seule libération (seules les attentes réservent du stock), triée par produit comme les
+        // autres opérations de stock (pas d'interblocage avec une vente concurrente sur une autre caisse).
+        stock.liberer(annulees.stream()
+                .filter(Vente::estEnAttente)
+                .flatMap(v -> quantites(v).stream())
+                .toList());
         annulees.forEach(v -> v.annulerAttente(maintenant));
     }
 
@@ -374,7 +385,7 @@ public class VenteService {
                 || !Objects.equals(vente.getSessionCaisseId(), session.id())) {
             throw new OperationInterditeException("Une vente en attente se reprend uniquement sur sa caisse.");
         }
-        if (!vente.estEnAttente()) {
+        if (!vente.estEnAttente() && !vente.estReprise()) {
             throw new ConflitException("Cette vente n'est plus en attente.");
         }
         if (vente.estExpiree(Instant.now(clock))) {

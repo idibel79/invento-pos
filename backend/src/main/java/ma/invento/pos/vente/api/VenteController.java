@@ -71,7 +71,7 @@ class VenteController {
         return venteService.enAttente(UtilisateurConnecte.depuis(jwt));
     }
 
-    /** Recharge une vente en attente sur sa caisse et prolonge sa réservation de 5 minutes. */
+    /** Recharge une vente en attente dans le ticket de sa caisse : elle quitte l'attente et libère son stock. */
     @PostMapping("/{id}/reprise")
     VenteDto reprendre(@PathVariable long id, @AuthenticationPrincipal Jwt jwt) {
         return venteService.reprendre(id, UtilisateurConnecte.depuis(jwt));

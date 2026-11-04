@@ -31,9 +31,10 @@ public interface VenteRepository extends JpaRepository<Vente, Long> {
             + " and v.attenteExpireLe <= :maintenant")
     List<Long> findIdsAttentesExpirees(@Param("maintenant") Instant maintenant);
 
-    @Query("select v.id from Vente v where v.statut = ma.invento.pos.vente.domain.StatutVente.EN_ATTENTE"
-            + " and v.sessionCaisseId = :sessionId")
-    List<Long> findIdsEnAttente(@Param("sessionId") long sessionId);
+    /** Ventes en attente ou reprises sans être encaissées : annulées à la clôture de la session. */
+    @Query("select v.id from Vente v where v.statut in (ma.invento.pos.vente.domain.StatutVente.EN_ATTENTE,"
+            + " ma.invento.pos.vente.domain.StatutVente.REPRISE) and v.sessionCaisseId = :sessionId")
+    List<Long> findIdsNonFinalisees(@Param("sessionId") long sessionId);
 
     @Query("select coalesce(sum(p.montant), 0) from Paiement p"
             + " where p.vente.sessionCaisseId = :sessionId"

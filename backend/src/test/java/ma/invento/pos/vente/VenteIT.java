@@ -237,9 +237,14 @@ class VenteIT extends IntegrationTest {
         mvc.perform(get("/api/v1/ventes/attente").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(jsonPath("$[0].noteAttente").value("Parti au DAB"))
                 .andExpect(jsonPath("$[0].lignes[0].remise.valeur").value(5));
+        // Reprise : la vente quitte l'attente et libère son stock (le client est au comptoir).
         mvc.perform(post("/api/v1/ventes/" + venteId + "/reprise").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statut").value("REPRISE"))
                 .andExpect(jsonPath("$.lignes[0].quantite").value(2));
+        assertThat(stockReserve(produit)).isZero();
+        mvc.perform(get("/api/v1/ventes/attente").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(jsonPath("$.length()").value(0));
 
         // Le prix change entre-temps : la vente reprise garde son prix.
         jdbc.update("update pos.produit set ppv = 50 where id = ?", produit);
@@ -289,6 +294,10 @@ class VenteIT extends IntegrationTest {
         valider(caissier, UUID.randomUUID().toString(), panier(ligne(produit, 1)), "50")
                 .andExpect(status().isCreated());
         mettreEnAttente(caissier, panier(ligne(produit, 2)));
+        // Vente reprise dans le ticket puis jamais encaissée : annulée elle aussi à la clôture.
+        long reprise = mettreEnAttente(caissier, panier(ligne(produit, 1)));
+        mvc.perform(post("/api/v1/ventes/" + reprise + "/reprise").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isOk());
         assertThat(stockReserve(produit)).isEqualTo(2);
         mvc.perform(get("/api/v1/sessions/courante").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(status().isOk())
@@ -317,6 +326,8 @@ class VenteIT extends IntegrationTest {
 
         assertThat(stockReserve(produit)).isZero();
         assertThat(stock(produit)).isEqualTo(3);
+        assertThat(jdbc.queryForObject("select statut from pos.vente where id = ?", String.class, reprise))
+                .isEqualTo("ANNULEE");
         mvc.perform(get("/api/v1/sessions/courante").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(status().isNoContent());
     }

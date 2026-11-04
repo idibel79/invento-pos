@@ -15,7 +15,7 @@ import { MenuUtilisateur } from "./MenuUtilisateur";
 import { panierVide, reducteurPanier, versCommande } from "./panier";
 import { PanierPanel } from "./PanierPanel";
 import { RemiseDialogue } from "./RemiseDialogue";
-import { usePanierCalcule, useVentesEnAttente } from "./requetes";
+import { useAbandonnerVente, usePanierCalcule, useVentesEnAttente } from "./requetes";
 import { VentesEnAttenteDialogue } from "./VentesEnAttenteDialogue";
 
 type Fenetre =
@@ -40,6 +40,7 @@ export function EcranVente({ session, onAdministration }: Props) {
   const commande = versCommande(panier);
   const calcul = usePanierCalcule(commande);
   const enAttente = useVentesEnAttente();
+  const abandonner = useAbandonnerVente();
   const [fenetre, setFenetre] = useState<Fenetre | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const maintenant = useMaintenant(30_000);
@@ -59,8 +60,11 @@ export function EcranVente({ session, onAdministration }: Props) {
 
   const fermer = () => setFenetre(null);
   const nombreEnAttente = enAttente.data?.length ?? 0;
-  // La vente reprise dans le panier reste réservée côté serveur jusqu'à l'encaissement, mais n'est plus « en attente » pour le caissier.
-  const nombreAReprendre = (enAttente.data ?? []).filter((v) => v.id !== panier.venteEnAttenteId).length;
+  const vider = () => {
+    // Ticket repris vidé : la vente est abandonnée au lieu de rester ouverte jusqu'à la clôture.
+    if (panier.venteEnAttenteId !== null) abandonner.mutate(panier.venteEnAttenteId);
+    dispatch({ type: "vider" });
+  };
   const total = calcul.data?.totaux.totalTtc ?? 0;
   const especes = session.especesEncaissees ?? 0;
 
@@ -96,12 +100,12 @@ export function EcranVente({ session, onAdministration }: Props) {
         <span className="barre-espace" />
         <button
           type="button"
-          className={`barre-bouton barre-attente${nombreAReprendre > 0 ? " signalee" : ""}`}
-          aria-label={`En attente (${nombreAReprendre})`}
+          className={`barre-bouton barre-attente${nombreEnAttente > 0 ? " signalee" : ""}`}
+          aria-label={`En attente (${nombreEnAttente})`}
           onClick={() => setFenetre({ type: "liste-attente" })}
         >
-          {nombreAReprendre > 0
-            ? `${nombreAReprendre} vente${nombreAReprendre > 1 ? "s" : ""} en attente`
+          {nombreEnAttente > 0
+            ? `${nombreEnAttente} vente${nombreEnAttente > 1 ? "s" : ""} en attente`
             : "Aucune vente en attente"}
         </button>
         {onAdministration && (
@@ -123,6 +127,7 @@ export function EcranVente({ session, onAdministration }: Props) {
           onRemiseTicket={() => setFenetre({ type: "remise", produitId: null })}
           onAttente={() => setFenetre({ type: "attente" })}
           onEncaisser={() => setFenetre({ type: "encaissement" })}
+          onVider={vider}
         />
       </main>
 
@@ -155,7 +160,6 @@ export function EcranVente({ session, onAdministration }: Props) {
       {fenetre?.type === "liste-attente" && (
         <VentesEnAttenteDialogue
           panierVide={panier.lignes.length === 0}
-          venteRepriseId={panier.venteEnAttenteId}
           onFermer={fermer}
           onReprise={(vente) => {
             dispatch({ type: "reprendre", vente });

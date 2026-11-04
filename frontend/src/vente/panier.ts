@@ -19,7 +19,7 @@ export interface EtatPanier {
   /** Jeton remis après le PIN d'un responsable (15 min, lié à ce caissier). */
   jetonAutorisation: string | null;
   autorisePar: string | null;
-  /** Vente en attente reprise : sa validation réutilise la même vente et son stock réservé. */
+  /** Vente en attente reprise : sa validation réutilise la même vente (prix et remise autorisée). */
   venteEnAttenteId: number | null;
   numeroEnAttente: string | null;
 }
