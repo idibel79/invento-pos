@@ -400,44 +400,6 @@ button:disabled {
   color: var(--gris);
 }
 
-/* En-tête de l'administration. */
-.entete {
-  min-height: 68px;
-  flex-shrink: 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--bordure);
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  padding: 8px 24px;
-}
-
-.entete .logo {
-  justify-content: flex-start;
-}
-
-.pastille {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--primaire);
-  background: var(--accent-doux);
-  padding: 6px 12px;
-  border-radius: 999px;
-}
-
-.entete-espace {
-  flex-grow: 1;
-}
-
-.entete-utilisateur {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 16px;
-  border-left: 1px solid var(--bordure);
-}
-
 .avatar {
   width: 36px;
   height: 36px;
@@ -2132,35 +2094,43 @@ button:disabled {
   flex-direction: column;
 }
 
-.onglets {
+/* Même barre sombre que la caisse, puis une sous-barre claire d'onglets soulignés en bleu. */
+.admin-onglets {
+  min-height: 48px;
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
 }
 
-.onglet {
-  min-height: 36px;
+.admin-onglet {
+  min-height: 48px;
   padding: 0 14px;
-  border-radius: 999px;
-  border: 1.5px solid transparent;
+  border: none;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--gris);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.onglet:hover {
+.admin-onglet:hover {
   color: var(--texte-fort);
 }
 
-.onglet[aria-current="page"] {
-  background: var(--accent-doux);
-  border-color: var(--accent);
+.admin-onglet[aria-current="page"] {
+  border-bottom-color: var(--primaire);
   color: var(--texte-fort);
+  font-weight: 600;
 }
 
 .admin-corps {
   flex-grow: 1;
+  min-width: 0;
   padding: 24px;
   display: flex;
   justify-content: center;
@@ -2409,13 +2379,8 @@ button:disabled {
     max-height: 70vh;
   }
 
-  .entete {
-    padding: 8px 16px;
-  }
-
-  .entete-utilisateur {
-    border-left: none;
-    padding-left: 0;
+  .admin-onglets {
+    padding: 0 8px;
   }
 
   .admin-corps {
