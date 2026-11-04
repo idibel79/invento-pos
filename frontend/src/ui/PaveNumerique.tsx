@@ -30,13 +30,18 @@ export function PaveNumerique({ onTouche, onEffacer, onExact }: Props) {
           {c}
         </button>
       ))}
+      <button type="button" className="pave-zero" onClick={() => onTouche("0")}>
+        0
+      </button>
       <button type="button" onClick={() => onTouche(",")} aria-label="Virgule">
         ,
       </button>
-      <button type="button" onClick={() => onTouche("0")}>
-        0
-      </button>
-      <button type="button" onClick={() => onTouche("retour")} aria-label="Effacer le dernier chiffre">
+      <button
+        type="button"
+        className="pave-action pave-retour"
+        onClick={() => onTouche("retour")}
+        aria-label="Effacer le dernier chiffre"
+      >
         <svg
           width="24"
           height="24"
@@ -52,11 +57,11 @@ export function PaveNumerique({ onTouche, onEffacer, onExact }: Props) {
           <path d="M17 9l-6 6M11 9l6 6" />
         </svg>
       </button>
-      <button type="button" className="pave-action pave-large" onClick={onExact}>
-        Montant exact
-      </button>
-      <button type="button" className="pave-action" onClick={onEffacer}>
+      <button type="button" className="pave-action pave-effacer" onClick={onEffacer}>
         Effacer
+      </button>
+      <button type="button" className="pave-action pave-exact" onClick={onExact}>
+        Montant exact
       </button>
     </div>
   );

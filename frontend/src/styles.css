@@ -1253,62 +1253,63 @@ button:disabled {
   color: var(--sur-primaire);
 }
 
-/* Encaissement (proposition A « Calculatrice ») : total, montant reçu et rendu empilés à gauche,
-   pavé numérique à droite, bouton Valider pleine largeur. */
-.modes-paiement {
-  align-self: flex-start;
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: var(--fond);
-  border-radius: 8px;
-}
-
-.modes-paiement button {
-  min-height: 40px;
-  padding: 0 18px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--gris);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.modes-paiement button[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--surface);
-  color: var(--texte-fort);
-  font-weight: 600;
-}
-
+/* Encaissement (design B « ticket à gauche ») : récapitulatif, total et mode de paiement à gauche
+   sur fond gris, montant reçu, rendu, billets et pavé numérique à droite. */
 .encaissement {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
-  align-items: start;
+  grid-template-columns: 340px minmax(0, 1fr);
+  margin: -20px;
 }
 
-.encaissement-carte {
-  grid-template-columns: 1fr;
-}
-
-@media (max-width: 700px) {
+@media (max-width: 760px) {
   .encaissement {
     grid-template-columns: 1fr;
   }
 }
 
-.encaissement-saisie {
+.encaissement-recap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  padding: 20px;
+  background: var(--fond);
+  border-right: 1px solid var(--bordure);
 }
 
-.encaissement-consigne {
+.recap-lignes {
+  list-style: none;
   margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.recap-lignes li,
+.recap-totaux > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recap-designation {
+  color: var(--designation);
+  min-width: 0;
+}
+
+.recap-totaux {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--accent);
+  font-size: 13px;
   color: var(--gris);
-  font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .total-a-payer {
@@ -1316,18 +1317,78 @@ button:disabled {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--bordure);
-  border-radius: 8px;
   font-size: 14px;
-  color: var(--gris);
+  font-weight: 600;
+  color: var(--texte-fort);
 }
 
 .total-a-payer strong {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--primaire);
+}
+
+.modes-paiement {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.modes-paiement button {
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--bordure-forte);
+  background: var(--surface);
+  color: var(--texte-fort);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modes-paiement button[aria-pressed="true"] {
+  border: 2px solid var(--primaire);
+  color: var(--primaire);
+  font-weight: 600;
+}
+
+.encaissement-saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px;
+}
+
+.encaissement-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--fond);
+}
+
+.encaissement-carte strong {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--texte-fort);
+  font-variant-numeric: tabular-nums;
+}
+
+.encaissement-carte p {
+  margin: 0;
+  color: var(--gris);
+}
+
+.recu-rendu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .dialogue .encaissement .champ-montant {
@@ -1339,6 +1400,11 @@ button:disabled {
   font-weight: 700;
 }
 
+.encaissement .rendu {
+  height: 64px;
+  box-sizing: border-box;
+}
+
 .encaissement .rendu strong {
   font-size: 30px;
   font-weight: 700;
@@ -1348,7 +1414,6 @@ button:disabled {
   background: var(--fond);
 }
 
-.rendu.vide .libelle,
 .rendu.vide strong {
   color: var(--gris);
 }
@@ -1356,20 +1421,20 @@ button:disabled {
 .billets {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 .billets button {
-  min-height: 52px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border-radius: 6px;
+  gap: 10px;
+  border-radius: 8px;
   border: 1px solid var(--bordure-forte);
   background: var(--surface);
   color: var(--texte-fort);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -1383,11 +1448,11 @@ button:disabled {
   color: var(--primaire);
 }
 
-/* Pavé numérique tactile : 3 colonnes de grosses touches, actions en bas. */
+/* Pavé numérique tactile : chiffres sur 3 colonnes, actions dans la 4e. */
 .pave-numerique {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 64px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 60px;
   gap: 8px;
 }
 
@@ -1408,19 +1473,33 @@ button:disabled {
   background: var(--accent-doux);
 }
 
+.pave-numerique .pave-zero {
+  grid-column: span 2;
+}
+
 .pave-numerique .pave-action {
-  border-color: var(--bordure-forte);
+  grid-column: 4;
   background: var(--surface);
   font-size: 15px;
 }
 
-.pave-numerique .pave-large {
-  grid-column: span 2;
+.pave-numerique .pave-retour {
+  grid-row: 1;
+}
+
+.pave-numerique .pave-effacer {
+  grid-row: 2;
+}
+
+.pave-numerique .pave-exact {
+  grid-row: 3 / span 2;
+  text-align: center;
 }
 
 .rangee-encaissement {
   display: flex;
   gap: 12px;
+  margin-top: 4px;
 }
 
 .rangee-encaissement .bouton {

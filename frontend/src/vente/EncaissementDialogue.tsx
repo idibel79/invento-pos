@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { Dialogue } from "../ui/Dialogue";
-import { dh, lireMontant } from "../ui/format";
+import { decimal, dh, lireMontant, pourcent } from "../ui/format";
 import { PaveNumerique, saisirTouche } from "../ui/PaveNumerique";
 import { BilletDirham } from "./BilletDirham";
 import { useValiderVente } from "./requetes";
@@ -10,6 +10,8 @@ import { useValiderVente } from "./requetes";
 interface Props {
   commande: Schemas["PanierCommande"];
   total: number;
+  /** Aperçu calculé par le serveur, pour le récapitulatif du ticket. */
+  apercu?: Schemas["PanierDto"];
   onValidee: (vente: Schemas["VenteDto"]) => void;
   onFermer: () => void;
 }
@@ -30,10 +32,10 @@ function enSaisie(montant: number): string {
 }
 
 /**
- * Encaissement en espèces ou par carte (paiement mixte : étape 3). Le rendu affiché aide le
- * caissier ; celui du ticket est calculé par le serveur.
+ * Encaissement en espèces ou par carte (paiement mixte : étape 3), design B « ticket à gauche ».
+ * Le rendu affiché aide le caissier ; celui du ticket est calculé par le serveur.
  */
-export function EncaissementDialogue({ commande, total, onValidee, onFermer }: Props) {
+export function EncaissementDialogue({ commande, total, apercu, onValidee, onFermer }: Props) {
   // Une clé par encaissement : un nouvel essai après une coupure ne crée pas une seconde vente.
   const [cle] = useState(() => crypto.randomUUID());
   const [mode, setMode] = useState<Mode>("ESPECES");
@@ -57,50 +59,95 @@ export function EncaissementDialogue({ commande, total, onValidee, onFermer }: P
   }
 
   return (
-    <Dialogue titre="Encaissement" onFermer={onFermer} largeur={780}>
-      <div className="modes-paiement" role="group" aria-label="Mode de paiement">
-        <button type="button" aria-pressed={!carte} onClick={() => setMode("ESPECES")}>
-          Espèces
-        </button>
-        <button type="button" aria-pressed={carte} onClick={() => setMode("CARTE")}>
-          Carte bancaire
-        </button>
-      </div>
-      <div className={`encaissement${carte ? " encaissement-carte" : ""}`}>
-        <div className="encaissement-saisie">
+    <Dialogue titre="Encaissement" onFermer={onFermer} largeur={1040}>
+      <div className="encaissement">
+        <aside className="encaissement-recap">
+          {apercu && (
+            <>
+              <ul className="recap-lignes">
+                {apercu.lignes.map((l) => (
+                  <li key={l.produitId}>
+                    <span className="recap-designation">
+                      {l.quantite} × {l.designation}
+                    </span>
+                    <span>{decimal(l.montantNet)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="recap-totaux">
+                {apercu.totaux.totalRemises > 0 && (
+                  <span>
+                    <span>Remises</span>
+                    <span>−{dh(apercu.totaux.totalRemises)}</span>
+                  </span>
+                )}
+                {apercu.totaux.tva.map((t) => (
+                  <span key={t.taux}>
+                    <span>TVA {pourcent(t.taux)}</span>
+                    <span>{dh(t.totalTva)}</span>
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
           <div className="total-a-payer">
             <span>Total à payer</span>
             <strong>{dh(total)}</strong>
           </div>
+          <div className="modes-paiement" role="group" aria-label="Mode de paiement">
+            <button type="button" aria-pressed={!carte} onClick={() => setMode("ESPECES")}>
+              <IconeEspeces />
+              Espèces
+            </button>
+            <button type="button" aria-pressed={carte} onClick={() => setMode("CARTE")}>
+              <IconeCarte />
+              Carte bancaire
+            </button>
+          </div>
+        </aside>
+        <div className="encaissement-saisie">
           {carte ? (
-            <p className="encaissement-consigne">
-              Saisissez {dh(total)} sur le terminal de paiement, puis validez une fois le paiement accepté.
-            </p>
+            <div className="encaissement-carte">
+              <span className="libelle">Montant à débiter sur le terminal</span>
+              <strong>{dh(total)}</strong>
+              <p>
+                Saisissez ce montant sur le terminal de paiement, puis validez une fois le paiement accepté.
+              </p>
+            </div>
           ) : (
             <>
-              <label className="libelle" htmlFor="montant-recu">
-                Montant reçu
-              </label>
-              <div className="champ-montant">
-                <input
-                  id="montant-recu"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  value={saisie}
-                  onChange={(e) => setSaisie(e.target.value)}
-                  placeholder={enSaisie(total)}
-                  autoFocus
-                />
-                <span>DH</span>
+              <div className="recu-rendu">
+                <div className="champ">
+                  <label className="libelle" htmlFor="montant-recu">
+                    Montant reçu
+                  </label>
+                  <div className="champ-montant">
+                    <input
+                      id="montant-recu"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={saisie}
+                      onChange={(e) => setSaisie(e.target.value)}
+                      placeholder={enSaisie(total)}
+                      autoFocus
+                    />
+                    <span>DH</span>
+                  </div>
+                </div>
+                <div className="champ">
+                  <span className="libelle">
+                    {rendu === null || suffisant ? "Rendu monnaie" : "Il manque"}
+                  </span>
+                  <div
+                    className={`rendu${rendu === null ? " vide" : suffisant ? "" : " manque"}`}
+                    aria-live="polite"
+                  >
+                    <strong>
+                      {rendu === null ? "–" : dh(Math.abs(suffisant ? Math.max(rendu, 0) : rendu))}
+                    </strong>
+                  </div>
+                </div>
               </div>
-              <div
-                className={`rendu${rendu === null ? " vide" : suffisant ? "" : " manque"}`}
-                aria-live="polite"
-              >
-                <span className="libelle">{rendu === null || suffisant ? "Rendu monnaie" : "Il manque"}</span>
-                <strong>{rendu === null ? "–" : dh(Math.abs(suffisant ? Math.max(rendu, 0) : rendu))}</strong>
-              </div>
-              <span className="libelle">Ajouter un billet</span>
               <div className="billets" role="group" aria-label="Billets reçus">
                 {BILLETS.map((b) => (
                   <button
@@ -111,45 +158,77 @@ export function EncaissementDialogue({ commande, total, onValidee, onFermer }: P
                       setSaisie((s) => enSaisie(ajouterBillet(s === "" ? null : lireMontant(s), b)))
                     }
                   >
-                    <BilletDirham valeur={b} />
-                    {b}
+                    <BilletDirham valeur={b} />+{b}
                   </button>
                 ))}
               </div>
+              <PaveNumerique
+                onTouche={(t) => setSaisie((s) => saisirTouche(s, t))}
+                onEffacer={() => setSaisie("")}
+                onExact={() => setSaisie(enSaisie(total))}
+              />
             </>
           )}
+          {valider.isError && (
+            <p className="alerte alerte-danger" role="alert">
+              {messageErreur(valider.error)}
+            </p>
+          )}
+          <div className="rangee-encaissement">
+            <button
+              type="button"
+              className="bouton bouton-contour"
+              onClick={onFermer}
+              disabled={valider.isPending}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="bouton bouton-plein"
+              disabled={(!carte && !suffisant) || valider.isPending}
+              onClick={envoyer}
+            >
+              {valider.isPending ? "Validation…" : libelleValider}
+            </button>
+          </div>
         </div>
-        {!carte && (
-          <PaveNumerique
-            onTouche={(t) => setSaisie((s) => saisirTouche(s, t))}
-            onEffacer={() => setSaisie("")}
-            onExact={() => setSaisie(enSaisie(total))}
-          />
-        )}
-      </div>
-      {valider.isError && (
-        <p className="alerte alerte-danger" role="alert">
-          {messageErreur(valider.error)}
-        </p>
-      )}
-      <div className="rangee-encaissement">
-        <button
-          type="button"
-          className="bouton bouton-contour"
-          onClick={onFermer}
-          disabled={valider.isPending}
-        >
-          Annuler
-        </button>
-        <button
-          type="button"
-          className="bouton bouton-plein"
-          disabled={(!carte && !suffisant) || valider.isPending}
-          onClick={envoyer}
-        >
-          {valider.isPending ? "Validation…" : libelleValider}
-        </button>
       </div>
     </Dialogue>
+  );
+}
+
+function IconeEspeces() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.5" />
+    </svg>
+  );
+}
+
+function IconeCarte() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20M6 15h4" />
+    </svg>
   );
 }
