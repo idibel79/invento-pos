@@ -92,9 +92,8 @@ public class DonneesDemo {
 
         long caisse1 = caisseService.creer("Caisse 1", adminId).id();
         long caisse2 = caisseService.creer("Caisse 2", adminId).id();
-        admin.modifierProfil(admin.getNom(), admin.getPrenom(), Role.ADMIN, true, Set.of(caisse1, caisse2));
         creerCompte("caissier", "Caissier", Role.CAISSIER, Set.of(caisse1), null, adminId);
-        creerCompte("responsable", "Responsable", Role.RESPONSABLE, Set.of(caisse1, caisse2), PIN_RESPONSABLE, adminId);
+        creerCompte("responsable", "Responsable", Role.RESPONSABLE, Set.of(caisse2), PIN_RESPONSABLE, adminId);
 
         creerCatalogue(adminId);
         log.info("Données de démo créées : comptes admin, responsable, caissier (mot de passe {}).", MOT_DE_PASSE);

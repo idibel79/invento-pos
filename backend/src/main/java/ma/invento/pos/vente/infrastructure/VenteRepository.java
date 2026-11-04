@@ -3,6 +3,7 @@ package ma.invento.pos.vente.infrastructure;
 import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import ma.invento.pos.vente.domain.StatutVente;
@@ -39,4 +40,12 @@ public interface VenteRepository extends JpaRepository<Vente, Long> {
             + " and p.vente.statut = ma.invento.pos.vente.domain.StatutVente.VALIDEE"
             + " and p.mode = ma.invento.pos.vente.domain.ModePaiement.ESPECES")
     BigDecimal sommeEspeces(@Param("sessionId") long sessionId);
+
+    @Query("select new ma.invento.pos.vente.infrastructure.EspecesSession(p.vente.sessionCaisseId, sum(p.montant))"
+            + " from Paiement p"
+            + " where p.vente.sessionCaisseId in :sessionIds"
+            + " and p.vente.statut = ma.invento.pos.vente.domain.StatutVente.VALIDEE"
+            + " and p.mode = ma.invento.pos.vente.domain.ModePaiement.ESPECES"
+            + " group by p.vente.sessionCaisseId")
+    List<EspecesSession> sommesEspeces(@Param("sessionIds") Collection<Long> sessionIds);
 }

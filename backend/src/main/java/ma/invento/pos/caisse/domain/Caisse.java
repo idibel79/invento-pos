@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import ma.invento.pos.shared.domain.RegleMetierException;
 
 /** Poste de caisse (mode en ligne : plusieurs caisses partagent le catalogue et le stock). */
 @Entity
@@ -19,6 +20,7 @@ public class Caisse {
 
     private String nom;
     private boolean active = true;
+    private boolean supprimee;
 
     protected Caisse() {}
 
@@ -31,6 +33,14 @@ public class Caisse {
         this.active = active;
     }
 
+    /** Suppression logique : la caisse garde son historique (sessions, ventes) mais n'est plus proposée. */
+    public void supprimer() {
+        if (active) {
+            throw new RegleMetierException("Désactivez la caisse avant de la supprimer.");
+        }
+        this.supprimee = true;
+    }
+
     public Long getId() {
         return id;
     }
@@ -41,5 +51,9 @@ public class Caisse {
 
     public boolean isActive() {
         return active;
+    }
+
+    public boolean isSupprimee() {
+        return supprimee;
     }
 }

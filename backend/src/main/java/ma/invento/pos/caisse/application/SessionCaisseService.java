@@ -4,7 +4,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import ma.invento.pos.caisse.domain.Caisse;
 import ma.invento.pos.caisse.domain.SessionCaisse;
 import ma.invento.pos.caisse.infrastructure.CaisseRepository;
@@ -91,6 +95,24 @@ public class SessionCaisseService {
                         s, nomCaisse(s.getCaisseId()), encaissements.especesEncaissees(s.getId())));
     }
 
+    /** Toutes les caisses avec, pour celles qui sont ouvertes, le fond et les espèces (écran admin). */
+    @Transactional(readOnly = true)
+    public List<SuiviCaisseDto> suivi() {
+        Map<Long, SessionCaisse> ouvertes = sessions.findByFermetureIsNull().stream()
+                .collect(Collectors.toMap(SessionCaisse::getCaisseId, Function.identity()));
+        Map<Long, BigDecimal> especes = encaissements.especesEncaisseesParSession(
+                ouvertes.values().stream().map(SessionCaisse::getId).toList());
+        return caisses.findAllBySupprimeeFalseOrderByNomAsc().stream()
+                .map(c -> new SuiviCaisseDto(
+                        c.getId(),
+                        c.getNom(),
+                        c.isActive(),
+                        Optional.ofNullable(ouvertes.get(c.getId()))
+                                .map(s -> SessionEnCours.depuis(s, especes.getOrDefault(s.getId(), BigDecimal.ZERO)))
+                                .orElse(null)))
+                .toList();
+    }
+
     /** Session ouverte de l'utilisateur, verrouillée jusqu'à la fin de la transaction appelante. */
     @Transactional(propagation = Propagation.MANDATORY)
     public SessionOuverte sessionOuverte(long utilisateurId) {
@@ -167,6 +189,30 @@ public class SessionCaisseService {
     }
 
     public record SessionOuverte(long id, long caisseId) {}
+
+    public record SuiviCaisseDto(
+            Long id,
+            String nom,
+            boolean active,
+            @Schema(nullable = true) SessionEnCours session) {}
+
+    /** Espèces attendues dans le tiroir = fond de caisse + espèces encaissées. */
+    public record SessionEnCours(
+            Long caissierId,
+            Instant ouverture,
+            BigDecimal fondInitial,
+            BigDecimal especesEncaissees,
+            BigDecimal especesAttendues) {
+
+        static SessionEnCours depuis(SessionCaisse s, BigDecimal especesEncaissees) {
+            return new SessionEnCours(
+                    s.getCaissierId(),
+                    s.getOuverture(),
+                    s.getFondInitial(),
+                    especesEncaissees,
+                    s.getFondInitial().add(especesEncaissees));
+        }
+    }
 
     public record SessionCaisseDto(
             Long id,

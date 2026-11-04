@@ -1,9 +1,11 @@
 package ma.invento.pos.identite.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.Set;
+import ma.invento.pos.shared.domain.RegleMetierException;
 import org.junit.jupiter.api.Test;
 
 class UtilisateurTest {
@@ -34,10 +36,10 @@ class UtilisateurTest {
     @Test
     void desactive_ne_peut_pas_se_connecter_et_garde_ses_caisses() {
         Utilisateur u = caissier();
-        u.modifierProfil("Alaoui", "Sara", Role.RESPONSABLE, false, Set.of(1L, 2L));
+        u.modifierProfil("Alaoui", "Sara", Role.RESPONSABLE, false, Set.of(2L));
         assertThat(u.peutSeConnecter()).isFalse();
         assertThat(u.getRole()).isEqualTo(Role.RESPONSABLE);
-        assertThat(u.getCaisseIds()).containsExactlyInAnyOrder(1L, 2L);
+        assertThat(u.getCaisseIds()).containsExactly(2L);
         u.reactiver();
         assertThat(u.peutSeConnecter()).isTrue();
     }
@@ -51,5 +53,14 @@ class UtilisateurTest {
         u.connexionReussie(Instant.EPOCH);
         assertThat(u.getDerniereConnexion()).isEqualTo(Instant.EPOCH);
         assertThat(u.getEssaisRates()).isZero();
+    }
+
+    @Test
+    void une_seule_caisse_par_utilisateur_et_aucune_pour_l_admin() {
+        Utilisateur u = caissier();
+        assertThatThrownBy(() -> u.modifierProfil("Alaoui", "Sara", Role.CAISSIER, true, Set.of(1L, 2L)))
+                .isInstanceOf(RegleMetierException.class);
+        u.modifierProfil("Alaoui", "Sara", Role.ADMIN, true, Set.of(1L));
+        assertThat(u.getCaisseIds()).isEmpty();
     }
 }

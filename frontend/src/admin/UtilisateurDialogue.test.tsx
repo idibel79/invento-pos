@@ -26,12 +26,12 @@ const salma: Schemas["UtilisateurDto"] = {
   version: 4,
 };
 
-function afficher(utilisateur: Schemas["UtilisateurDto"] | null) {
+function afficher(utilisateur: Schemas["UtilisateurDto"] | null, autres: Schemas["UtilisateurDto"][] = []) {
   const onFermer = vi.fn();
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <UtilisateurDialogue utilisateur={utilisateur} caisses={caisses} onFermer={onFermer} />
+      <UtilisateurDialogue utilisateur={utilisateur} caisses={caisses} autres={autres} onFermer={onFermer} />
     </QueryClientProvider>,
   );
   return onFermer;
@@ -69,7 +69,7 @@ describe("UtilisateurDialogue", () => {
     expect(requetes).toHaveLength(0);
   });
 
-  it("crée un caissier avec les caisses cochées, sans proposer les caisses inactives", async () => {
+  it("crée un caissier avec la caisse choisie, sans proposer les caisses inactives", async () => {
     const requetes = simulerServeur(201);
     const onFermer = afficher(null);
 
@@ -94,7 +94,7 @@ describe("UtilisateurDialogue", () => {
     });
   });
 
-  it("modifie un compte avec sa version et permet de retirer une caisse devenue inactive", async () => {
+  it("modifie un compte avec sa version et permet de remplacer une caisse devenue inactive", async () => {
     const requetes = simulerServeur();
     const onFermer = afficher(salma);
 
@@ -115,6 +115,16 @@ describe("UtilisateurDialogue", () => {
       caisseIds: [1],
       version: 4,
     });
+  });
+
+  it("n'attribue qu'une caisse et grise celles d'un autre compte", async () => {
+    simulerServeur();
+    afficher(salma, [{ ...salma, id: 6, prenom: "Karim", nom: "Alaoui", caisseIds: [1] }]);
+
+    expect(screen.getByLabelText(/Caisse 1 · attribuée à Karim Alaoui/)).toBeDisabled();
+    await userEvent.click(screen.getByLabelText("Caisse 2"));
+    expect(screen.getByLabelText("Caisse 2")).toBeChecked();
+    expect(screen.queryByLabelText("Ancienne (inactive)")).not.toBeInTheDocument();
   });
 
   it("affiche le refus du serveur et garde la popup ouverte", async () => {

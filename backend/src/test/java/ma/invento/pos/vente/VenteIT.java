@@ -293,9 +293,17 @@ class VenteIT extends IntegrationTest {
         mvc.perform(get("/api/v1/sessions/courante").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.especesEncaissees").value(30.00));
+        String suivi = "$[?(@.id == " + caisseId + ")].session.";
+        mvc.perform(get("/api/v1/caisses/suivi").header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(suivi + "fondInitial").value(200.00))
+                .andExpect(jsonPath(suivi + "especesEncaissees").value(30.00))
+                .andExpect(jsonPath(suivi + "especesAttendues").value(230.00));
+        mvc.perform(get("/api/v1/caisses/suivi").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isForbidden());
 
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(caissierSur(caisseId)))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissierSur(autreCaisseId)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"montantCompte\": 0}"))
                 .andExpect(status().isForbidden());
@@ -396,9 +404,9 @@ class VenteIT extends IntegrationTest {
                 .andExpect(jsonPath("$.caisseId").value(caisseId))
                 .andExpect(jsonPath("$.fondInitial").value(200.00));
 
-        String collegue = caissierSur(caisseId);
+        // L'admin peut ouvrir toutes les caisses, mais pas une caisse déjà ouverte.
         mvc.perform(post("/api/v1/sessions")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(collegue))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("caisseId", caisseId, "fondInitial", 0))))
                 .andExpect(status().isConflict());

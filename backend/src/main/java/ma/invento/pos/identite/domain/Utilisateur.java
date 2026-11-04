@@ -16,6 +16,7 @@ import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import ma.invento.pos.shared.domain.RegleMetierException;
 
 /** Compte d'un caissier, d'un responsable ou de l'admin. Jamais supprimé, seulement désactivé. */
 @Entity
@@ -115,13 +116,17 @@ public class Utilisateur {
         this.essaisPinRates = 0;
     }
 
+    /** Une caisse au plus par utilisateur ; l'admin ouvre toutes les caisses, il n'en a pas d'attribuée. */
     public void modifierProfil(String nom, String prenom, Role role, boolean actif, Set<Long> caisseIds) {
+        if (caisseIds.size() > 1) {
+            throw new RegleMetierException("Un utilisateur ne peut avoir qu'une seule caisse attribuée.");
+        }
         this.nom = nom;
         this.prenom = prenom;
         this.role = role;
         this.actif = actif;
         this.caisseIds.clear();
-        this.caisseIds.addAll(caisseIds);
+        if (role != Role.ADMIN) this.caisseIds.addAll(caisseIds);
     }
 
     /** Réactive le compte admin (récupération). */

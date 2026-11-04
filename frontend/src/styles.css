@@ -2226,6 +2226,152 @@ button:disabled {
   gap: 6px;
 }
 
+/* Écran Caisses : fond et espèces de la session ouverte. */
+.caisse-especes {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 128px);
+  gap: 12px;
+}
+
+.caisse-especes div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.caisse-especes dt {
+  font-size: 11.5px;
+  color: var(--gris);
+}
+
+.caisse-especes dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texte-fort);
+  font-variant-numeric: tabular-nums;
+}
+
+.caisse-especes .caisse-especes-total {
+  font-weight: 800;
+}
+
+@media (max-width: 860px) {
+  .ligne-admin:has(.caisse-especes) {
+    flex-wrap: wrap;
+  }
+
+  .caisse-especes {
+    order: 3;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .caisse-especes div {
+    text-align: left;
+  }
+}
+
+/* Nom de caisse cliquable : ouvre le renommage. */
+.lien-nom {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lien-nom:hover,
+.lien-nom:focus-visible {
+  color: var(--primaire);
+  text-decoration: underline;
+}
+
+/* Bouton carré à icône (suppression) ; la place vide garde l'alignement des lignes. */
+.bouton-icone,
+.bouton-icone-place {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.bouton-icone {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid var(--bordure-forte);
+  background: transparent;
+  color: var(--texte-fort);
+}
+
+.bouton-icone.danger {
+  border-color: var(--danger-bordure);
+  color: var(--danger);
+}
+
+.bouton-icone.danger:hover {
+  background: var(--danger-fond);
+}
+
+/* Interrupteur (role="switch") : piste grise, bleue quand activé. */
+.interrupteur {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 104px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--texte-fort);
+  cursor: pointer;
+}
+
+.interrupteur input {
+  appearance: none;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--bordure-forte);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.interrupteur input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.15s;
+}
+
+.interrupteur input:checked {
+  background: var(--primaire);
+}
+
+.interrupteur input:checked::after {
+  transform: translateX(18px);
+}
+
+.interrupteur input:focus-visible {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+.interrupteur input:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .statut {
   font-size: 11px;
   font-weight: 700;

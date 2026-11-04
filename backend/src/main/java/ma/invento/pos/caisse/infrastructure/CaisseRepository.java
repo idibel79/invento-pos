@@ -1,16 +1,20 @@
 package ma.invento.pos.caisse.infrastructure;
 
 import java.util.List;
+import java.util.Optional;
 import ma.invento.pos.caisse.domain.Caisse;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/** Les caisses supprimées (logiquement) ne sont visibles que par leur id, pour l'historique. */
 public interface CaisseRepository extends JpaRepository<Caisse, Long> {
 
-    List<Caisse> findAllByOrderByNomAsc();
+    List<Caisse> findAllBySupprimeeFalseOrderByNomAsc();
 
-    boolean existsByNomIgnoreCase(String nom);
+    Optional<Caisse> findByIdAndSupprimeeFalse(Long id);
 
-    boolean existsByNomIgnoreCaseAndIdNot(String nom, Long id);
+    boolean existsByNomIgnoreCaseAndSupprimeeFalse(String nom);
 
-    long countByIdIn(Iterable<Long> ids);
+    boolean existsByNomIgnoreCaseAndIdNotAndSupprimeeFalse(String nom, Long id);
+
+    long countByIdInAndSupprimeeFalse(Iterable<Long> ids);
 }

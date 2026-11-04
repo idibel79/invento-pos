@@ -122,6 +122,7 @@ export function Utilisateurs() {
         <UtilisateurDialogue
           utilisateur={fenetre.utilisateur}
           caisses={caisses.data ?? []}
+          autres={utilisateurs.data ?? []}
           onFermer={fermer}
         />
       )}

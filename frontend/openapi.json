@@ -220,6 +220,24 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "caisse-controller" ],
+        "operationId" : "supprimer",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
       }
     },
     "/api/v1/zones" : {
@@ -1309,6 +1327,27 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PageResponseJournalDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/caisses/suivi" : {
+      "get" : {
+        "tags" : [ "caisse-controller" ],
+        "operationId" : "suivi",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SuiviCaisseDto"
+                  }
                 }
               }
             }
@@ -2479,7 +2518,7 @@
           },
           "action" : {
             "type" : "string",
-            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "REMISE_AUTORISEE" ]
+            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "REMISE_AUTORISEE" ]
           },
           "detail" : {
             "type" : [ "string", "null" ]
@@ -2518,6 +2557,52 @@
           }
         },
         "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "SessionEnCours" : {
+        "type" : "object",
+        "properties" : {
+          "caissierId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ouverture" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "fondInitial" : {
+            "type" : "number"
+          },
+          "especesEncaissees" : {
+            "type" : "number"
+          },
+          "especesAttendues" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "caissierId", "especesAttendues", "especesEncaissees", "fondInitial", "ouverture" ]
+      },
+      "SuiviCaisseDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "session" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SessionEnCours"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "active", "id", "nom", "session" ]
       },
       "Autorisateur" : {
         "type" : "object",
