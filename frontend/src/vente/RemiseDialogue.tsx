@@ -86,7 +86,10 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
         ) : (
           <div className="encadre-ligne">
             <span>Total des lignes</span>
-            <span>{apercu ? dh(apercu.totaux.sousTotal - apercu.totaux.remisesLignes) : "…"}</span>
+            {/* Ne dépend pas de la remise saisie : affiché dès l'ouverture, champ vide compris. */}
+            <span>
+              {essai.data ? dh(essai.data.totaux.sousTotal - essai.data.totaux.remisesLignes) : "…"}
+            </span>
           </div>
         )}
       </div>
