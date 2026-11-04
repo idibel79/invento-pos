@@ -532,6 +532,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/produits/bornes-prix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bornesPrix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal": {
         parameters: {
             query?: never;
@@ -976,6 +992,10 @@ export interface components {
             totalElements: number;
             /** Format: int32 */
             totalPages: number;
+        };
+        BornesPrixDto: {
+            min: number;
+            max: number;
         };
         JournalDto: {
             /** Format: int64 */
@@ -1548,6 +1568,8 @@ export interface operations {
                 recherche?: string;
                 zoneId?: number;
                 categorieId?: number;
+                prixMin?: number;
+                prixMax?: number;
                 disponibilite?: "EN_STOCK" | "RUPTURE";
                 actif?: boolean;
                 /** @description Zero-based page index (0..N) */
@@ -2012,6 +2034,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProduitDto"];
+                };
+            };
+        };
+    };
+    bornesPrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BornesPrixDto"];
                 };
             };
         };

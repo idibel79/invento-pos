@@ -753,6 +753,235 @@ button:disabled {
   cursor: pointer;
 }
 
+/* Bouton « Prix » (même allure que les filtres Zone et Catégorie) et son panneau. */
+.filtre-prix {
+  position: relative;
+}
+
+.filtre-bouton {
+  padding-right: 10px;
+  cursor: pointer;
+}
+
+.filtre-bouton strong {
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.filtre-bouton.actif {
+  border-color: var(--primaire);
+  background: var(--accent-doux);
+  color: var(--primaire);
+}
+
+.filtre-bouton.actif strong {
+  color: var(--designation);
+}
+
+.panneau-prix {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 360px;
+  box-sizing: border-box;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--ombre);
+}
+
+.panneau-prix-titre {
+  font-size: 14px;
+  color: var(--texte-fort);
+}
+
+.panneau-prix-champs {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.panneau-prix-tiret {
+  height: 40px;
+  line-height: 40px;
+  color: var(--gris);
+}
+
+.champ-prix {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--gris);
+}
+
+.champ-prix-saisie {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--champ);
+  font-size: 14px;
+}
+
+.champ-prix-saisie:focus-within {
+  border-color: var(--primaire);
+  box-shadow: 0 0 0 3px var(--accent-doux);
+}
+
+.champ-prix-saisie input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--texte);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panneau-prix-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bordure);
+}
+
+.panneau-prix-actions .bouton-petit {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.bouton-petit.bouton-appliquer {
+  border-color: var(--primaire);
+  background: var(--primaire);
+  color: var(--sur-primaire);
+}
+
+.bouton-petit.bouton-appliquer:hover {
+  background: var(--primaire-survol);
+}
+
+/* Curseur à deux poignées : deux curseurs natifs superposés sur une seule piste. */
+.curseur-double {
+  position: relative;
+  height: 32px;
+  margin: 0 2px;
+}
+
+/* Piste grise, portion retenue en bleu entre les deux poignées. */
+.curseur-double::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--bas),
+    var(--primaire) var(--bas),
+    var(--primaire) var(--haut),
+    var(--accent) var(--haut)
+  );
+}
+
+.curseur-double input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.curseur-double input.au-dessus {
+  z-index: 1;
+}
+
+.curseur-double input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.curseur-double input::-moz-range-track {
+  background: transparent;
+}
+
+.curseur-double input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--primaire);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.curseur-double input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primaire);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.curseur-double input:focus-visible {
+  outline: none;
+}
+
+.curseur-double input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+.curseur-double input:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+/* Graduations placées sur l'échelle resserrée (positions calculées par le composant). */
+.curseur-graduations {
+  position: relative;
+  height: 16px;
+  margin: -8px 13px 0;
+  font-size: 11.5px;
+  color: var(--gris);
+  font-variant-numeric: tabular-nums;
+}
+
+.curseur-graduations span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.curseur-graduations span:first-child {
+  transform: none;
+}
+
+.curseur-graduations span:last-child {
+  transform: translateX(-100%);
+}
+
 /* Tableau des produits : colonnes alignées, une ligne par produit. */
 .tableau-produits {
   flex-grow: 1;
@@ -773,14 +1002,14 @@ button:disabled {
 }
 
 /* Pas de trait entre les colonnes : il n'apparaît (en bleu) que pendant le réglage d'une largeur. */
-.tableau-entete > :nth-child(-n + 5),
-.ligne-produit > :nth-child(-n + 5) {
+.tableau-entete > :nth-child(-n + 6),
+.ligne-produit > :nth-child(-n + 6) {
   align-self: stretch;
   padding: 0 10px;
   border-right: 1px solid transparent;
 }
 
-.ligne-produit > :nth-child(-n + 5) {
+.ligne-produit > :nth-child(-n + 6) {
   line-height: 44px;
 }
 
@@ -808,6 +1037,11 @@ button:disabled {
 .tableau-produits:has(.entete-colonne:nth-child(5) > .separateur:is(:hover, .actif, :focus-visible))
   :is(.tableau-entete, .ligne-produit)
   > :nth-child(5) {
+  border-right-color: var(--primaire);
+}
+.tableau-produits:has(.entete-colonne:nth-child(6) > .separateur:is(:hover, .actif, :focus-visible))
+  :is(.tableau-entete, .ligne-produit)
+  > :nth-child(6) {
   border-right-color: var(--primaire);
 }
 
@@ -867,6 +1101,11 @@ button:disabled {
 
 .ligne-produit-prix {
   font-weight: 600;
+}
+
+.ligne-produit-pph {
+  font-size: 14px;
+  color: var(--gris);
 }
 
 /* En-tête de colonne : la poignée sur son bord droit règle la largeur de la colonne. */

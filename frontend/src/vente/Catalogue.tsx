@@ -1,8 +1,10 @@
 import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import type { Schemas } from "../api/client";
 import { ErreurApi, messageErreur } from "../api/erreurs";
+import { useUtilisateur } from "../auth/AuthContext";
 import {
   chercherParCodeBarre,
+  useBornesPrix,
   useCategories,
   useProduits,
   useZones,
@@ -12,6 +14,7 @@ import { dh } from "../ui/format";
 import { useTailleRetenue, useValeurDifferee } from "../ui/hooks";
 import { IconeScan } from "../ui/icones";
 import { Separateur } from "../ui/Separateur";
+import { FiltrePrix } from "./FiltrePrix";
 
 type Produit = Schemas["ProduitDto"];
 
@@ -20,7 +23,7 @@ interface Props {
   onMessage: (message: string) => void;
 }
 
-/** Recherche et scan, filtres zone et catégorie, tableau des produits (rupture grisée). */
+/** Recherche et scan, filtres zone, catégorie et prix, tableau des produits (rupture grisée). */
 export function Catalogue({ onAjouter, onMessage }: Props) {
   const champ = useRef<HTMLInputElement>(null);
   const [saisie, setSaisie] = useState("");
@@ -29,8 +32,20 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
   const recherche = useValeurDifferee(saisie.trim(), 250);
   const zones = useZones();
   const categories = useCategories();
+  const bornes = useBornesPrix();
+  // Plage de prix appliquée depuis le panneau du bouton « Prix ».
+  const [prix, setPrix] = useState<{ bas: number | null; haut: number | null }>({ bas: null, haut: null });
   const [tri, setTri] = useState<TriCatalogue | null>(null);
-  const produits = useProduits({ recherche, zoneId, categorieId, tri });
+  const produits = useProduits({
+    recherche,
+    zoneId,
+    categorieId,
+    prixMin: prix.bas,
+    prixMax: prix.haut,
+    tri,
+  });
+  // Le prix d'achat (PPH) n'est envoyé par l'API qu'à l'admin.
+  const voirPph = useUtilisateur().role === "ADMIN";
 
   // Clics successifs sur une colonne : croissant, décroissant, puis tri annulé (ordre par défaut).
   function trierPar(champ: TriCatalogue["champ"]) {
@@ -49,6 +64,11 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
   const zone = useTailleRetenue("invento-pos.colonne-zone", 160);
   const categorie = useTailleRetenue("invento-pos.colonne-categorie", 140);
   const stock = useTailleRetenue("invento-pos.colonne-stock", 72);
+  const pph = useTailleRetenue("invento-pos.colonne-pph", 110);
+  const bornesCurseur = bornes.data && {
+    min: Math.floor(bornes.data.min),
+    max: Math.ceil(bornes.data.max),
+  };
 
   function ajouter(produit: Produit) {
     if (produit.enRupture) {
@@ -112,6 +132,15 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
           valeur={categorieId}
           onChoisir={setCategorieId}
         />
+        {bornesCurseur && bornesCurseur.max > bornesCurseur.min && (
+          <FiltrePrix
+            min={bornesCurseur.min}
+            max={bornesCurseur.max}
+            bas={prix.bas}
+            haut={prix.haut}
+            onChanger={(bas, haut) => setPrix({ bas, haut })}
+          />
+        )}
       </div>
 
       {produits.isError && (
@@ -123,15 +152,16 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
         className="tableau-produits"
         style={
           {
-            "--colonnes": `${designation[0]}px ${zone[0]}px ${categorie[0]}px ${stock[0]}px minmax(110px, 1fr)`,
+            "--colonnes": `${designation[0]}px ${zone[0]}px ${categorie[0]}px ${stock[0]}px ${voirPph ? `${pph[0]}px ` : ""}minmax(110px, 1fr)`,
           } as CSSProperties
         }
       >
         <div className="tableau-entete">
           <EnteteColonne libelle="Désignation" taille={designation} min={160} tri={etatTri("designation")} />
-          <EnteteColonne libelle="Zone" taille={zone} min={80} />
-          <EnteteColonne libelle="Catégorie" taille={categorie} min={80} />
-          <EnteteColonne libelle="Stock" taille={stock} min={56} aDroite />
+          <EnteteColonne libelle="Zone" taille={zone} min={80} tri={etatTri("zone")} />
+          <EnteteColonne libelle="Catégorie" taille={categorie} min={80} tri={etatTri("categorie")} />
+          <EnteteColonne libelle="Stock" taille={stock} min={72} aDroite tri={etatTri("stock")} />
+          {voirPph && <EnteteColonne libelle="PPH" taille={pph} min={80} aDroite />}
           {/* Dernière colonne : elle occupe la place restante, sans poignée. */}
           <span className="entete-colonne a-droite" aria-sort={ariaTri(etatTri("ppv").ordre)}>
             <BoutonTri libelle="Prix TTC" tri={etatTri("ppv")} />
@@ -139,7 +169,7 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
         </div>
         {produits.isSuccess && liste.length === 0 && <p className="vide">Aucun produit ne correspond.</p>}
         {liste.map((p) => (
-          <LigneProduit key={p.id} produit={p} onChoisir={() => ajouter(p)} />
+          <LigneProduit key={p.id} produit={p} voirPph={voirPph} onChoisir={() => ajouter(p)} />
         ))}
         {produits.hasNextPage && (
           <button
@@ -243,7 +273,15 @@ function EnteteColonne({
 }
 
 /** Une ligne du tableau : toute la ligne ajoute le produit au ticket (rupture désactivée). */
-function LigneProduit({ produit, onChoisir }: { produit: Produit; onChoisir: () => void }) {
+function LigneProduit({
+  produit,
+  voirPph,
+  onChoisir,
+}: {
+  produit: Produit;
+  voirPph: boolean;
+  onChoisir: () => void;
+}) {
   const stock = produit.stockDisponible;
   // Rouge sous 5, orange de 5 à 10, vert au-delà.
   const classeStock = produit.enRupture
@@ -258,7 +296,7 @@ function LigneProduit({ produit, onChoisir }: { produit: Produit; onChoisir: () 
       type="button"
       className="ligne-produit"
       // Nom lu par les lecteurs d'écran : les cellules collées (« stock 2 » + « 34,60 DH ») seraient ambiguës.
-      aria-label={`${produit.designation}, ${produit.zone.nom}, ${produit.categorie.nom}, ${produit.enRupture ? "rupture" : `stock ${stock}`}, ${dh(produit.ppv)}`}
+      aria-label={`${produit.designation}, ${produit.zone.nom}, ${produit.categorie.nom}, ${produit.enRupture ? "rupture" : `stock ${stock}`}, ${voirPph && produit.pph != null ? `PPH ${dh(produit.pph)}, ` : ""}${dh(produit.ppv)}`}
       disabled={produit.enRupture}
       onClick={onChoisir}
     >
@@ -266,6 +304,9 @@ function LigneProduit({ produit, onChoisir }: { produit: Produit; onChoisir: () 
       <span className="ligne-produit-zone">{produit.zone.nom}</span>
       <span className="ligne-produit-zone">{produit.categorie.nom}</span>
       <span className={`stock a-droite ${classeStock}`}>{produit.enRupture ? "Rupture" : stock}</span>
+      {voirPph && (
+        <span className="ligne-produit-pph a-droite">{produit.pph == null ? "—" : dh(produit.pph)}</span>
+      )}
       <span className="ligne-produit-prix a-droite">{dh(produit.ppv)}</span>
     </button>
   );

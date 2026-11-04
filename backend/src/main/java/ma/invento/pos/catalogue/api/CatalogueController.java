@@ -1,7 +1,9 @@
 package ma.invento.pos.catalogue.api;
 
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
+import ma.invento.pos.catalogue.api.CatalogueDtos.BornesPrixDto;
 import ma.invento.pos.catalogue.api.CatalogueDtos.ProduitCommande;
 import ma.invento.pos.catalogue.api.CatalogueDtos.ProduitDto;
 import ma.invento.pos.catalogue.api.CatalogueDtos.ReferenceCommande;
@@ -49,13 +51,21 @@ class CatalogueController {
             @RequestParam(required = false) String recherche,
             @RequestParam(required = false) Long zoneId,
             @RequestParam(required = false) Long categorieId,
+            @RequestParam(required = false) BigDecimal prixMin,
+            @RequestParam(required = false) BigDecimal prixMax,
             @RequestParam(required = false) Disponibilite disponibilite,
             @RequestParam(required = false) Boolean actif,
             @ParameterObject @PageableDefault(size = 50, sort = "designation", direction = Sort.Direction.ASC)
                     Pageable pageable,
             @AuthenticationPrincipal Jwt jwt) {
         return catalogueService.rechercher(
-                recherche, zoneId, categorieId, disponibilite, actif, pageable, estAdmin(jwt));
+                recherche, zoneId, categorieId, prixMin, prixMax, disponibilite, actif, pageable, estAdmin(jwt));
+    }
+
+    /** Bornes du filtre de prix de l'écran de vente (produits actifs). */
+    @GetMapping("/produits/bornes-prix")
+    BornesPrixDto bornesPrix() {
+        return catalogueService.bornesPrix();
     }
 
     @GetMapping("/produits/{id}")

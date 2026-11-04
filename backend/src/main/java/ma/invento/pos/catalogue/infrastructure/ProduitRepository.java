@@ -1,5 +1,6 @@
 package ma.invento.pos.catalogue.infrastructure;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,16 @@ public interface ProduitRepository extends JpaRepository<Produit, Long>, JpaSpec
             @Param("codes") Collection<String> codes, @Param("produitId") long produitId);
 
     boolean existsByPid(String pid);
+
+    /** Prix de vente le plus bas et le plus haut des produits actifs (bornes du filtre de prix). */
+    @Query("select min(p.ppv) as min, max(p.ppv) as max from Produit p where p.actif = true")
+    BornesPrix bornesPrix();
+
+    interface BornesPrix {
+        BigDecimal getMin();
+
+        BigDecimal getMax();
+    }
 
     @EntityGraph(attributePaths = {"tva"})
     List<Produit> findWithTvaByIdIn(Collection<Long> ids);

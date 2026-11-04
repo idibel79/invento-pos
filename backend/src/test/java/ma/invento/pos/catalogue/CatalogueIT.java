@@ -1,5 +1,6 @@
 package ma.invento.pos.catalogue;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -90,6 +91,44 @@ class CatalogueIT extends IntegrationTest {
                         .param("disponibilite", "EN_STOCK")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(jsonPath("$.contenu", hasSize(0)));
+    }
+
+    @Test
+    void filtre_par_plage_de_prix_et_trie_par_zone_categorie_et_stock() throws Exception {
+        creerProduit("V" + suffixe, "PRIX FILTRE " + suffixe, List.of());
+
+        mvc.perform(get("/api/v1/produits")
+                        .param("zoneId", String.valueOf(zoneId))
+                        .param("prixMin", "9.60")
+                        .param("prixMax", "9.60")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(jsonPath("$.contenu", hasSize(1)));
+        mvc.perform(get("/api/v1/produits")
+                        .param("zoneId", String.valueOf(zoneId))
+                        .param("prixMin", "9.61")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(jsonPath("$.contenu", hasSize(0)));
+        mvc.perform(get("/api/v1/produits")
+                        .param("zoneId", String.valueOf(zoneId))
+                        .param("prixMax", "9.59")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(jsonPath("$.contenu", hasSize(0)));
+
+        for (String tri : List.of("zone.nom,desc", "categorie.nom,asc", "stock,desc")) {
+            mvc.perform(get("/api/v1/produits")
+                            .param("zoneId", String.valueOf(zoneId))
+                            .param("sort", tri)
+                            .header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.contenu", hasSize(1)));
+        }
+
+        JsonNode bornes = lire(
+                mvc.perform(get("/api/v1/produits/bornes-prix").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                        .andExpect(status().isOk())
+                        .andReturn());
+        assertThat(bornes.get("min").decimalValue()).isLessThanOrEqualTo(new BigDecimal("9.60"));
+        assertThat(bornes.get("max").decimalValue()).isGreaterThanOrEqualTo(new BigDecimal("9.60"));
     }
 
     @Test
