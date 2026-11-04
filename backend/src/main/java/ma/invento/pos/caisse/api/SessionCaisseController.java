@@ -31,11 +31,11 @@ class SessionCaisseController {
         this.sessionService = sessionService;
     }
 
-    /** Session ouverte de l'utilisateur connecté ; 204 s'il n'en a pas. */
+    /** Session ouverte de l'utilisateur connecté, avec les espèces encaissées ; 204 s'il n'en a pas. */
     @GetMapping("/courante")
     ResponseEntity<SessionCaisseDto> courante(@AuthenticationPrincipal Jwt jwt) {
         return sessionService
-                .courante(UtilisateurConnecte.depuis(jwt).id())
+                .couranteAvecEspeces(UtilisateurConnecte.depuis(jwt).id())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
