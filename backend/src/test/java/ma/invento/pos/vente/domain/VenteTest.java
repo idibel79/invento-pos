@@ -73,22 +73,36 @@ class VenteTest {
     }
 
     @Test
-    void attente_prolongee_puis_expiree_puis_annulee() {
+    void attente_reprise_ne_peut_plus_expirer_puis_est_abandonnee() {
+        Vente vente = venteDe("10.00");
+        vente.mettreEnAttente(null, T0.plusSeconds(300));
+
+        vente.reprendre();
+        assertThat(vente.getStatut()).isEqualTo(StatutVente.REPRISE);
+        assertThat(vente.estEnAttente()).isFalse();
+        assertThat(vente.getAttenteExpireLe()).isNull();
+        assertThat(vente.estExpiree(T0.plusSeconds(600))).isFalse();
+        assertThatThrownBy(vente::reprendre).isInstanceOf(RegleMetierException.class);
+
+        vente.annulerAttente(T0.plusSeconds(60));
+        assertThat(vente.getStatut()).isEqualTo(StatutVente.ANNULEE);
+    }
+
+    @Test
+    void attente_expiree_puis_annulee() {
         Vente vente = venteDe("10.00");
         vente.mettreEnAttente("Parti au DAB", T0.plusSeconds(300));
         assertThat(vente.estEnAttente()).isTrue();
         assertThat(vente.getNoteAttente()).isEqualTo("Parti au DAB");
         assertThat(vente.estExpiree(T0.plusSeconds(299))).isFalse();
 
-        vente.prolongerAttente(T0.plusSeconds(600));
-        assertThat(vente.estExpiree(T0.plusSeconds(300))).isFalse();
-        assertThat(vente.estExpiree(T0.plusSeconds(600))).isTrue();
+        assertThat(vente.estExpiree(T0.plusSeconds(300))).isTrue();
 
-        vente.annulerAttente(T0.plusSeconds(601));
+        vente.annulerAttente(T0.plusSeconds(301));
         assertThat(vente.getStatut()).isEqualTo(StatutVente.ANNULEE);
         assertThat(vente.getAttenteExpireLe()).isNull();
         assertThatThrownBy(() -> vente.annulerAttente(T0)).isInstanceOf(RegleMetierException.class);
-        assertThatThrownBy(() -> vente.prolongerAttente(T0)).isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(vente::reprendre).isInstanceOf(RegleMetierException.class);
         assertThatThrownBy(() -> vente.validerEnEspeces(BigDecimal.TEN, "x", T0))
                 .isInstanceOf(RegleMetierException.class);
     }

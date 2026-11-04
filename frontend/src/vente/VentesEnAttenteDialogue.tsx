@@ -7,8 +7,6 @@ import { useAbandonnerVente, useReprendreVente, useVentesEnAttente } from "./req
 
 interface Props {
   panierVide: boolean;
-  /** Vente déjà reprise dans le panier : elle n'apparaît plus dans la liste. */
-  venteRepriseId: number | null;
   onReprise: (vente: Schemas["VenteDto"]) => void;
   onFermer: () => void;
 }
@@ -28,15 +26,13 @@ function minutesSecondes(ms: number): string {
 }
 
 /** Ventes en attente de la caisse en tableau, la plus proche de l'annulation en premier. */
-export function VentesEnAttenteDialogue({ panierVide, venteRepriseId, onReprise, onFermer }: Props) {
+export function VentesEnAttenteDialogue({ panierVide, onReprise, onFermer }: Props) {
   const ventes = useVentesEnAttente();
   const reprendre = useReprendreVente();
   const abandonner = useAbandonnerVente();
   const maintenant = useMaintenant();
   const erreur = reprendre.error ?? abandonner.error;
-  const liste = (ventes.data ?? [])
-    .filter((v) => v.id !== venteRepriseId)
-    .sort((a, b) => msRestantes(a.attenteExpireLe, maintenant) - msRestantes(b.attenteExpireLe, maintenant));
+  const liste = [...(ventes.data ?? [])].sort((a, b) => msRestantes(a.attenteExpireLe, maintenant) - msRestantes(b.attenteExpireLe, maintenant));
 
   return (
     <Dialogue

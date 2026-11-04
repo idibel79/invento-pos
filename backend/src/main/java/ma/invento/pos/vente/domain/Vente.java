@@ -141,18 +141,19 @@ public class Vente {
         this.finaliseeLe = maintenant;
     }
 
-    /** Reprise sur la caisse : le client est revenu, la réservation repart pour la durée d'attente. */
-    public void prolongerAttente(Instant expireLe) {
+    /** Reprise sur la caisse : le client est revenu, la vente quitte l'attente et ne réserve plus de stock. */
+    public void reprendre() {
         if (statut != StatutVente.EN_ATTENTE) {
             throw new RegleMetierException("Cette vente n'est plus en attente.");
         }
-        this.attenteExpireLe = expireLe;
+        this.statut = StatutVente.REPRISE;
+        this.attenteExpireLe = null;
     }
 
-    /** Abandon d'une vente en attente (caissier, échéance ou clôture de la session). */
+    /** Abandon d'une vente en attente ou reprise (caissier, échéance, ticket vidé ou clôture de la session). */
     public void annulerAttente(Instant maintenant) {
-        if (statut != StatutVente.EN_ATTENTE) {
-            throw new RegleMetierException("Seule une vente en attente peut être abandonnée.");
+        if (statut != StatutVente.EN_ATTENTE && statut != StatutVente.REPRISE) {
+            throw new RegleMetierException("Seule une vente en attente ou reprise peut être abandonnée.");
         }
         this.statut = StatutVente.ANNULEE;
         this.attenteExpireLe = null;
@@ -161,6 +162,10 @@ public class Vente {
 
     public boolean estEnAttente() {
         return statut == StatutVente.EN_ATTENTE;
+    }
+
+    public boolean estReprise() {
+        return statut == StatutVente.REPRISE;
     }
 
     public boolean estExpiree(Instant maintenant) {

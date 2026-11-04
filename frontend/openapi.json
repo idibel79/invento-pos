@@ -1942,7 +1942,7 @@
           },
           "statut" : {
             "type" : "string",
-            "enum" : [ "EN_ATTENTE", "VALIDEE", "ANNULEE" ]
+            "enum" : [ "EN_ATTENTE", "REPRISE", "VALIDEE", "ANNULEE" ]
           },
           "caisseId" : {
             "type" : "integer",

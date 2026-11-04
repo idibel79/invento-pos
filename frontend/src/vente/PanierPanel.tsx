@@ -13,6 +13,7 @@ interface Props {
   onRemiseTicket: () => void;
   onAttente: () => void;
   onEncaisser: () => void;
+  onVider: () => void;
 }
 
 /** Ticket en cours : lignes, remises, totaux calculés par le serveur, attente et encaissement. */
@@ -24,6 +25,7 @@ export function PanierPanel({
   onRemiseTicket,
   onAttente,
   onEncaisser,
+  onVider,
 }: Props) {
   const vide = panier.lignes.length === 0;
   // Pendant un recalcul, l'aperçu précédent reste affiché mais l'encaissement attend le nouveau.
@@ -53,7 +55,7 @@ export function PanierPanel({
         <button
           type="button"
           className="bouton-petit danger"
-          onClick={() => dispatch({ type: "vider" })}
+          onClick={onVider}
           disabled={vide && panier.venteEnAttenteId === null}
         >
           Vider

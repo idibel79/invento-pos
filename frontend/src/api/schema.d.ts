@@ -782,7 +782,7 @@ export interface components {
             id: number;
             numero: string;
             /** @enum {string} */
-            statut: "EN_ATTENTE" | "VALIDEE" | "ANNULEE";
+            statut: "EN_ATTENTE" | "REPRISE" | "VALIDEE" | "ANNULEE";
             /** Format: int64 */
             caisseId: number;
             /** Format: int64 */
