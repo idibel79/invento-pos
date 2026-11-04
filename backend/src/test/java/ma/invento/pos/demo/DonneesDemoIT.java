@@ -44,7 +44,7 @@ class DonneesDemoIT extends IntegrationTest {
         mvc.perform(get("/api/v1/utilisateurs")
                         .header(HttpHeaders.AUTHORIZATION, bearer(jeton("admin", DonneesDemo.MOT_DE_PASSE))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.login == 'admin')].caisseIds[*]", hasSize(2)));
+                .andExpect(jsonPath("$[?(@.login == 'admin')].caisseIds[*]", hasSize(0)));
     }
 
     @Test

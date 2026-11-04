@@ -9,6 +9,15 @@ export function useUtilisateurs() {
   return useQuery({ queryKey: cleUtilisateurs, queryFn: () => appel(api.GET("/api/v1/utilisateurs")) });
 }
 
+/** Caisses avec le fond et les espèces de leur session ouverte ; relu régulièrement pendant que l'écran est affiché. */
+export function useSuiviCaisses() {
+  return useQuery({
+    queryKey: [...cles.caisses, "suivi"],
+    queryFn: () => appel(api.GET("/api/v1/caisses/suivi")),
+    refetchInterval: 30_000,
+  });
+}
+
 export function useEnregistrerCaisse() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -20,6 +29,18 @@ export function useEnregistrerCaisse() {
       void queryClient.invalidateQueries({ queryKey: cles.caisses });
       // L'admin a pu désactiver la caisse qu'il a lui-même ouverte : sa session est alors clôturée.
       void queryClient.invalidateQueries({ queryKey: cles.sessionCourante });
+    },
+  });
+}
+
+/** Suppression logique d'une caisse inactive ; elle est aussi retirée des fiches utilisateurs. */
+export function useSupprimerCaisse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => appel(api.DELETE("/api/v1/caisses/{id}", { params: { path: { id } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: cles.caisses });
+      void queryClient.invalidateQueries({ queryKey: cleUtilisateurs });
     },
   });
 }

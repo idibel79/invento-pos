@@ -31,6 +31,14 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
     @Query("update Utilisateur u set u.essaisPinRates = u.essaisPinRates + 1 where u.id = :id")
     void incrementerEssaisPinRates(@Param("id") long id);
 
+    @Query("select u from Utilisateur u join u.caisseIds c where c = :caisseId")
+    List<Utilisateur> findAttributaires(@Param("caisseId") long caisseId);
+
+    /** Caisse supprimée : elle n'est plus attribuée à personne. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = "delete from pos.utilisateur_caisse where caisse_id = :caisseId", nativeQuery = true)
+    void retirerCaisse(@Param("caisseId") long caisseId);
+
     /** Responsables et admin actifs ayant un PIN : ceux qui peuvent autoriser une remise. */
     @Query("select u from Utilisateur u where u.actif = true and u.pinHash is not null"
             + " and u.role in :roles order by u.nom, u.prenom")

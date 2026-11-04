@@ -3,6 +3,7 @@ package ma.invento.pos.identite.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import ma.invento.pos.caisse.application.CaisseService;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.ModificationUtilisateur;
@@ -64,6 +65,7 @@ public class UtilisateurService {
         }
         PolitiqueSecrets.verifierMotDePasse(login, commande.motDePasseTemporaire());
         caisses.verifierExistence(commande.caisseIds());
+        verifierCaissesLibres(commande.caisseIds(), null);
         Utilisateur utilisateur = new Utilisateur(
                 commande.nom().trim(),
                 commande.prenom().trim(),
@@ -92,6 +94,7 @@ public class UtilisateurService {
             refuserAdmin(commande.role());
         }
         caisses.verifierExistence(commande.caisseIds());
+        if (utilisateur.getRole() != Role.ADMIN) verifierCaissesLibres(commande.caisseIds(), id);
         utilisateur.modifierProfil(
                 commande.nom().trim(),
                 commande.prenom().trim(),
@@ -135,6 +138,19 @@ public class UtilisateurService {
     private static void refuserAdmin(Role role) {
         if (role == Role.ADMIN) {
             throw new RegleMetierException("Il ne peut y avoir qu'un seul compte admin.");
+        }
+    }
+
+    /** Une caisse n'est attribuée qu'à un seul utilisateur (index unique en base en dernier recours). */
+    private void verifierCaissesLibres(Set<Long> caisseIds, Long utilisateurId) {
+        for (long caisseId : caisseIds) {
+            utilisateurs.findAttributaires(caisseId).stream()
+                    .filter(u -> !u.getId().equals(utilisateurId))
+                    .findFirst()
+                    .ifPresent(u -> {
+                        throw new ConflitException(
+                                "Cette caisse est déjà attribuée à " + (u.getPrenom() + " " + u.getNom()).trim() + ".");
+                    });
         }
     }
 

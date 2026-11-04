@@ -42,11 +42,13 @@ interface Props {
   /** null : création d'un compte. */
   utilisateur: Utilisateur | null;
   caisses: Schemas["CaisseDto"][];
+  /** Tous les comptes, pour savoir quelles caisses sont déjà attribuées. */
+  autres: Utilisateur[];
   onFermer: () => void;
 }
 
-/** Création ou modification d'un compte : identité, rôle, état et caisses attribuées. */
-export function UtilisateurDialogue({ utilisateur, caisses, onFermer }: Props) {
+/** Création ou modification d'un compte : identité, rôle, état et caisse attribuée (une au plus). */
+export function UtilisateurDialogue({ utilisateur, caisses, autres, onFermer }: Props) {
   const creer = useCreerUtilisateur();
   const modifier = useModifierUtilisateur();
   const mutation = utilisateur ? modifier : creer;
@@ -72,9 +74,9 @@ export function UtilisateurDialogue({ utilisateur, caisses, onFermer }: Props) {
   const [role, actif, caisseIds] = useWatch({ control, name: ["role", "actif", "caisseIds"] });
   // Une caisse inactive déjà attribuée reste affichée pour pouvoir la retirer.
   const proposees = caisses.filter((c) => c.active || caisseIds.includes(c.id));
-
-  const basculerCaisse = (id: number) =>
-    setValue("caisseIds", caisseIds.includes(id) ? caisseIds.filter((c) => c !== id) : [...caisseIds, id]);
+  // Une caisse n'a qu'un titulaire : celles des autres comptes sont affichées mais pas sélectionnables.
+  const titulaire = (caisseId: number) =>
+    autres.find((u) => u.id !== utilisateur?.id && u.role !== "ADMIN" && u.caisseIds.includes(caisseId));
 
   const envoyer = handleSubmit((c) => {
     if (utilisateur) {
@@ -174,23 +176,45 @@ export function UtilisateurDialogue({ utilisateur, caisses, onFermer }: Props) {
               </div>
             )}
             <fieldset className="champ cases">
-              <legend className="libelle">Caisses attribuées</legend>
+              <legend className="libelle">Caisse attribuée</legend>
               {proposees.length === 0 ? (
                 <span className="texte-secondaire">
                   Aucune caisse active : créez-en une dans l'onglet Caisses.
                 </span>
               ) : (
-                proposees.map((c) => (
-                  <label key={c.id} className="case">
+                <>
+                  <label className="case">
                     <input
-                      type="checkbox"
-                      checked={caisseIds.includes(c.id)}
-                      onChange={() => basculerCaisse(c.id)}
+                      type="radio"
+                      name="caisse"
+                      checked={caisseIds.length === 0}
+                      onChange={() => setValue("caisseIds", [])}
                     />
-                    {c.nom}
-                    {!c.active && " (inactive)"}
+                    Aucune
                   </label>
-                ))
+                  {proposees.map((c) => {
+                    const prise = titulaire(c.id);
+                    return (
+                      <label key={c.id} className={`case${prise ? " indisponible" : ""}`}>
+                        <input
+                          type="radio"
+                          name="caisse"
+                          checked={caisseIds.includes(c.id)}
+                          disabled={prise !== undefined}
+                          onChange={() => setValue("caisseIds", [c.id])}
+                        />
+                        {c.nom}
+                        {!c.active && " (inactive)"}
+                        {prise && (
+                          <span className="texte-secondaire">
+                            {" "}
+                            · attribuée à {`${prise.prenom} ${prise.nom}`.trim()}
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </>
               )}
             </fieldset>
           </>

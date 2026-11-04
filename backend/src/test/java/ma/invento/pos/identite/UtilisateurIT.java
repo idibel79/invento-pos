@@ -1,6 +1,7 @@
 package ma.invento.pos.identite;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -71,6 +72,65 @@ class UtilisateurIT extends IntegrationTest {
                         .content(json.writeValueAsString(Map.of("nom", "Caisse renommée " + suffixe, "active", false))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
+    }
+
+    @Test
+    void une_caisse_attribuee_a_un_seul_utilisateur_et_une_seule_caisse_par_utilisateur() throws Exception {
+        long caisseA = creerCaisse("Caisse A " + suffixe);
+        long caisseB = creerCaisse("Caisse B " + suffixe);
+        long caisseC = creerCaisse("Caisse C " + suffixe);
+        mvc.perform(post("/api/v1/utilisateurs")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(creation("a-" + suffixe, Role.CAISSIER, List.of(caisseA)))))
+                .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/v1/utilisateurs")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(creation("b-" + suffixe, Role.CAISSIER, List.of(caisseA)))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Cette caisse est déjà attribuée à Sara Alaoui."));
+        mvc.perform(post("/api/v1/utilisateurs")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(
+                                creation("c-" + suffixe, Role.CAISSIER, List.of(caisseB, caisseC)))))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void supprimer_une_caisse_inactive_la_retire_des_listes_et_des_attributions() throws Exception {
+        String nom = "Caisse D " + suffixe;
+        long caisseId = creerCaisse(nom);
+        long sara = lire(mvc.perform(post("/api/v1/utilisateurs")
+                                .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json.writeValueAsString(
+                                        creation("d-" + suffixe, Role.CAISSIER, List.of(caisseId)))))
+                        .andExpect(status().isCreated())
+                        .andReturn())
+                .get("id")
+                .asLong();
+
+        mvc.perform(delete("/api/v1/caisses/" + caisseId).header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(put("/api/v1/caisses/" + caisseId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("nom", nom, "active", false))))
+                .andExpect(status().isOk());
+        mvc.perform(delete("/api/v1/caisses/" + caisseId).header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/v1/caisses").header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(jsonPath("$[?(@.id == " + caisseId + ")]").isEmpty());
+        mvc.perform(get("/api/v1/utilisateurs").header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(jsonPath("$[?(@.id == " + sara + ")].caisseIds[*]").isEmpty());
+        assertThat(journal.findByAction(ActionJournal.CAISSE_SUPPRIMEE))
+                .anyMatch(a -> a.getDetail().equals(nom));
+        // Le nom redevient disponible.
+        creerCaisse(nom);
     }
 
     @Test

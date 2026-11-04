@@ -78,7 +78,7 @@ export interface paths {
         get?: never;
         put: operations["modifier_3"];
         post?: never;
-        delete?: never;
+        delete: operations["supprimer"];
         options?: never;
         head?: never;
         patch?: never;
@@ -548,6 +548,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/caisses/suivi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["suivi"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/autorisations/autorisateurs": {
         parameters: {
             query?: never;
@@ -967,7 +983,7 @@ export interface components {
             /** Format: int64 */
             utilisateurId: number | null;
             /** @enum {string} */
-            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "REMISE_AUTORISEE";
+            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "REMISE_AUTORISEE";
             detail: string | null;
             /** Format: date-time */
             creeLe: string;
@@ -982,6 +998,22 @@ export interface components {
             totalElements: number;
             /** Format: int32 */
             totalPages: number;
+        };
+        SessionEnCours: {
+            /** Format: int64 */
+            caissierId: number;
+            /** Format: date-time */
+            ouverture: string;
+            fondInitial: number;
+            especesEncaissees: number;
+            especesAttendues: number;
+        };
+        SuiviCaisseDto: {
+            /** Format: int64 */
+            id: number;
+            nom: string;
+            active: boolean;
+            session: components["schemas"]["SessionEnCours"] | null;
         };
         Autorisateur: {
             /** Format: int64 */
@@ -1165,6 +1197,26 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CaisseDto"];
                 };
+            };
+        };
+    };
+    supprimer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1987,6 +2039,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PageResponseJournalDto"];
+                };
+            };
+        };
+    };
+    suivi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuiviCaisseDto"][];
                 };
             };
         };

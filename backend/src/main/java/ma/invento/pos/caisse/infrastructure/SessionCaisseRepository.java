@@ -1,6 +1,7 @@
 package ma.invento.pos.caisse.infrastructure;
 
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import ma.invento.pos.caisse.domain.SessionCaisse;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,4 +33,6 @@ public interface SessionCaisseRepository extends JpaRepository<SessionCaisse, Lo
     Optional<SessionCaisse> findOuverteDeLaCaisseForUpdate(@Param("caisseId") long caisseId);
 
     Optional<SessionCaisse> findFirstByCaissierIdOrderByOuvertureDesc(Long caissierId);
+
+    List<SessionCaisse> findByFermetureIsNull();
 }
