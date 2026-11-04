@@ -4,7 +4,7 @@ import { ChangementMotDePasse } from "./auth/ChangementMotDePasse";
 import { Connexion } from "./auth/Connexion";
 import { useAuth } from "./auth/AuthContext";
 import { OuvertureSession } from "./caisse/OuvertureSession";
-import { useSessionCourante } from "./caisse/requetes";
+import { useAvisSessionFermee, useSessionCourante } from "./caisse/requetes";
 import { EcranVente } from "./vente/EcranVente";
 
 export function App() {
@@ -34,6 +34,7 @@ function EspaceAdmin() {
 /** Vente si une session de caisse est ouverte, sinon ouverture de la caisse. */
 function Caisse({ onAdministration }: { onAdministration?: () => void }) {
   const session = useSessionCourante();
+  const avis = useAvisSessionFermee();
   if (session.isPending) return <p className="chargement">Chargement de la caisse…</p>;
   if (session.isError) {
     return (
@@ -45,6 +46,6 @@ function Caisse({ onAdministration }: { onAdministration?: () => void }) {
   return session.data ? (
     <EcranVente session={session.data} onAdministration={onAdministration} />
   ) : (
-    <OuvertureSession onAdministration={onAdministration} />
+    <OuvertureSession avis={avis} onAdministration={onAdministration} />
   );
 }

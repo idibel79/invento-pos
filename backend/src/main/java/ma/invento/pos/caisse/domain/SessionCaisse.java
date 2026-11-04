@@ -30,6 +30,7 @@ public class SessionCaisse {
     private BigDecimal fondInitial;
     private BigDecimal montantCompte;
     private BigDecimal ecart;
+    private boolean clotureForcee;
 
     protected SessionCaisse() {}
 
@@ -56,8 +57,24 @@ public class SessionCaisse {
         this.fermeture = maintenant;
     }
 
+    /**
+     * Clôture d'office (caisse désactivée) : les espèces n'ont pas été comptées, montant compté et
+     * écart restent vides plutôt que d'afficher un écart fabriqué.
+     */
+    public void cloturerDOffice(Instant maintenant) {
+        if (!estOuverte()) {
+            throw new RegleMetierException("Cette session de caisse est déjà clôturée.");
+        }
+        this.clotureForcee = true;
+        this.fermeture = maintenant;
+    }
+
     public boolean estOuverte() {
         return fermeture == null;
+    }
+
+    public boolean isClotureForcee() {
+        return clotureForcee;
     }
 
     public Long getId() {

@@ -1,12 +1,20 @@
 /** Erreur renvoyée par l'API au format ProblemDetail (RFC 9457), message destiné à l'écran. */
 export class ErreurApi extends Error {
   readonly statut: number;
+  /** Code métier facultatif du ProblemDetail (ex. SESSION_FERMEE). */
+  readonly code: string | null;
 
-  constructor(message: string, statut: number) {
+  constructor(message: string, statut: number, code: string | null = null) {
     super(message);
     this.name = "ErreurApi";
     this.statut = statut;
+    this.code = code;
   }
+}
+
+/** Le vendeur n'a plus de session ouverte (caisse désactivée, session clôturée ailleurs). */
+export function estSessionFermee(erreur: unknown): boolean {
+  return erreur instanceof ErreurApi && erreur.code === "SESSION_FERMEE";
 }
 
 interface Reponse<T> {
@@ -18,6 +26,13 @@ interface Reponse<T> {
 function detail(erreur: unknown): string | null {
   if (erreur && typeof erreur === "object" && "detail" in erreur && typeof erreur.detail === "string") {
     return erreur.detail;
+  }
+  return null;
+}
+
+function code(erreur: unknown): string | null {
+  if (erreur && typeof erreur === "object" && "code" in erreur && typeof erreur.code === "string") {
+    return erreur.code;
   }
   return null;
 }
@@ -39,7 +54,7 @@ export async function appel<T>(promesse: Promise<Reponse<T>>): Promise<T> {
   }
   const { data, error, response } = resultat;
   if (!response.ok) {
-    throw new ErreurApi(detail(error) ?? messageParDefaut(response.status), response.status);
+    throw new ErreurApi(detail(error) ?? messageParDefaut(response.status), response.status, code(error));
   }
   return data as T;
 }

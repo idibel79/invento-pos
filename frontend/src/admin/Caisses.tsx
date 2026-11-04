@@ -118,6 +118,12 @@ function CaisseDialogue({ caisse, onFermer }: { caisse: Caisse | null; onFermer:
             </button>
           </div>
         </div>
+        {caisse?.active && !active && (
+          <p className="alerte alerte-attention" role="alert">
+            Si une session est ouverte sur cette caisse, elle sera clôturée d'office et ses ventes en attente
+            annulées.
+          </p>
+        )}
         {enregistrer.isError && (
           <p className="alerte alerte-danger" role="alert">
             {messageErreur(enregistrer.error)}

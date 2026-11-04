@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schemas } from "../api/client";
 import { appel } from "../api/erreurs";
-import { cles } from "../caisse/requetes";
+import { cles, useSiSessionFermee } from "../caisse/requetes";
 
 const cleAttente = ["ventes-en-attente"] as const;
 
@@ -38,7 +38,10 @@ function useInvalidationVente() {
 export function useValiderVente() {
   const queryClient = useQueryClient();
   const invalider = useInvalidationVente();
+  const siSessionFermee = useSiSessionFermee();
   return useMutation({
+    mutationKey: cles.operationCaisse,
+    onError: siSessionFermee,
     mutationFn: ({ cle, corps }: { cle: string; corps: Schemas["ValidationCommande"] }) =>
       appel(api.POST("/api/v1/ventes", { params: { header: { "Idempotency-Key": cle } }, body: corps })),
     onSuccess: () => {
@@ -51,7 +54,10 @@ export function useValiderVente() {
 
 export function useMettreEnAttente() {
   const invalider = useInvalidationVente();
+  const siSessionFermee = useSiSessionFermee();
   return useMutation({
+    mutationKey: cles.operationCaisse,
+    onError: siSessionFermee,
     mutationFn: ({ cle, corps }: { cle: string; corps: Schemas["MiseEnAttenteCommande"] }) =>
       appel(
         api.POST("/api/v1/ventes/attente", { params: { header: { "Idempotency-Key": cle } }, body: corps }),
@@ -62,7 +68,10 @@ export function useMettreEnAttente() {
 
 export function useReprendreVente() {
   const invalider = useInvalidationVente();
+  const siSessionFermee = useSiSessionFermee();
   return useMutation({
+    mutationKey: cles.operationCaisse,
+    onError: siSessionFermee,
     mutationFn: (id: number) => appel(api.POST("/api/v1/ventes/{id}/reprise", { params: { path: { id } } })),
     onSuccess: invalider,
   });
@@ -70,7 +79,10 @@ export function useReprendreVente() {
 
 export function useAbandonnerVente() {
   const invalider = useInvalidationVente();
+  const siSessionFermee = useSiSessionFermee();
   return useMutation({
+    mutationKey: cles.operationCaisse,
+    onError: siSessionFermee,
     mutationFn: (id: number) => appel(api.POST("/api/v1/ventes/{id}/abandon", { params: { path: { id } } })),
     onSuccess: invalider,
   });

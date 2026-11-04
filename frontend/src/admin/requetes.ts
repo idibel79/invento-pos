@@ -16,7 +16,11 @@ export function useEnregistrerCaisse() {
       id === null
         ? appel(api.POST("/api/v1/caisses", { body: corps }))
         : appel(api.PUT("/api/v1/caisses/{id}", { params: { path: { id } }, body: corps })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cles.caisses }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: cles.caisses });
+      // L'admin a pu désactiver la caisse qu'il a lui-même ouverte : sa session est alors clôturée.
+      void queryClient.invalidateQueries({ queryKey: cles.sessionCourante });
+    },
   });
 }
 
