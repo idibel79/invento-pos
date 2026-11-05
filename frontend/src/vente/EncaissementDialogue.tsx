@@ -1,11 +1,27 @@
 import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
+import { useSessionCourante } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, lireMontant, pourcent } from "../ui/format";
 import { PaveNumerique, saisirTouche } from "../ui/PaveNumerique";
 import { BilletDirham } from "./BilletDirham";
 import { useValiderVente } from "./requetes";
+
+/**
+ * Espèces dans le tiroir pour rendre la monnaie : fond + ventes en espèces + reçu − versé pendant la
+ * session (les tickets TPE ne servent pas à rendre la monnaie) ; null si la session n'est pas connue.
+ */
+export function especesDisponibles(session: Schemas["SessionCaisseDto"] | null | undefined): number | null {
+  if (!session) return null;
+  const t = session.tiroir;
+  return (
+    session.fondInitial +
+    (t?.ventesEspeces ?? session.especesEncaissees ?? 0) +
+    (t?.recu ?? 0) -
+    (t?.verse ?? 0)
+  );
+}
 
 interface Props {
   commande: Schemas["PanierCommande"];
@@ -45,6 +61,10 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
   const rendu = recu === null ? null : recu - total;
   const suffisant = recu !== null && rendu !== null && rendu >= -0.005;
   const carte = mode === "CARTE";
+  // Monnaie rendue prise sur les espèces déjà dans le tiroir ; le serveur refait le contrôle.
+  const disponibles = especesDisponibles(useSessionCourante().data);
+  const monnaieInsuffisante =
+    !carte && disponibles !== null && rendu !== null && rendu > 0.005 && rendu > disponibles + 0.005;
   const libelleValider = carte
     ? "Valider le paiement par carte"
     : suffisant && rendu > 0.005
@@ -158,6 +178,12 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
                   </div>
                 </div>
               </div>
+              {monnaieInsuffisante && (
+                <p className="alerte alerte-danger" role="alert">
+                  Monnaie insuffisante dans le tiroir : {dh(Math.max(disponibles ?? 0, 0))} disponibles.
+                  Demandez l'appoint ou encaissez par carte.
+                </p>
+              )}
               <div className="billets" role="group" aria-label="Billets reçus">
                 {BILLETS.map((b) => (
                   <button
@@ -196,7 +222,7 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
             <button
               type="button"
               className="bouton bouton-plein"
-              disabled={(!carte && !suffisant) || valider.isPending}
+              disabled={(!carte && (!suffisant || monnaieInsuffisante)) || valider.isPending}
               onClick={envoyer}
             >
               {valider.isPending ? "Validation…" : libelleValider}

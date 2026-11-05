@@ -2821,3 +2821,926 @@ button:disabled {
   outline: 2px solid var(--primaire);
   outline-offset: -2px;
 }
+
+/* ---------------------------------------------------------------- Trésorerie : Mon compte, clôture, caisse principale */
+
+.bouton-mon-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pastille-nombre {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--primaire);
+  color: var(--sur-primaire);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.barre-haut .pastille-nombre {
+  background: var(--barre-attente-texte);
+  color: var(--barre-fond);
+}
+
+/* Panneau latéral droit, par-dessus l'écran de vente. */
+.panneau-lateral {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(420px, 100vw);
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--bordure);
+  background: var(--surface);
+  color: var(--texte);
+  box-shadow: var(--ombre);
+}
+
+.panneau-lateral::backdrop {
+  background: var(--voile);
+}
+
+.panneau-contenu {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.panneau-contenu > .dialogue-tete {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.panneau-corps {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tuiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tuile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond);
+}
+
+.tuile strong {
+  font-size: 20px;
+  color: var(--texte-fort);
+}
+
+.panneau-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panneau-titre {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gris-clair);
+}
+
+.liste-a-valider {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.a-valider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--primaire);
+  border-radius: 8px;
+  background: var(--accent-doux);
+}
+
+.a-valider-ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.a-valider-montant {
+  font-size: 16px;
+  color: var(--texte-fort);
+}
+
+.a-valider-detail {
+  font-size: 12.5px;
+  color: var(--gris);
+}
+
+.a-valider-motif {
+  display: block;
+  font-size: 12px;
+  color: var(--gris-clair);
+}
+
+.a-valider-actions,
+.a-valider-refus {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.a-valider-refus input {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--champ);
+}
+
+.bouton-petit-plein {
+  border-color: var(--primaire);
+  background: var(--primaire);
+  color: var(--sur-primaire);
+}
+
+.bouton-petit-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.bouton-petit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.panneau-versement {
+  display: flex;
+  gap: 8px;
+}
+
+.panneau-versement .bouton {
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding: 0 18px;
+}
+
+.champ-montant-compact {
+  flex: 1;
+  height: 44px;
+  border-width: 1px;
+}
+
+.champ-montant-compact input {
+  font-size: 16px;
+}
+
+.historique-versements {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.historique-versements li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 13px;
+}
+
+.historique-heure {
+  color: var(--gris-clair);
+}
+
+.historique-montant {
+  font-weight: 700;
+  color: var(--texte-fort);
+}
+
+.historique-montant.positif,
+.montant-signe.positif {
+  color: var(--succes);
+}
+
+.historique-montant.negatif,
+.montant-signe.negatif {
+  color: var(--danger);
+}
+
+.montant-signe {
+  font-weight: 700;
+}
+
+/* Popup de clôture en deux colonnes : récapitulatif et dettes à gauche, comptage et versement à droite. */
+.cloture-colonnes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.cloture-colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cloture-titre {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gris-clair);
+}
+
+.encadre-ligne-legere {
+  font-weight: 500;
+  color: var(--texte);
+}
+
+.cloture-ecart {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--fond);
+  font-size: 13.5px;
+}
+
+.cloture-ecart strong {
+  font-size: 18px;
+  color: var(--texte-fort);
+}
+
+.cloture-ecart.manque {
+  background: var(--danger-fond);
+  color: var(--danger);
+}
+
+.cloture-ecart.manque strong {
+  color: var(--danger);
+}
+
+.cloture-ecart.excedent {
+  background: var(--succes-fond);
+  color: var(--succes-texte);
+}
+
+.cloture-ecart-note {
+  font-size: 12.5px;
+}
+
+.cloture-raccourcis {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .cloture-colonnes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Écran Caisse principale (administration), maquette B : comptes à gauche, détail et journal à droite. */
+.tresorerie-ecran {
+  flex-grow: 1;
+  min-width: 0;
+  margin: -24px;
+  display: flex;
+  align-items: stretch;
+}
+
+.tresorerie-comptes {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--bordure);
+}
+
+.tresorerie-comptes-titre {
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.tresorerie-compte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 16px;
+  border: none;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--bordure);
+  background: var(--surface);
+  text-align: left;
+}
+
+.tresorerie-compte:hover {
+  background: var(--ligne-survol);
+}
+
+.tresorerie-compte[aria-current="true"] {
+  border-left-color: var(--primaire);
+  background: var(--accent-doux);
+}
+
+.tresorerie-compte.inactif {
+  opacity: 0.65;
+}
+
+.tresorerie-compte-texte {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tresorerie-compte-nom {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
+.tresorerie-compte-detail {
+  font-size: 12px;
+  color: var(--gris);
+}
+
+.tresorerie-compte strong {
+  font-size: 14px;
+  color: var(--texte-fort);
+}
+
+.tresorerie-principal {
+  flex-grow: 1;
+  min-width: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tresorerie-entete {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tresorerie-solde {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.tresorerie-solde-montant {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--texte-fort);
+}
+
+.tresorerie-solde-montant span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gris-clair);
+}
+
+.bouton-compact {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--texte-fort);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.bouton-compact.plein {
+  border-color: var(--primaire);
+  background: var(--primaire);
+  color: var(--sur-primaire);
+  font-weight: 600;
+}
+
+.bouton-compact:hover:not(:disabled) {
+  border-color: var(--primaire);
+}
+
+.bouton-compact.plein:hover:not(:disabled) {
+  background: var(--primaire-survol);
+}
+
+.bouton-compact:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.bandeau-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--primaire);
+  border-radius: 8px;
+  background: var(--accent-doux);
+  font-size: 13.5px;
+  color: var(--texte-fort);
+}
+
+.bandeau-info .bouton-compact {
+  height: 34px;
+  font-size: 13px;
+}
+
+.bandeau-info-texte {
+  flex-grow: 1;
+}
+
+.bandeau-attention {
+  border-color: var(--alerte);
+  background: var(--alerte-fond);
+  color: var(--alerte-texte);
+}
+
+.texte-gris {
+  color: var(--gris);
+}
+
+.carte-journal {
+  flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.carte-journal-tete {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.carte-journal-tete h2 {
+  flex-grow: 1;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
+.filtre-compact {
+  display: inline-flex;
+}
+
+.filtre-compact select,
+.filtre-compact input,
+button.filtre-compact {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--champ);
+  color: var(--gris);
+  font-size: 12.5px;
+}
+
+button.filtre-compact {
+  align-items: center;
+}
+
+.filtre-compact select {
+  appearance: none;
+  padding-right: 10px;
+}
+
+.journal-tresorerie {
+  overflow-x: auto;
+}
+
+.journal-ligne {
+  display: grid;
+  grid-template-columns: 96px minmax(200px, 1fr) 130px 104px 76px 100px 110px 150px;
+  gap: 10px;
+  align-items: center;
+  min-width: 1000px;
+  min-height: 42px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 13px;
+}
+
+.journal-entete {
+  min-height: 34px;
+  background: var(--rupture-fond);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.journal-operation {
+  font-weight: 500;
+  color: var(--texte-fort);
+}
+
+.journal-tresorerie .statut {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+
+@media (max-width: 900px) {
+  .tresorerie-ecran {
+    flex-direction: column;
+  }
+
+  .tresorerie-comptes {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--bordure);
+  }
+}
+
+/* Page Mon compte (maquette B) : solde et mini-calendrier à gauche, journée choisie à droite. */
+.page-mon-compte {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: var(--fond);
+  color: var(--texte);
+  display: flex;
+  flex-direction: column;
+}
+
+.page-mon-compte:not([open]) {
+  display: none;
+}
+
+.barre-nom {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid var(--barre-bordure);
+  font-size: 13px;
+}
+
+.mon-compte-corps {
+  flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  overflow: auto;
+}
+
+.mon-compte-gauche {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.carte-blanche {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.carte-blanche > .texte-gris {
+  font-size: 13px;
+}
+
+.texte-gris.petit,
+.petit {
+  font-size: 12px;
+}
+
+.mon-compte-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mon-compte-actions .bouton-compact {
+  flex: 1 1 0;
+}
+
+.calendrier-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--texte-fort);
+}
+
+.calendrier-fleche {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--texte-fort);
+}
+
+.calendrier-fleche:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.calendrier-grille {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 38px;
+  gap: 2px;
+}
+
+.calendrier-semaine {
+  grid-auto-rows: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gris);
+}
+
+.calendrier-jour {
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--texte-fort);
+  font-size: 12.5px;
+}
+
+.calendrier-jour:hover:not(:disabled) {
+  background: var(--ligne-survol);
+}
+
+.calendrier-jour.hors-mois,
+.calendrier-jour:disabled {
+  color: var(--gris-clair);
+  opacity: 0.6;
+}
+
+.calendrier-jour:disabled {
+  cursor: default;
+}
+
+.calendrier-jour.aujourdhui {
+  box-shadow: inset 0 0 0 1px var(--primaire);
+  font-weight: 600;
+}
+
+.calendrier-jour[aria-pressed="true"] {
+  background: var(--primaire);
+  color: var(--sur-primaire);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.calendrier-point {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--primaire);
+}
+
+.calendrier-point.absent {
+  background: transparent;
+}
+
+.calendrier-jour[aria-pressed="true"] .calendrier-point:not(.absent) {
+  background: var(--sur-primaire);
+}
+
+.mon-compte-droite {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mon-compte-titre {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.mon-compte-titre h1 {
+  flex-grow: 1;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--texte-fort);
+}
+
+.mon-compte-titre .texte-gris {
+  font-size: 13px;
+}
+
+.mon-compte-tuiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mon-compte-tuile {
+  gap: 2px;
+  padding: 12px 14px;
+}
+
+.mon-compte-tuile .texte-gris {
+  font-size: 12px;
+}
+
+.mon-compte-tuile strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--texte-fort);
+}
+
+.chronologie {
+  padding: 8px 20px;
+}
+
+.chronologie-liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chronologie-ligne {
+  display: grid;
+  grid-template-columns: 56px 16px minmax(0, 1fr) 110px 120px;
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 13px;
+}
+
+.chronologie-ligne:last-child {
+  border-bottom: none;
+}
+
+.chronologie-puce {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.chronologie-puce.vert {
+  background: var(--succes);
+}
+
+.chronologie-puce.bleu {
+  background: var(--primaire);
+}
+
+.chronologie-puce.rouge {
+  background: var(--danger);
+}
+
+.chronologie-puce.gris {
+  background: var(--gris-clair);
+}
+
+.chronologie-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chronologie-libelle {
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
+.chronologie-montant {
+  text-align: right;
+  font-size: 15px;
+  color: var(--texte-fort);
+}
+
+.chronologie-montant.barre {
+  color: var(--gris-clair);
+  text-decoration: line-through;
+}
+
+.panneau-titre-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 900px) {
+  .mon-compte-corps {
+    flex-direction: column;
+  }
+
+  .mon-compte-gauche {
+    width: auto;
+  }
+
+  .mon-compte-tuiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chronologie-ligne {
+    grid-template-columns: 48px 12px minmax(0, 1fr) auto;
+  }
+
+  .chronologie-ligne > span:nth-child(4) {
+    display: none;
+  }
+}
+
+/* Écran d'ouverture : action principale pleine largeur, actions secondaires de même largeur, déconnexion discrète. */
+.ouverture-principal {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.ouverture-secondaires {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 10px;
+}
+
+.ouverture-secondaires .bouton {
+  min-height: 44px;
+  white-space: nowrap;
+  justify-content: center;
+}
+
+.ouverture-deconnexion {
+  align-self: center;
+  min-height: 40px;
+}

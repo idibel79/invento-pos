@@ -44,6 +44,8 @@ describe("EncaissementDialogue", () => {
   it("envoie la vente avec une clé d'idempotence, conservée en cas de nouvel essai", async () => {
     const requetes: Request[] = [];
     const fetchSimule = vi.fn(async (requete: Request) => {
+      // Session courante (monnaie disponible) : sans session connue, pas de contrôle côté écran.
+      if (requete.method === "GET") return new Response(null, { status: 204 });
       requetes.push(requete);
       if (requetes.length === 1) return new Response(null, { status: 503 });
       return new Response(JSON.stringify({ id: 1, numero: "C1-000001" }), {

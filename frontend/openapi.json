@@ -499,6 +499,225 @@
         }
       }
     },
+    "/api/v1/tresorerie/versements/{id}/validation" : {
+      "post" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "valider_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VersementDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/versements/{id}/refus" : {
+      "post" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "refuser",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefusCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VersementDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/versements/{id}/annulation" : {
+      "post" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "annuler",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VersementDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/principale/versements" : {
+      "post" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "verserAuCaissier",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersementCaissierCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VersementDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/principale/retrait" : {
+      "post" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "retirer",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OperationCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/principale/alimentation" : {
+      "post" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "alimenter",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OperationCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/mon-compte/versements" : {
+      "post" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "verser",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersementCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VersementDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/comptes/{utilisateurId}/ajustement" : {
+      "post" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "ajuster",
+        "parameters" : [ {
+          "name" : "utilisateurId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OperationCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/sessions" : {
       "post" : {
         "tags" : [ "session-caisse-controller" ],
@@ -516,6 +735,43 @@
         "responses" : {
           "201" : {
             "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionCaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/comptage" : {
+      "post" : {
+        "tags" : [ "session-caisse-controller" ],
+        "operationId" : "terminerComptage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClotureCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1067,6 +1323,227 @@
         }
       }
     },
+    "/api/v1/tresorerie/principale/a-valider" : {
+      "get" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "aValider",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VersementDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/mon-compte" : {
+      "get" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "monCompte",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MonCompteDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/mon-compte/journee" : {
+      "get" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "journee",
+        "parameters" : [ {
+          "name" : "jour",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JourneeDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/mon-compte/calendrier" : {
+      "get" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "calendrier",
+        "parameters" : [ {
+          "name" : "mois",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\d{4}-(0[1-9]|1[0-2])"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CalendrierDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/journal" : {
+      "get" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "journal",
+        "parameters" : [ {
+          "name" : "jour",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "caisseId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "utilisateurId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "statut",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EN_TRANSIT", "VALIDE", "AUTO_VALIDE", "REFUSE", "ANNULE" ]
+          }
+        }, {
+          "name" : "croissant",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "taille",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 200,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseOperation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/comptes" : {
+      "get" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "comptes",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ComptesDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tresorerie/comptes/{utilisateurId}/versements" : {
+      "get" : {
+        "tags" : [ "caisse-principale-controller" ],
+        "operationId" : "versementsDuCaissier",
+        "parameters" : [ {
+          "name" : "utilisateurId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VersementDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/courante" : {
       "get" : {
         "tags" : [ "session-caisse-controller" ],
@@ -1078,6 +1555,27 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SessionCaisseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/comptages-en-attente" : {
+      "get" : {
+        "tags" : [ "session-caisse-controller" ],
+        "operationId" : "comptagesEnAttente",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SessionCaisseDto"
+                  }
                 }
               }
             }
@@ -2120,6 +2618,117 @@
         },
         "required" : [ "caisseIds", "login", "motDePasseTemporaire", "nom", "prenom", "role", "seuilsRemise" ]
       },
+      "VersementDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "montant" : {
+            "type" : "number"
+          },
+          "statut" : {
+            "type" : "string",
+            "enum" : [ "EN_TRANSIT", "VALIDE", "REFUSE", "ANNULE" ]
+          },
+          "versLaPrincipale" : {
+            "type" : "boolean"
+          },
+          "caissierId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "caissier" : {
+            "type" : "string"
+          },
+          "motif" : {
+            "type" : [ "string", "null" ]
+          },
+          "cloture" : {
+            "type" : "boolean"
+          },
+          "autoValide" : {
+            "type" : "boolean"
+          },
+          "creeLe" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "traiteLe" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "autoValide", "caissier", "caissierId", "cloture", "creeLe", "id", "montant", "motif", "statut", "traiteLe", "versLaPrincipale" ]
+      },
+      "RefusCommande" : {
+        "type" : "object",
+        "properties" : {
+          "motif" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "motif" ]
+      },
+      "VersementCaissierCommande" : {
+        "type" : "object",
+        "properties" : {
+          "utilisateurId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "montant" : {
+            "type" : "number",
+            "minimum" : 0.01
+          },
+          "motif" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "cle" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "montant", "utilisateurId" ]
+      },
+      "OperationCommande" : {
+        "type" : "object",
+        "properties" : {
+          "montant" : {
+            "type" : "number",
+            "minimum" : 0.01
+          },
+          "motif" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "cle" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "montant" ]
+      },
+      "VersementCommande" : {
+        "type" : "object",
+        "properties" : {
+          "montant" : {
+            "type" : "number",
+            "minimum" : 0.01
+          },
+          "cle" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "montant" ]
+      },
       "OuvertureCommande" : {
         "type" : "object",
         "properties" : {
@@ -2174,9 +2783,43 @@
           },
           "clotureForcee" : {
             "type" : "boolean"
+          },
+          "comptageEnAttente" : {
+            "type" : "boolean"
+          },
+          "tiroir" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/TiroirDto"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "caisseId", "caisseNom", "caissierId", "clotureForcee", "ecart", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "ouverture" ]
+        "required" : [ "caisseId", "caisseNom", "caissierId", "clotureForcee", "comptageEnAttente", "ecart", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "ouverture", "tiroir" ]
+      },
+      "TiroirDto" : {
+        "type" : "object",
+        "properties" : {
+          "ventesEspeces" : {
+            "type" : "number"
+          },
+          "ventesCarte" : {
+            "type" : "number"
+          },
+          "recu" : {
+            "type" : "number"
+          },
+          "verse" : {
+            "type" : "number"
+          },
+          "attendu" : {
+            "type" : "number"
+          },
+          "soldeCompte" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "attendu", "recu", "soldeCompte", "ventesCarte", "ventesEspeces", "verse" ]
       },
       "ClotureCommande" : {
         "type" : "object",
@@ -2184,9 +2827,13 @@
           "montantCompte" : {
             "type" : "number",
             "minimum" : 0.0
+          },
+          "montantVerse" : {
+            "type" : "number",
+            "minimum" : 0.0
           }
         },
-        "required" : [ "montantCompte" ]
+        "required" : [ "montantCompte", "montantVerse" ]
       },
       "InventaireDisponible" : {
         "type" : "object",
@@ -2408,6 +3055,328 @@
         },
         "required" : [ "codeSecours" ]
       },
+      "MonCompteDto" : {
+        "type" : "object",
+        "properties" : {
+          "solde" : {
+            "type" : "number"
+          },
+          "sessionOuverte" : {
+            "type" : "boolean"
+          },
+          "tiroirAttendu" : {
+            "type" : [ "number", "null" ]
+          },
+          "aValider" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VersementDto"
+            }
+          },
+          "historique" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VersementDto"
+            }
+          }
+        },
+        "required" : [ "aValider", "historique", "sessionOuverte", "solde", "tiroirAttendu" ]
+      },
+      "JourneeDto" : {
+        "type" : "object",
+        "properties" : {
+          "jour" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "sessions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SessionJourneeDto"
+            }
+          },
+          "soldeDebut" : {
+            "type" : "number"
+          },
+          "recu" : {
+            "type" : "number"
+          },
+          "ventes" : {
+            "type" : "number"
+          },
+          "verse" : {
+            "type" : "number"
+          },
+          "soldeFin" : {
+            "type" : "number"
+          },
+          "lignes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LigneJourneeDto"
+            }
+          }
+        },
+        "required" : [ "jour", "lignes", "recu", "sessions", "soldeDebut", "soldeFin", "ventes", "verse" ]
+      },
+      "LigneJourneeDto" : {
+        "type" : "object",
+        "properties" : {
+          "le" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "OUVERTURE", "VENTES", "CLOTURE", "VERSEMENT", "AJUSTEMENT" ]
+          },
+          "montant" : {
+            "type" : "number"
+          },
+          "caisse" : {
+            "type" : [ "string", "null" ]
+          },
+          "tickets" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "especes" : {
+            "type" : [ "number", "null" ]
+          },
+          "carte" : {
+            "type" : [ "number", "null" ]
+          },
+          "montantCompte" : {
+            "type" : [ "number", "null" ]
+          },
+          "ecart" : {
+            "type" : [ "number", "null" ]
+          },
+          "clotureForcee" : {
+            "type" : "boolean"
+          },
+          "comptageEnAttente" : {
+            "type" : "boolean"
+          },
+          "versLaPrincipale" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "statut" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "EN_TRANSIT", "VALIDE", "REFUSE", "ANNULE" ]
+          },
+          "autoValide" : {
+            "type" : "boolean"
+          },
+          "cloture" : {
+            "type" : "boolean"
+          },
+          "creePar" : {
+            "type" : [ "string", "null" ]
+          },
+          "traitePar" : {
+            "type" : [ "string", "null" ]
+          },
+          "traiteLe" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "motif" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "autoValide", "caisse", "carte", "cloture", "clotureForcee", "comptageEnAttente", "creePar", "ecart", "especes", "le", "montant", "montantCompte", "motif", "statut", "tickets", "traiteLe", "traitePar", "type", "versLaPrincipale" ]
+      },
+      "SessionJourneeDto" : {
+        "type" : "object",
+        "properties" : {
+          "caisse" : {
+            "type" : "string"
+          },
+          "ouverture" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "fermeture" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "caisse", "fermeture", "ouverture" ]
+      },
+      "CalendrierDto" : {
+        "type" : "object",
+        "properties" : {
+          "mois" : {
+            "type" : "string"
+          },
+          "jours" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
+            }
+          }
+        },
+        "required" : [ "jours", "mois" ]
+      },
+      "Operation" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "le" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "ALIMENTATION", "RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_RECU", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "AJUSTEMENT", "CLOTURE_SESSION" ]
+          },
+          "compte" : {
+            "type" : "string",
+            "enum" : [ "PRINCIPALE", "CAISSIER" ]
+          },
+          "montant" : {
+            "type" : "number"
+          },
+          "caissierId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "caissier" : {
+            "type" : [ "string", "null" ]
+          },
+          "caisse" : {
+            "type" : [ "string", "null" ]
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "ecartSession" : {
+            "type" : [ "number", "null" ]
+          },
+          "versementId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "versLaPrincipale" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "statut" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "EN_TRANSIT", "VALIDE", "REFUSE", "ANNULE" ]
+          },
+          "autoValide" : {
+            "type" : "boolean"
+          },
+          "cloture" : {
+            "type" : "boolean"
+          },
+          "motif" : {
+            "type" : [ "string", "null" ]
+          },
+          "soldePrincipaleApres" : {
+            "type" : "number"
+          },
+          "soldeCaissierApres" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "versLaPrincipale", "versementId" ]
+      },
+      "PageResponseOperation" : {
+        "type" : "object",
+        "properties" : {
+          "contenu" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Operation"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "taille" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "CompteCaissierDto" : {
+        "type" : "object",
+        "properties" : {
+          "utilisateurId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          },
+          "actif" : {
+            "type" : "boolean"
+          },
+          "solde" : {
+            "type" : "number"
+          },
+          "sessionOuverteCaisse" : {
+            "type" : [ "string", "null" ]
+          },
+          "recusEnTransitNombre" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "recusEnTransitMontant" : {
+            "type" : "number"
+          },
+          "envoyesEnTransitNombre" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "envoyesEnTransitMontant" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "actif", "envoyesEnTransitMontant", "envoyesEnTransitNombre", "nom", "recusEnTransitMontant", "recusEnTransitNombre", "role", "sessionOuverteCaisse", "solde", "utilisateurId" ]
+      },
+      "ComptesDto" : {
+        "type" : "object",
+        "properties" : {
+          "soldePrincipale" : {
+            "type" : "number"
+          },
+          "aValiderNombre" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "aValiderMontant" : {
+            "type" : "number"
+          },
+          "caissiers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CompteCaissierDto"
+            }
+          }
+        },
+        "required" : [ "aValiderMontant", "aValiderNombre", "caissiers", "soldePrincipale" ]
+      },
       "PageResponseRemiseJournal" : {
         "type" : "object",
         "properties" : {
@@ -2552,7 +3521,7 @@
           },
           "action" : {
             "type" : "string",
-            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "REMISE_AUTORISEE" ]
+            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "SESSION_COMPTEE", "CAISSE_PRINCIPALE_ALIMENTEE", "CAISSE_PRINCIPALE_RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_VALIDE", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "COMPTE_AJUSTE", "REMISE_AUTORISEE" ]
           },
           "detail" : {
             "type" : [ "string", "null" ]

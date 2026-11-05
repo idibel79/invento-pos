@@ -196,6 +196,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tresorerie/versements/{id}/validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["valider_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/versements/{id}/refus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refuser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/versements/{id}/annulation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["annuler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/principale/versements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verserAuCaissier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/principale/retrait": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retirer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/principale/alimentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["alimenter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/mon-compte/versements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/comptes/{utilisateurId}/ajustement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ajuster"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions": {
         parameters: {
             query?: never;
@@ -206,6 +334,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ouvrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{id}/comptage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["terminerComptage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -436,6 +580,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tresorerie/principale/a-valider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["aValider"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/mon-compte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["monCompte"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/mon-compte/journee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["journee"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/mon-compte/calendrier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["calendrier"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["journal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/comptes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["comptes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tresorerie/comptes/{utilisateurId}/versements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["versementsDuCaissier"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/courante": {
         parameters: {
             query?: never;
@@ -444,6 +700,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["courante"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/comptages-en-attente": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["comptagesEnAttente"];
         put?: never;
         post?: never;
         delete?: never;
@@ -829,6 +1101,46 @@ export interface components {
             pin?: string | null;
             seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
         };
+        VersementDto: {
+            /** Format: int64 */
+            id: number;
+            montant: number;
+            /** @enum {string} */
+            statut: "EN_TRANSIT" | "VALIDE" | "REFUSE" | "ANNULE";
+            versLaPrincipale: boolean;
+            /** Format: int64 */
+            caissierId: number;
+            caissier: string;
+            motif: string | null;
+            cloture: boolean;
+            autoValide: boolean;
+            /** Format: date-time */
+            creeLe: string;
+            /** Format: date-time */
+            traiteLe: string | null;
+        };
+        RefusCommande: {
+            motif: string;
+        };
+        VersementCaissierCommande: {
+            /** Format: int64 */
+            utilisateurId: number;
+            montant: number;
+            motif?: string | null;
+            /** Format: uuid */
+            cle?: string | null;
+        };
+        OperationCommande: {
+            montant: number;
+            motif?: string | null;
+            /** Format: uuid */
+            cle?: string | null;
+        };
+        VersementCommande: {
+            montant: number;
+            /** Format: uuid */
+            cle?: string | null;
+        };
         OuvertureCommande: {
             /** Format: int64 */
             caisseId: number;
@@ -851,9 +1163,20 @@ export interface components {
             especesEncaissees: number | null;
             ecart: number | null;
             clotureForcee: boolean;
+            comptageEnAttente: boolean;
+            tiroir: components["schemas"]["TiroirDto"] | null;
+        };
+        TiroirDto: {
+            ventesEspeces: number;
+            ventesCarte: number;
+            recu: number;
+            verse: number;
+            attendu: number;
+            soldeCompte: number | null;
         };
         ClotureCommande: {
             montantCompte: number;
+            montantVerse: number;
         };
         InventaireDisponible: {
             numero: string;
@@ -930,6 +1253,122 @@ export interface components {
         CodeSecoursDto: {
             codeSecours: string;
         };
+        MonCompteDto: {
+            solde: number;
+            sessionOuverte: boolean;
+            tiroirAttendu: number | null;
+            aValider: components["schemas"]["VersementDto"][];
+            historique: components["schemas"]["VersementDto"][];
+        };
+        JourneeDto: {
+            /** Format: date */
+            jour: string;
+            sessions: components["schemas"]["SessionJourneeDto"][];
+            soldeDebut: number;
+            recu: number;
+            ventes: number;
+            verse: number;
+            soldeFin: number;
+            lignes: components["schemas"]["LigneJourneeDto"][];
+        };
+        LigneJourneeDto: {
+            /** Format: date-time */
+            le: string;
+            /** @enum {string} */
+            type: "OUVERTURE" | "VENTES" | "CLOTURE" | "VERSEMENT" | "AJUSTEMENT";
+            montant: number;
+            caisse: string | null;
+            /** Format: int32 */
+            tickets: number | null;
+            especes: number | null;
+            carte: number | null;
+            montantCompte: number | null;
+            ecart: number | null;
+            clotureForcee: boolean;
+            comptageEnAttente: boolean;
+            versLaPrincipale: boolean | null;
+            /** @enum {string|null} */
+            statut: "EN_TRANSIT" | "VALIDE" | "REFUSE" | "ANNULE" | null;
+            autoValide: boolean;
+            cloture: boolean;
+            creePar: string | null;
+            traitePar: string | null;
+            /** Format: date-time */
+            traiteLe: string | null;
+            motif: string | null;
+        };
+        SessionJourneeDto: {
+            caisse: string;
+            /** Format: date-time */
+            ouverture: string;
+            /** Format: date-time */
+            fermeture: string | null;
+        };
+        CalendrierDto: {
+            mois: string;
+            jours: string[];
+        };
+        Operation: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            le: string;
+            /** @enum {string} */
+            type: "ALIMENTATION" | "RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_RECU" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "AJUSTEMENT" | "CLOTURE_SESSION";
+            /** @enum {string} */
+            compte: "PRINCIPALE" | "CAISSIER";
+            montant: number;
+            /** Format: int64 */
+            caissierId: number | null;
+            caissier: string | null;
+            caisse: string | null;
+            auteur: string;
+            ecartSession: number | null;
+            /** Format: int64 */
+            versementId: number | null;
+            versLaPrincipale: boolean | null;
+            /** @enum {string|null} */
+            statut: "EN_TRANSIT" | "VALIDE" | "REFUSE" | "ANNULE" | null;
+            autoValide: boolean;
+            cloture: boolean;
+            motif: string | null;
+            soldePrincipaleApres: number;
+            soldeCaissierApres: number | null;
+        };
+        PageResponseOperation: {
+            contenu: components["schemas"]["Operation"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            taille: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        CompteCaissierDto: {
+            /** Format: int64 */
+            utilisateurId: number;
+            nom: string;
+            /** @enum {string} */
+            role: "CAISSIER" | "RESPONSABLE" | "ADMIN";
+            actif: boolean;
+            solde: number;
+            sessionOuverteCaisse: string | null;
+            /** Format: int32 */
+            recusEnTransitNombre: number;
+            recusEnTransitMontant: number;
+            /** Format: int32 */
+            envoyesEnTransitNombre: number;
+            envoyesEnTransitMontant: number;
+        };
+        ComptesDto: {
+            soldePrincipale: number;
+            /** Format: int32 */
+            aValiderNombre: number;
+            aValiderMontant: number;
+            caissiers: components["schemas"]["CompteCaissierDto"][];
+        };
         PageResponseRemiseJournal: {
             contenu: components["schemas"]["RemiseJournal"][];
             /** Format: int32 */
@@ -987,7 +1426,7 @@ export interface components {
             /** Format: int64 */
             utilisateurId: number | null;
             /** @enum {string} */
-            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "REMISE_AUTORISEE";
+            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "SESSION_COMPTEE" | "CAISSE_PRINCIPALE_ALIMENTEE" | "CAISSE_PRINCIPALE_RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_VALIDE" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "COMPTE_AJUSTE" | "REMISE_AUTORISEE";
             detail: string | null;
             /** Format: date-time */
             creeLe: string;
@@ -1449,6 +1888,192 @@ export interface operations {
             };
         };
     };
+    valider_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"];
+                };
+            };
+        };
+    };
+    refuser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefusCommande"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"];
+                };
+            };
+        };
+    };
+    annuler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"];
+                };
+            };
+        };
+    };
+    verserAuCaissier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersementCaissierCommande"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"];
+                };
+            };
+        };
+    };
+    retirer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OperationCommande"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    alimenter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OperationCommande"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    verser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersementCommande"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"];
+                };
+            };
+        };
+    };
+    ajuster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                utilisateurId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OperationCommande"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ouvrir: {
         parameters: {
             query?: never;
@@ -1464,6 +2089,32 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCaisseDto"];
+                };
+            };
+        };
+    };
+    terminerComptage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClotureCommande"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1881,6 +2532,160 @@ export interface operations {
             };
         };
     };
+    aValider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"][];
+                };
+            };
+        };
+    };
+    monCompte: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonCompteDto"];
+                };
+            };
+        };
+    };
+    journee: {
+        parameters: {
+            query: {
+                jour: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JourneeDto"];
+                };
+            };
+        };
+    };
+    calendrier: {
+        parameters: {
+            query: {
+                mois: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendrierDto"];
+                };
+            };
+        };
+    };
+    journal: {
+        parameters: {
+            query?: {
+                jour?: string;
+                caisseId?: number;
+                utilisateurId?: number;
+                statut?: "EN_TRANSIT" | "VALIDE" | "AUTO_VALIDE" | "REFUSE" | "ANNULE";
+                croissant?: boolean;
+                page?: number;
+                taille?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseOperation"];
+                };
+            };
+        };
+    };
+    comptes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComptesDto"];
+                };
+            };
+        };
+    };
+    versementsDuCaissier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                utilisateurId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"][];
+                };
+            };
+        };
+    };
     courante: {
         parameters: {
             query?: never;
@@ -1897,6 +2702,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionCaisseDto"];
+                };
+            };
+        };
+    };
+    comptagesEnAttente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCaisseDto"][];
                 };
             };
         };

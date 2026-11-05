@@ -1,5 +1,6 @@
 package ma.invento.pos.vente.application;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -187,12 +188,27 @@ public class VenteService {
         } else if (commande.especesRecues() == null) {
             throw new RegleMetierException("Indiquez le montant reçu en espèces.");
         } else {
+            // Avant la validation : la vente n'est pas encore comptée dans les espèces du tiroir.
+            verifierMonnaie(commande.especesRecues().subtract(vente.getTotalTtc()), session);
             vente.validerEnEspeces(commande.especesRecues(), cle, maintenant);
         }
         ventes.save(vente);
         stock.sortirPourVente(quantites(panier), vente.getNumero(), vendeur.id(), maintenant);
         journaliserAccords(accords, vente, vendeur);
         return versDto(vente, panier.produits());
+    }
+
+    /**
+     * La monnaie rendue sort des espèces déjà dans le tiroir (le billet du client ne peut pas servir à se
+     * rendre la monnaie à lui-même) : elle ne peut pas les dépasser.
+     */
+    private void verifierMonnaie(BigDecimal rendu, SessionOuverte session) {
+        if (rendu.signum() <= 0) return;
+        BigDecimal disponibles = sessions.especesDisponibles(session.id());
+        if (rendu.compareTo(disponibles) > 0) {
+            throw new RegleMetierException("Monnaie insuffisante dans le tiroir : "
+                    + disponibles.max(BigDecimal.ZERO).toPlainString() + " DH disponibles.");
+        }
     }
 
     /**

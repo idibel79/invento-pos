@@ -7,6 +7,7 @@ import { decimal, dh, heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeValide } from "../ui/icones";
 import { IconeInvento } from "../ui/Logo";
+import { BoutonMonCompte } from "../tresorerie/MonComptePanneau";
 import { AttenteDialogue } from "./AttenteDialogue";
 import { Catalogue } from "./Catalogue";
 import { EncaissementDialogue } from "./EncaissementDialogue";
@@ -58,7 +59,9 @@ export function EcranVente({ session, onAdministration }: Props) {
     dispatch({ type: "vider" });
   };
   const total = calcul.data?.totaux.totalTtc ?? 0;
-  const especes = session.especesEncaissees ?? 0;
+  const tiroir = session.tiroir;
+  const ventes = (tiroir?.ventesEspeces ?? session.especesEncaissees ?? 0) + (tiroir?.ventesCarte ?? 0);
+  const mouvements = (tiroir?.recu ?? 0) - (tiroir?.verse ?? 0);
 
   return (
     <div className="ecran-vente">
@@ -73,12 +76,13 @@ export function EcranVente({ session, onAdministration }: Props) {
         </span>
         <span className="barre-tiroir">
           <span className="barre-tiroir-total">
-            <span>Espèces dans le tiroir</span>
-            <strong>{dh(session.fondInitial + especes)}</strong>
+            <span>Dans le tiroir</span>
+            <strong>{dh(tiroir?.attendu ?? session.fondInitial + ventes)}</strong>
           </span>
           <span className="barre-tiroir-detail">
             fond {decimal(session.fondInitial)}
-            <br />+ encaissé {decimal(especes)}
+            <br />+ ventes {decimal(ventes)}
+            {mouvements !== 0 && ` ${mouvements > 0 ? "+" : "−"} versements ${decimal(Math.abs(mouvements))}`}
           </span>
           <button
             type="button"
@@ -90,6 +94,7 @@ export function EcranVente({ session, onAdministration }: Props) {
           </button>
         </span>
         <span className="barre-espace" />
+        <BoutonMonCompte classe="barre-bouton" />
         <button
           type="button"
           className={`barre-bouton barre-attente${nombreEnAttente > 0 ? " signalee" : ""}`}

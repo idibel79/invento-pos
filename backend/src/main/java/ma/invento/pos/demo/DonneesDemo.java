@@ -23,6 +23,7 @@ import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.stock.domain.MouvementStock;
 import ma.invento.pos.stock.domain.TypeMouvement;
 import ma.invento.pos.stock.infrastructure.MouvementStockRepository;
+import ma.invento.pos.tresorerie.application.TresorerieService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -56,6 +57,7 @@ public class DonneesDemo {
     private final TvaRepository tvas;
     private final ProduitRepository produits;
     private final MouvementStockRepository mouvements;
+    private final TresorerieService tresorerie;
     private final PasswordEncoder encoder;
     private final Clock clock;
 
@@ -68,6 +70,7 @@ public class DonneesDemo {
             TvaRepository tvas,
             ProduitRepository produits,
             MouvementStockRepository mouvements,
+            TresorerieService tresorerie,
             PasswordEncoder encoder,
             Clock clock) {
         this.utilisateurs = utilisateurs;
@@ -78,6 +81,7 @@ public class DonneesDemo {
         this.tvas = tvas;
         this.produits = produits;
         this.mouvements = mouvements;
+        this.tresorerie = tresorerie;
         this.encoder = encoder;
         this.clock = clock;
     }
@@ -86,7 +90,11 @@ public class DonneesDemo {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void creerSiBaseVide() {
-        if (caisses.count() > 0) return;
+        if (caisses.count() == 0) creerBase();
+        creerTresorerieSiVide();
+    }
+
+    private void creerBase() {
         Utilisateur admin = utilisateurs.findByRole(Role.ADMIN).orElseThrow();
         long adminId = admin.getId();
         admin.changerMotDePasse(encoder.encode(MOT_DE_PASSE));
@@ -113,6 +121,18 @@ public class DonneesDemo {
 
         creerCatalogue(adminId);
         log.info("Données de démo créées : comptes admin, responsable, caissier (mot de passe {}).", MOT_DE_PASSE);
+    }
+
+    /**
+     * Caisse principale alimentée de 20 000 DH ; les comptes des caissiers partent de 0 DH (l'admin
+     * leur verse leur fond). Aussi sur une base démo conservée, tant que le journal de
+     * la caisse principale est vide.
+     */
+    private void creerTresorerieSiVide() {
+        if (tresorerie.journal(null, null, null, null, false, 0, 1).totalElements() > 0) return;
+        long adminId = utilisateurs.findByRole(Role.ADMIN).orElseThrow().getId();
+        tresorerie.alimenter(new BigDecimal("20000.00"), "Fonds de démo", null, adminId);
+        log.info("Caisse principale de démo alimentée ; les comptes des caissiers partent de 0 DH.");
     }
 
     private void creerCompte(

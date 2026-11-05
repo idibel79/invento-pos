@@ -65,16 +65,20 @@ export function useOuvrirSession() {
       const mutations = queryClient.getMutationCache();
       mutations.findAll({ mutationKey: cles.operationCaisse }).forEach((m) => mutations.remove(m));
       queryClient.setQueryData(cles.sessionCourante, session);
+      void queryClient.invalidateQueries({ queryKey: ["tresorerie"] });
     },
   });
 }
 
 export function useCloturerSession() {
   const siSessionFermee = useSiSessionFermee();
+  const queryClient = useQueryClient();
   return useMutation({
+    // Le compte du caissier change à la clôture (ventes, excédent, versement en transit).
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["tresorerie"] }),
     mutationKey: cles.operationCaisse,
-    mutationFn: ({ id, montantCompte }: { id: number; montantCompte: number }) =>
-      appel(api.POST("/api/v1/sessions/{id}/cloture", { params: { path: { id } }, body: { montantCompte } })),
+    mutationFn: ({ id, ...corps }: { id: number; montantCompte: number; montantVerse: number }) =>
+      appel(api.POST("/api/v1/sessions/{id}/cloture", { params: { path: { id } }, body: corps })),
     onError: siSessionFermee,
   });
 }

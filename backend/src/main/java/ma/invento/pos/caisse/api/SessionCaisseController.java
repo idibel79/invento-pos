@@ -5,11 +5,13 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.util.List;
 import ma.invento.pos.caisse.application.SessionCaisseService;
 import ma.invento.pos.caisse.application.SessionCaisseService.SessionCaisseDto;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,7 +51,27 @@ class SessionCaisseController {
     @PostMapping("/{id}/cloture")
     SessionCaisseDto cloturer(
             @PathVariable long id, @Valid @RequestBody ClotureCommande commande, @AuthenticationPrincipal Jwt jwt) {
-        return sessionService.cloturer(id, commande.montantCompte(), UtilisateurConnecte.depuis(jwt));
+        return sessionService.cloturer(
+                id, commande.montantCompte(), commande.montantVerse(), UtilisateurConnecte.depuis(jwt));
+    }
+
+    /** Sessions clôturées d'office dont le tiroir attend le comptage de l'admin. */
+    @GetMapping("/comptages-en-attente")
+    @PreAuthorize("hasRole('ADMIN')")
+    List<SessionCaisseDto> comptagesEnAttente() {
+        return sessionService.comptagesEnAttente();
+    }
+
+    /** Comptage par l'admin du tiroir d'une session clôturée d'office. */
+    @PostMapping("/{id}/comptage")
+    @PreAuthorize("hasRole('ADMIN')")
+    SessionCaisseDto terminerComptage(
+            @PathVariable long id, @Valid @RequestBody ClotureCommande commande, @AuthenticationPrincipal Jwt jwt) {
+        return sessionService.terminerComptage(
+                id,
+                commande.montantCompte(),
+                commande.montantVerse(),
+                UtilisateurConnecte.depuis(jwt).id());
     }
 
     record OuvertureCommande(
@@ -58,7 +80,11 @@ class SessionCaisseController {
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
             BigDecimal fondInitial) {}
 
+    /** Compté dans le tiroir (espèces et tickets TPE) et montant versé à la caisse principale (0 à tout). */
     record ClotureCommande(
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
-            BigDecimal montantCompte) {}
+            BigDecimal montantCompte,
+
+            @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantVerse) {}
 }

@@ -32,7 +32,9 @@ export function VentesEnAttenteDialogue({ panierVide, onReprise, onFermer }: Pro
   const abandonner = useAbandonnerVente();
   const maintenant = useMaintenant();
   const erreur = reprendre.error ?? abandonner.error;
-  const liste = [...(ventes.data ?? [])].sort((a, b) => msRestantes(a.attenteExpireLe, maintenant) - msRestantes(b.attenteExpireLe, maintenant));
+  const liste = [...(ventes.data ?? [])].sort(
+    (a, b) => msRestantes(a.attenteExpireLe, maintenant) - msRestantes(b.attenteExpireLe, maintenant),
+  );
 
   return (
     <Dialogue

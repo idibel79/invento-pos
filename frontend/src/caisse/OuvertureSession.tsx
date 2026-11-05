@@ -5,6 +5,9 @@ import { messageErreur } from "../api/erreurs";
 import { useAuth, useUtilisateur } from "../auth/AuthContext";
 import { lireMontant } from "../ui/format";
 import { Logo } from "../ui/Logo";
+import { BoutonMonCompte } from "../tresorerie/MonComptePanneau";
+import { useMonCompte } from "../tresorerie/requetes";
+import { dh } from "../ui/format";
 import { useCaisses, useOuvrirSession } from "./requetes";
 
 const schema = z.object({
@@ -19,12 +22,13 @@ interface Props {
   onAdministration?: () => void;
 }
 
-/** Ouverture de la caisse avec le fond de caisse (espèces présentes au départ). */
+/** Ouverture de la caisse avec le fond de caisse, pris sur le solde du compte du caissier. */
 export function OuvertureSession({ avis, onAdministration }: Props) {
   const utilisateur = useUtilisateur();
   const { deconnecter } = useAuth();
   const caisses = useCaisses();
   const ouvrir = useOuvrirSession();
+  const disponible = useMonCompte().data?.solde;
   const autorisees = (caisses.data ?? []).filter(
     (c) => c.active && (utilisateur.role === "ADMIN" || utilisateur.caisseIds.includes(c.id)),
   );
@@ -47,7 +51,8 @@ export function OuvertureSession({ avis, onAdministration }: Props) {
         <Logo />
         <h1 className="titre-popup">Ouvrir la caisse</h1>
         <p className="texte-secondaire">
-          Bonjour {utilisateur.prenom}. Comptez les espèces présentes dans le tiroir avant de commencer.
+          Bonjour {utilisateur.prenom || utilisateur.nom}. Le tiroir est vide au départ : mettez-y le fond de
+          caisse, pris sur l'argent de votre compte.
         </p>
         {avis && (
           <p className="alerte alerte-attention" role="alert">
@@ -77,9 +82,12 @@ export function OuvertureSession({ avis, onAdministration }: Props) {
               {errors.caisseId && <span className="erreur-champ">{errors.caisseId.message}</span>}
             </div>
             <label className="champ">
-              <span className="libelle">Fond de caisse (DH)</span>
+              <span className="libelle">Fond de caisse pris sur mon compte (DH)</span>
               <input inputMode="decimal" placeholder="0,00" autoFocus {...register("fondInitial")} />
               {errors.fondInitial && <span className="erreur-champ">{errors.fondInitial.message}</span>}
+              <span className="texte-secondaire">
+                Disponible : {disponible === undefined ? "…" : dh(disponible)}
+              </span>
             </label>
           </>
         )}
@@ -88,23 +96,28 @@ export function OuvertureSession({ avis, onAdministration }: Props) {
             {messageErreur(ouvrir.error)}
           </p>
         )}
-        <div className="rangee-boutons">
-          <button type="button" className="bouton bouton-contour" onClick={() => void deconnecter()}>
-            Se déconnecter
-          </button>
+        <button
+          type="submit"
+          className="bouton bouton-plein ouverture-principal"
+          disabled={ouvrir.isPending || autorisees.length === 0}
+        >
+          Ouvrir la caisse
+        </button>
+        <div className="ouverture-secondaires">
+          <BoutonMonCompte classe="bouton bouton-contour" page />
           {onAdministration && (
             <button type="button" className="bouton bouton-contour" onClick={onAdministration}>
               Administration
             </button>
           )}
-          <button
-            type="submit"
-            className="bouton bouton-plein"
-            disabled={ouvrir.isPending || autorisees.length === 0}
-          >
-            Ouvrir la caisse
-          </button>
         </div>
+        <button
+          type="button"
+          className="bouton-lien ouverture-deconnexion"
+          onClick={() => void deconnecter()}
+        >
+          Se déconnecter
+        </button>
       </form>
     </main>
   );

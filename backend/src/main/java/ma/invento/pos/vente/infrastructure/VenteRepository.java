@@ -49,4 +49,12 @@ public interface VenteRepository extends JpaRepository<Vente, Long> {
             + " and p.mode = ma.invento.pos.vente.domain.ModePaiement.ESPECES"
             + " group by p.vente.sessionCaisseId")
     List<EspecesSession> sommesEspeces(@Param("sessionIds") Collection<Long> sessionIds);
+
+    @Query("select new ma.invento.pos.vente.infrastructure.PaiementsSession(p.vente.sessionCaisseId, p.mode,"
+            + " sum(p.montant))"
+            + " from Paiement p"
+            + " where p.vente.sessionCaisseId in :sessionIds"
+            + " and p.vente.statut = ma.invento.pos.vente.domain.StatutVente.VALIDEE"
+            + " group by p.vente.sessionCaisseId, p.mode")
+    List<PaiementsSession> sommesParMode(@Param("sessionIds") Collection<Long> sessionIds);
 }

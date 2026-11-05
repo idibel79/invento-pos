@@ -9,7 +9,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import ma.invento.pos.caisse.application.ComptesCaissiers.MouvementsSession;
+import ma.invento.pos.caisse.application.EncaissementsSession.VentesSession;
 import ma.invento.pos.caisse.domain.Caisse;
+import ma.invento.pos.caisse.domain.ComptageTiroir;
 import ma.invento.pos.caisse.domain.SessionCaisse;
 import ma.invento.pos.caisse.infrastructure.CaisseRepository;
 import ma.invento.pos.caisse.infrastructure.SessionCaisseRepository;
@@ -37,6 +40,7 @@ public class SessionCaisseService {
     private final CaisseRepository caisses;
     private final UtilisateurRepository utilisateurs;
     private final EncaissementsSession encaissements;
+    private final ComptesCaissiers comptes;
     private final ApplicationEventPublisher evenements;
     private final JournalService journal;
     private final Clock clock;
@@ -46,6 +50,7 @@ public class SessionCaisseService {
             CaisseRepository caisses,
             UtilisateurRepository utilisateurs,
             EncaissementsSession encaissements,
+            ComptesCaissiers comptes,
             ApplicationEventPublisher evenements,
             JournalService journal,
             Clock clock) {
@@ -53,6 +58,7 @@ public class SessionCaisseService {
         this.caisses = caisses;
         this.utilisateurs = utilisateurs;
         this.encaissements = encaissements;
+        this.comptes = comptes;
         this.evenements = evenements;
         this.journal = journal;
         this.clock = clock;
@@ -72,27 +78,62 @@ public class SessionCaisseService {
         if (sessions.existsByCaisseIdAndFermetureIsNull(caisseId)) {
             throw new ConflitException("La caisse " + caisse.getNom() + " est déjà ouverte par un autre utilisateur.");
         }
+        // Le fond passe de la poche du caissier au tiroir : il ne change pas le solde de son compte.
+        BigDecimal solde = comptes.solde(utilisateur.id());
+        if (fondInitial.compareTo(solde) > 0) {
+            throw new RegleMetierException("Le fond de caisse dépasse le solde de votre compte ("
+                    + solde.toPlainString() + " DH disponibles).");
+        }
         SessionCaisse session =
                 sessions.save(new SessionCaisse(caisseId, utilisateur.id(), fondInitial, Instant.now(clock)));
         journal.enregistrer(
                 utilisateur.id(),
                 ActionJournal.SESSION_OUVERTE,
                 caisse.getNom() + ", fond " + fondInitial.toPlainString() + " DH");
-        return SessionCaisseDto.depuis(session, caisse.getNom(), BigDecimal.ZERO);
+        return SessionCaisseDto.depuis(session, caisse.getNom(), BigDecimal.ZERO, null);
     }
 
     @Transactional(readOnly = true)
     public Optional<SessionCaisseDto> courante(long utilisateurId) {
         return sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
-                .map(s -> SessionCaisseDto.depuis(s, nomCaisse(s.getCaisseId()), null));
+                .map(s -> SessionCaisseDto.depuis(s, nomCaisse(s.getCaisseId()), null, null));
     }
 
-    /** Session ouverte avec les espèces encaissées jusqu'ici, pour la barre de caisse. */
+    /**
+     * Session ouverte avec le contenu attendu du tiroir et le solde du compte, pour la barre de caisse
+     * et la popup de clôture.
+     */
     @Transactional(readOnly = true)
     public Optional<SessionCaisseDto> couranteAvecEspeces(long utilisateurId) {
-        return sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
-                .map(s -> SessionCaisseDto.depuis(
-                        s, nomCaisse(s.getCaisseId()), encaissements.especesEncaissees(s.getId())));
+        return sessions.findByCaissierIdAndFermetureIsNull(utilisateurId).map(s -> {
+            ComptageTiroir tiroir = tiroir(s.getId());
+            return SessionCaisseDto.depuis(
+                    s,
+                    nomCaisse(s.getCaisseId()),
+                    tiroir.ventesEspeces(),
+                    TiroirDto.depuis(s, tiroir, comptes.solde(utilisateurId)));
+        });
+    }
+
+    /**
+     * Espèces présentes dans le tiroir, de quoi rendre la monnaie : fond + ventes en espèces (nettes du
+     * rendu) + versements reçus − versements faits pendant la session. Les tickets TPE n'en font pas
+     * partie. Appelé sous le verrou de la session ({@link #sessionOuverte}).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal especesDisponibles(long sessionId) {
+        SessionCaisse session = sessions.findById(sessionId).orElseThrow();
+        ComptageTiroir tiroir = tiroir(sessionId);
+        return session.getFondInitial()
+                .add(tiroir.ventesEspeces())
+                .add(tiroir.recu())
+                .subtract(tiroir.verse());
+    }
+
+    private ComptageTiroir tiroir(long sessionId) {
+        VentesSession ventes = encaissements.ventes(sessionId);
+        MouvementsSession mouvements = comptes.mouvementsSession(sessionId);
+        return new ComptageTiroir(ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.verse());
     }
 
     /** Toutes les caisses avec, pour celles qui sont ouvertes, le fond et les espèces (écran admin). */
@@ -136,17 +177,24 @@ public class SessionCaisseService {
         sessions.findOuverteDeLaCaisseForUpdate(caisseId).ifPresent(session -> {
             evenements.publishEvent(new SessionCaisseCloturee(session.getId()));
             session.cloturerDOffice(Instant.now(clock));
+            comptes.cloturerDOffice(
+                    session, encaissements.ventes(session.getId()).total(), adminId);
             journal.enregistrer(
                     adminId,
                     ActionJournal.SESSION_CLOTUREE_D_OFFICE,
                     nomCaisse(caisseId) + ", caisse désactivée : session de l'utilisateur " + session.getCaissierId()
-                            + " clôturée sans comptage");
+                            + " clôturée, comptage du tiroir en attente");
         });
     }
 
-    /** Clôture par le caissier de la session (ou l'admin) : ventes en attente annulées, écart calculé. */
+    /**
+     * Clôture par le caissier de la session (ou l'admin) : ventes en attente annulées, tiroir compté
+     * (espèces et tickets TPE), écart calculé, puis le tiroir est vidé : {@code montantVerse} part vers
+     * la caisse principale, le reste demeure sur le compte du caissier.
+     */
     @Transactional
-    public SessionCaisseDto cloturer(long sessionId, BigDecimal montantCompte, UtilisateurConnecte utilisateur) {
+    public SessionCaisseDto cloturer(
+            long sessionId, BigDecimal montantCompte, BigDecimal montantVerse, UtilisateurConnecte utilisateur) {
         SessionCaisse session = sessions.findForUpdate(sessionId)
                 .orElseThrow(() -> new RessourceIntrouvableException("Session de caisse introuvable."));
         if (!utilisateur.estAdmin() && session.getCaissierId() != utilisateur.id()) {
@@ -155,16 +203,64 @@ public class SessionCaisseService {
         if (!session.estOuverte()) {
             throw new RegleMetierException("Cette session de caisse est déjà clôturée.", SESSION_FERMEE);
         }
+        verifierVerse(montantCompte, montantVerse);
         evenements.publishEvent(new SessionCaisseCloturee(sessionId));
-        BigDecimal especes = encaissements.especesEncaissees(sessionId);
-        session.cloturer(montantCompte, especes, Instant.now(clock));
+        ComptageTiroir tiroir = tiroir(sessionId);
+        session.cloturer(montantCompte, tiroir, Instant.now(clock));
+        comptes.cloturer(session, tiroir.ventes(), montantVerse, utilisateur.id());
         String caisse = nomCaisse(session.getCaisseId());
         journal.enregistrer(
                 utilisateur.id(),
                 ActionJournal.SESSION_CLOTUREE,
                 caisse + ", compté " + montantCompte.toPlainString() + " DH, écart "
-                        + session.getEcart().toPlainString() + " DH");
-        return SessionCaisseDto.depuis(session, caisse, especes);
+                        + session.getEcart().toPlainString() + " DH, versé " + montantVerse.toPlainString()
+                        + " DH à la caisse principale");
+        return SessionCaisseDto.depuis(
+                session, caisse, tiroir.ventesEspeces(), TiroirDto.depuis(session, tiroir, null));
+    }
+
+    /**
+     * Comptage par l'admin du tiroir d'une session clôturée d'office : l'écart est calculé comme à une
+     * clôture normale, {@code montantVerse} entre dans la caisse principale (l'admin a le tiroir).
+     */
+    @Transactional
+    public SessionCaisseDto terminerComptage(
+            long sessionId, BigDecimal montantCompte, BigDecimal montantVerse, long adminId) {
+        SessionCaisse session = sessions.findForUpdate(sessionId)
+                .orElseThrow(() -> new RessourceIntrouvableException("Session de caisse introuvable."));
+        verifierVerse(montantCompte, montantVerse);
+        ComptageTiroir tiroir = tiroir(sessionId);
+        session.terminerComptage(montantCompte, tiroir);
+        comptes.terminerComptage(session, montantVerse, adminId);
+        String caisse = nomCaisse(session.getCaisseId());
+        journal.enregistrer(
+                adminId,
+                ActionJournal.SESSION_COMPTEE,
+                caisse + ", session de l'utilisateur " + session.getCaissierId() + " : compté "
+                        + montantCompte.toPlainString() + " DH, écart "
+                        + session.getEcart().toPlainString()
+                        + " DH, versé " + montantVerse.toPlainString() + " DH à la caisse principale");
+        return SessionCaisseDto.depuis(
+                session, caisse, tiroir.ventesEspeces(), TiroirDto.depuis(session, tiroir, null));
+    }
+
+    /** Sessions clôturées d'office dont le tiroir attend le comptage de l'admin. */
+    @Transactional(readOnly = true)
+    public List<SessionCaisseDto> comptagesEnAttente() {
+        return sessions.findByComptageEnAttenteTrueOrderByFermetureAsc().stream()
+                .map(s -> {
+                    ComptageTiroir tiroir = tiroir(s.getId());
+                    return SessionCaisseDto.depuis(
+                            s, nomCaisse(s.getCaisseId()), tiroir.ventesEspeces(), TiroirDto.depuis(s, tiroir, null));
+                })
+                .toList();
+    }
+
+    /** Le tiroir est vidé : on verse entre 0 et tout le compté. */
+    private static void verifierVerse(BigDecimal montantCompte, BigDecimal montantVerse) {
+        if (montantVerse.signum() < 0 || montantVerse.compareTo(montantCompte) > 0) {
+            throw new RegleMetierException("Le montant versé doit être compris entre 0 et le montant compté.");
+        }
     }
 
     /** Plus de session ouverte : le message précise si la dernière a été clôturée d'office. */
@@ -225,9 +321,12 @@ public class SessionCaisseService {
             @Schema(nullable = true) BigDecimal montantCompte,
             @Schema(nullable = true) BigDecimal especesEncaissees,
             @Schema(nullable = true) BigDecimal ecart,
-            boolean clotureForcee) {
+            boolean clotureForcee,
+            boolean comptageEnAttente,
+            @Schema(nullable = true) TiroirDto tiroir) {
 
-        static SessionCaisseDto depuis(SessionCaisse s, String caisseNom, BigDecimal especesEncaissees) {
+        static SessionCaisseDto depuis(
+                SessionCaisse s, String caisseNom, BigDecimal especesEncaissees, TiroirDto tiroir) {
             return new SessionCaisseDto(
                     s.getId(),
                     s.getCaisseId(),
@@ -239,7 +338,33 @@ public class SessionCaisseService {
                     s.getMontantCompte(),
                     especesEncaissees,
                     s.getEcart(),
-                    s.isClotureForcee());
+                    s.isClotureForcee(),
+                    s.isComptageEnAttente(),
+                    tiroir);
+        }
+    }
+
+    /**
+     * Contenu attendu du tiroir (espèces et tickets TPE) : fond + ventes espèces + ventes carte + reçu de
+     * la caisse principale − versé pendant la session. {@code soldeCompte} : ce que le caissier doit à la
+     * caisse principale, ventes de la session comprises (absent après la clôture).
+     */
+    public record TiroirDto(
+            BigDecimal ventesEspeces,
+            BigDecimal ventesCarte,
+            BigDecimal recu,
+            BigDecimal verse,
+            BigDecimal attendu,
+            @Schema(nullable = true) BigDecimal soldeCompte) {
+
+        static TiroirDto depuis(SessionCaisse s, ComptageTiroir tiroir, BigDecimal soldeCompte) {
+            return new TiroirDto(
+                    tiroir.ventesEspeces(),
+                    tiroir.ventesCarte(),
+                    tiroir.recu(),
+                    tiroir.verse(),
+                    tiroir.attendu(s.getFondInitial()),
+                    soldeCompte);
         }
     }
 }
