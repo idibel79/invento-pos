@@ -20,22 +20,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/utilisateurs/{id}/pin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["definirPin"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/produits/{id}": {
         parameters: {
             query?: never;
@@ -190,22 +174,6 @@ export interface paths {
         get: operations["lister"];
         put?: never;
         post: operations["creer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/utilisateurs/{id}/mot-de-passe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["reinitialiserMotDePasse"];
         delete?: never;
         options?: never;
         head?: never;
@@ -619,12 +587,20 @@ export interface components {
         ModificationUtilisateur: {
             nom: string;
             prenom: string;
+            login: string;
+            motDePasseTemporaire?: string | null;
+            pin?: string | null;
             /** @enum {string} */
             role: "CAISSIER" | "RESPONSABLE" | "ADMIN";
             actif?: boolean;
             caisseIds: number[];
+            seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
             /** Format: int64 */
             version?: number;
+        };
+        SeuilsRemiseDto: {
+            ligne: number;
+            ticket: number;
         };
         UtilisateurDto: {
             /** Format: int64 */
@@ -639,13 +615,11 @@ export interface components {
             doitChangerMotDePasse: boolean;
             pinDefini: boolean;
             caisseIds: number[];
+            seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
             /** Format: date-time */
             derniereConnexion: string | null;
             /** Format: int64 */
             version: number;
-        };
-        PinCommande: {
-            pin: string;
         };
         ProduitCommande: {
             pid: string;
@@ -710,15 +684,11 @@ export interface components {
             taux: number;
         };
         ParametresCommande: {
-            plafondRemiseCaissier: number;
-            plafondRemiseResponsable: number;
             boutiqueNom: string;
             boutiqueAdresse: string;
             fuseauHoraire: string;
         };
         Parametres: {
-            plafondRemiseCaissier: number;
-            plafondRemiseResponsable: number;
             boutiqueNom: string;
             boutiqueAdresse: string;
             fuseauHoraire: string;
@@ -742,6 +712,7 @@ export interface components {
             /** Format: int32 */
             quantite?: number;
             remise?: components["schemas"]["RemiseDto"];
+            jetonAutorisation?: string;
         };
         PanierCommande: {
             lignes: components["schemas"]["LigneCommande"][];
@@ -824,6 +795,15 @@ export interface components {
             totalTva: number;
             totalTtc: number;
         };
+        AccordRemiseDto: {
+            /** Format: int64 */
+            produitId: number | null;
+            tauxRemise: number;
+            /** @enum {string} */
+            autorisationRequise: "AUCUNE" | "RESPONSABLE" | "ADMIN";
+            /** Format: int64 */
+            valideePar: number | null;
+        };
         PanierDto: {
             lignes: components["schemas"]["LigneDto"][];
             totaux: components["schemas"]["TotauxDto"];
@@ -832,6 +812,7 @@ export interface components {
             autorisationRequise: "AUCUNE" | "RESPONSABLE" | "ADMIN";
             autorisationAcquise: boolean;
             stockSuffisant: boolean;
+            remises: components["schemas"]["AccordRemiseDto"][];
         };
         MiseEnAttenteCommande: {
             panier: components["schemas"]["PanierCommande"];
@@ -845,9 +826,8 @@ export interface components {
             role: "CAISSIER" | "RESPONSABLE" | "ADMIN";
             motDePasseTemporaire: string;
             caisseIds: number[];
-        };
-        MotDePasseTemporaire: {
-            motDePasseTemporaire: string;
+            pin?: string | null;
+            seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
         };
         OuvertureCommande: {
             /** Format: int64 */
@@ -910,6 +890,10 @@ export interface components {
             /** Format: int64 */
             autorisateurId: number;
             pin: string;
+            /** Format: int64 */
+            produitId?: number | null;
+            remiseType: string;
+            remiseValeur: number;
         };
         JetonAutorisation: {
             jeton: string;
@@ -1042,6 +1026,7 @@ export interface components {
             nom: string;
             /** @enum {string} */
             role: "CAISSIER" | "RESPONSABLE" | "ADMIN";
+            seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
         };
     };
     responses: never;
@@ -1075,30 +1060,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UtilisateurDto"];
                 };
-            };
-        };
-    };
-    definirPin: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PinCommande"];
-            };
-        };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -1465,30 +1426,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UtilisateurDto"];
                 };
-            };
-        };
-    };
-    reinitialiserMotDePasse: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MotDePasseTemporaire"];
-            };
-        };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

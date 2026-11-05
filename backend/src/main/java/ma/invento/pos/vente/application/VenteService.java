@@ -1,6 +1,5 @@
 package ma.invento.pos.vente.application;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,17 +17,10 @@ import ma.invento.pos.caisse.application.SessionCaisseService;
 import ma.invento.pos.caisse.application.SessionCaisseService.SessionOuverte;
 import ma.invento.pos.catalogue.domain.Produit;
 import ma.invento.pos.catalogue.infrastructure.ProduitRepository;
-import ma.invento.pos.identite.application.AutorisationService;
-import ma.invento.pos.identite.application.AutorisationService.Autorisation;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
-import ma.invento.pos.identite.domain.Role;
-import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
 import ma.invento.pos.journal.domain.ActionJournal;
-import ma.invento.pos.parametre.application.ParametreService;
-import ma.invento.pos.parametre.application.ParametreService.Parametres;
-import ma.invento.pos.parametre.domain.PlafondsRemise;
 import ma.invento.pos.shared.domain.ConflitException;
 import ma.invento.pos.shared.domain.OperationInterditeException;
 import ma.invento.pos.shared.domain.RegleMetierException;
@@ -78,8 +70,7 @@ public class VenteService {
     private final UtilisateurRepository utilisateurs;
     private final SessionCaisseService sessions;
     private final StockService stock;
-    private final ParametreService parametres;
-    private final AutorisationService autorisations;
+    private final AccordsRemise accordsRemise;
     private final NumeroteurVente numeroteur;
     private final JournalService journal;
     private final Clock clock;
@@ -90,8 +81,7 @@ public class VenteService {
             UtilisateurRepository utilisateurs,
             SessionCaisseService sessions,
             StockService stock,
-            ParametreService parametres,
-            AutorisationService autorisations,
+            AccordsRemise accordsRemise,
             NumeroteurVente numeroteur,
             JournalService journal,
             Clock clock) {
@@ -100,8 +90,7 @@ public class VenteService {
         this.utilisateurs = utilisateurs;
         this.sessions = sessions;
         this.stock = stock;
-        this.parametres = parametres;
-        this.autorisations = autorisations;
+        this.accordsRemise = accordsRemise;
         this.numeroteur = numeroteur;
         this.journal = journal;
         this.clock = clock;
@@ -116,14 +105,7 @@ public class VenteService {
                         .filter(v -> (v.estEnAttente() || v.estReprise()) && surSessionCourante(v, vendeur))
                         .orElseThrow(() -> new RessourceIntrouvableException("Vente en attente introuvable."));
         Panier panier = preparer(commande, reprise);
-        NiveauAutorisation niveau = niveauRequis(panier.calcul());
-        boolean acquise;
-        try {
-            valideePar(niveau, panier.calcul(), commande, vendeur, reprise);
-            acquise = true;
-        } catch (RegleMetierException | OperationInterditeException e) {
-            acquise = false;
-        }
+        AccordsRemise.Accords accords = accordsRemise.accorder(panier.calcul(), commande, vendeur, reprise);
         Map<Long, Integer> reservees =
                 reprise == null || !reprise.estEnAttente() ? Map.of() : quantitesParProduit(reprise);
         List<LigneDto> lignes = panier.calcul().lignes().stream()
@@ -138,9 +120,10 @@ public class VenteService {
                 lignes,
                 totaux(panier.calcul()),
                 panier.calcul().tauxRemiseMax(),
-                niveau,
-                acquise,
-                lignes.stream().allMatch(LigneDto::stockSuffisant));
+                accords.niveau(),
+                accords.acquis(),
+                lignes.stream().allMatch(LigneDto::stockSuffisant),
+                accords.versDto());
     }
 
     /** Client parti chercher de quoi payer : panier conservé, stock réservé {@link #DUREE_ATTENTE}. */
@@ -157,12 +140,17 @@ public class VenteService {
         SessionOuverte session = sessions.sessionOuverte(vendeur.id());
         Vente reprise = reprendreVerrouillee(commande.panier().venteEnAttenteId(), session);
         Panier panier = preparer(commande.panier(), reprise);
-        Long valideePar = autoriserRemise(panier, commande.panier(), vendeur, reprise);
+        AccordsRemise.Accords accords = exigerAccords(panier, commande.panier(), vendeur, reprise);
         Instant maintenant = Instant.now(clock);
         if (reprise != null && reprise.estEnAttente()) stock.liberer(quantites(reprise));
 
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
-        vente.remplirPanier(panier.calcul(), remiseTicket(commande.panier()), motif(commande.panier()), valideePar);
+        vente.remplirPanier(
+                panier.calcul(),
+                remiseTicket(commande.panier()),
+                motif(commande.panier()),
+                accords.principal(),
+                accords.parArticle());
         vente.mettreEnAttente(texte(commande.note()), maintenant.plus(DUREE_ATTENTE));
         ventes.save(vente);
         stock.reserver(quantites(panier));
@@ -183,12 +171,17 @@ public class VenteService {
         SessionOuverte session = sessions.sessionOuverte(vendeur.id());
         Vente reprise = reprendreVerrouillee(commande.panier().venteEnAttenteId(), session);
         Panier panier = preparer(commande.panier(), reprise);
-        Long valideePar = autoriserRemise(panier, commande.panier(), vendeur, reprise);
+        AccordsRemise.Accords accords = exigerAccords(panier, commande.panier(), vendeur, reprise);
         Instant maintenant = Instant.now(clock);
         if (reprise != null && reprise.estEnAttente()) stock.liberer(quantites(reprise));
 
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
-        vente.remplirPanier(panier.calcul(), remiseTicket(commande.panier()), motif(commande.panier()), valideePar);
+        vente.remplirPanier(
+                panier.calcul(),
+                remiseTicket(commande.panier()),
+                motif(commande.panier()),
+                accords.principal(),
+                accords.parArticle());
         if (commande.mode() == ModePaiement.CARTE) {
             vente.validerParCarte(cle, maintenant);
         } else if (commande.especesRecues() == null) {
@@ -198,14 +191,7 @@ public class VenteService {
         }
         ventes.save(vente);
         stock.sortirPourVente(quantites(panier), vente.getNumero(), vendeur.id(), maintenant);
-        if (valideePar != null) {
-            journal.enregistrer(
-                    vendeur.id(),
-                    ActionJournal.REMISE_AUTORISEE,
-                    "Vente " + vente.getNumero() + " : remise de "
-                            + panier.calcul().tauxRemiseMax().toPlainString() + " % autorisée par l'utilisateur "
-                            + valideePar + ". Motif : " + vente.getMotifRemise());
-        }
+        journaliserAccords(accords, vente, vendeur);
         return versDto(vente, panier.produits());
     }
 
@@ -309,62 +295,29 @@ public class VenteService {
         return new Panier(parId, CalculateurVente.calculer(lignes, remiseTicket(commande)));
     }
 
-    private NiveauAutorisation niveauRequis(PanierCalcule calcul) {
-        Parametres p = parametres.lire();
-        return NiveauAutorisation.requis(
-                calcul.tauxRemiseMax(), new PlafondsRemise(p.plafondRemiseCaissier(), p.plafondRemiseResponsable()));
-    }
-
-    /** Remise au-delà du plafond caissier : motif obligatoire et autorisation du bon niveau. */
-    private Long autoriserRemise(Panier panier, PanierCommande commande, UtilisateurConnecte vendeur, Vente reprise) {
-        NiveauAutorisation niveau = niveauRequis(panier.calcul());
-        if (niveau == NiveauAutorisation.AUCUNE) return null;
-        if (motif(commande) == null) {
+    /** Remises accordées : motif obligatoire dès qu'une autorisation est demandée, sinon la vente est refusée. */
+    private AccordsRemise.Accords exigerAccords(
+            Panier panier, PanierCommande commande, UtilisateurConnecte vendeur, Vente reprise) {
+        AccordsRemise.Accords accords = accordsRemise.accorder(panier.calcul(), commande, vendeur, reprise);
+        if (accords.niveau() != NiveauAutorisation.AUCUNE && motif(commande) == null) {
             throw new RegleMetierException("Indiquez le motif de la remise.");
         }
-        return valideePar(niveau, panier.calcul(), commande, vendeur, reprise);
+        accords.exiger();
+        return accords;
     }
 
-    /**
-     * Qui couvre le niveau exigé : le vendeur lui-même, le jeton joint, ou celui qui a validé la vente
-     * reprise, tant que la remise ne dépasse pas celle qu'il a acceptée.
-     */
-    private Long valideePar(
-            NiveauAutorisation niveau,
-            PanierCalcule calcul,
-            PanierCommande commande,
-            UtilisateurConnecte vendeur,
-            Vente reprise) {
-        if (niveau.estCouvertPar(vendeur.role())) {
-            return niveau == NiveauAutorisation.AUCUNE ? null : vendeur.id();
-        }
-        if (commande.jetonAutorisation() != null
-                && !commande.jetonAutorisation().isBlank()) {
-            Autorisation autorisation = autorisations.verifier(commande.jetonAutorisation(), vendeur.id());
-            if (niveau.estCouvertPar(autorisation.role())) return autorisation.autorisateurId();
-        } else if (reprise != null && reprise.getValideePar() != null) {
-            Role role = utilisateurs
-                    .findById(reprise.getValideePar())
-                    .filter(Utilisateur::isActif)
-                    .map(Utilisateur::getRole)
-                    .orElse(Role.CAISSIER);
-            if (niveau.estCouvertPar(role) && calcul.tauxRemiseMax().compareTo(tauxAccorde(reprise)) <= 0) {
-                return reprise.getValideePar();
-            }
-        }
-        throw new OperationInterditeException(
-                niveau == NiveauAutorisation.ADMIN
-                        ? "Cette remise dépasse le plafond responsable : autorisation de l'admin requise."
-                        : "Cette remise dépasse votre plafond : autorisation d'un responsable requise.");
-    }
-
-    /** Remise effective la plus forte de la vente en attente, telle qu'elle a été autorisée. */
-    private static BigDecimal tauxAccorde(Vente vente) {
-        List<LignePanier> lignes = vente.getLignes().stream()
-                .map(l -> new LignePanier(
-                        l.getProduitId(), l.getQuantite(), l.getPrixUnitaire(), l.getTauxTva(), l.getRemise()))
-                .toList();
-        return CalculateurVente.calculer(lignes, vente.getRemiseTicket()).tauxRemiseMax();
+    /** Une entrée au journal par remise accordée par un autre que le vendeur. */
+    private void journaliserAccords(AccordsRemise.Accords accords, Vente vente, UtilisateurConnecte vendeur) {
+        accords.tous()
+                .filter(a -> a.valideePar() != null && a.valideePar() != vendeur.id())
+                .forEach(a -> journal.enregistrer(
+                        vendeur.id(),
+                        ActionJournal.REMISE_AUTORISEE,
+                        "Vente " + vente.getNumero() + " : remise de "
+                                + a.taux().toPlainString() + " %"
+                                + (a.produitId() == null ? " sur le ticket" : " sur l'article " + a.produitId())
+                                + " autorisée par l'utilisateur " + a.valideePar() + ". Motif : "
+                                + vente.getMotifRemise()));
     }
 
     // ---------------------------------------------------------------- Ventes en attente

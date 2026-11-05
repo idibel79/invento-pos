@@ -4,8 +4,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.ModificationUtilisateur;
-import ma.invento.pos.identite.api.UtilisateurDtos.MotDePasseTemporaire;
-import ma.invento.pos.identite.api.UtilisateurDtos.PinCommande;
 import ma.invento.pos.identite.api.UtilisateurDtos.UtilisateurDto;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.identite.application.UtilisateurService;
@@ -53,25 +51,10 @@ class UtilisateurController {
         return utilisateurService.modifier(id, commande, adminId(jwt));
     }
 
-    @PostMapping("/{id}/mot-de-passe")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void reinitialiserMotDePasse(
-            @PathVariable long id,
-            @Valid @RequestBody MotDePasseTemporaire commande,
-            @AuthenticationPrincipal Jwt jwt) {
-        utilisateurService.reinitialiserMotDePasse(id, commande.motDePasseTemporaire(), adminId(jwt));
-    }
-
     @PostMapping("/{id}/deverrouiller")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deverrouiller(@PathVariable long id, @AuthenticationPrincipal Jwt jwt) {
         utilisateurService.deverrouiller(id, adminId(jwt));
-    }
-
-    @PutMapping("/{id}/pin")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void definirPin(@PathVariable long id, @Valid @RequestBody PinCommande commande, @AuthenticationPrincipal Jwt jwt) {
-        utilisateurService.definirPin(id, commande.pin(), adminId(jwt));
     }
 
     private static long adminId(Jwt jwt) {

@@ -62,8 +62,11 @@ public class JournalRemisesRequete {
         String s = schema + ".";
         String communs = " from " + s + "vente v"
                 + " join " + s + "caisse c on c.id = v.caisse_id"
-                + " join " + s + "utilisateur uv on uv.id = v.caissier_id"
-                + " left join " + s + "utilisateur ua on ua.id = v.validee_par";
+                + " join " + s + "utilisateur uv on uv.id = v.caissier_id";
+        // Chaque remise d'article a son autorisation ; la remise ticket, celle de la vente.
+        String autoriseLigne =
+                " left join " + s + "utilisateur ua on ua.id = coalesce(lv.remise_validee_par, v.validee_par)";
+        String autoriseTicket = " left join " + s + "utilisateur ua on ua.id = v.validee_par";
         String colonnesVente = "v.numero, v.finalisee_le, c.nom as caisse,"
                 + " uv.prenom || ' ' || uv.nom as vendeur, ua.prenom || ' ' || ua.nom as autorise_par,"
                 + " v.motif_remise as motif";
@@ -72,11 +75,13 @@ public class JournalRemisesRequete {
                 + communs
                 + " join " + s + "ligne_vente lv on lv.vente_id = v.id"
                 + " join " + s + "produit p on p.id = lv.produit_id"
+                + autoriseLigne
                 + " where v.statut = 'VALIDEE' and lv.remise_montant > 0";
         this.tickets = "select " + colonnesVente + ", 'TICKET' as portee, null as produit, null as quantite,"
                 + " v.remise_ticket_type as type, v.remise_ticket_valeur as valeur,"
                 + " v.remise_ticket_montant as montant"
                 + communs
+                + autoriseTicket
                 + " where v.statut = 'VALIDEE' and v.remise_ticket_montant > 0";
     }
 

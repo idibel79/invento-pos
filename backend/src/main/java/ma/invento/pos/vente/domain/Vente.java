@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.vente.domain.PanierCalcule.LigneCalculee;
 
@@ -87,10 +88,24 @@ public class Vente {
 
     /** Remplace le panier par celui calculé (lignes, remises, totaux). */
     public void remplirPanier(PanierCalcule panier, Remise remiseTicket, String motifRemise, Long valideePar) {
+        remplirPanier(panier, remiseTicket, motifRemise, valideePar, Map.of());
+    }
+
+    /**
+     * @param valideePar qui a accordé la remise ticket (ou une remise d'article, pour l'historique)
+     * @param remisesValideesPar qui a accordé la remise de chaque article, par produit
+     */
+    public void remplirPanier(
+            PanierCalcule panier,
+            Remise remiseTicket,
+            String motifRemise,
+            Long valideePar,
+            Map<Long, Long> remisesValideesPar) {
         verifierModifiable();
         lignes.clear();
         for (LigneCalculee ligne : panier.lignes()) {
-            lignes.add(new LigneVente(this, ligne));
+            lignes.add(new LigneVente(
+                    this, ligne, remisesValideesPar.get(ligne.ligne().produitId())));
         }
         this.totalHt = panier.totalHt();
         this.totalTva = panier.totalTva();

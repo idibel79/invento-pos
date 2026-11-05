@@ -4,12 +4,12 @@ import { LIBELLES_ROLE } from "../auth/roles";
 import { pourcent } from "../ui/format";
 
 interface Props {
-  /** Plafond de remise du rôle, affiché sous le nom. */
-  plafond: number | undefined;
+  /** Sur la caisse : la remise que le vendeur peut accorder est rappelée sous son nom. */
+  enCaisse?: boolean;
 }
 
 /** Nom et rôle de l'utilisateur dans la barre de caisse ; la déconnexion est dans le menu déroulant. */
-export function MenuUtilisateur({ plafond }: Props) {
+export function MenuUtilisateur({ enCaisse = false }: Props) {
   const utilisateur = useUtilisateur();
   const { deconnecter } = useAuth();
   const [ouvert, setOuvert] = useState(false);
@@ -54,7 +54,10 @@ export function MenuUtilisateur({ plafond }: Props) {
           </span>
           <span className="utilisateur-role">
             {LIBELLES_ROLE[utilisateur.role]}
-            {plafond !== undefined && ` · remise max ${pourcent(plafond)}`}
+            {enCaisse && utilisateur.role === "CAISSIER" && " · sans remise"}
+            {enCaisse &&
+              utilisateur.role === "RESPONSABLE" &&
+              ` · remise max ${pourcent(utilisateur.seuilsRemise.ligne)} ligne, ${pourcent(utilisateur.seuilsRemise.ticket)} ticket`}
           </span>
         </span>
         <svg

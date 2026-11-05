@@ -1,12 +1,9 @@
 package ma.invento.pos.parametre.api;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.parametre.application.ParametreService;
 import ma.invento.pos.parametre.application.ParametreService.Parametres;
@@ -29,7 +26,7 @@ class ParametreController {
         this.parametreService = parametreService;
     }
 
-    /** Lisible par tous : la caisse a besoin des plafonds et de l'en-tête du ticket. */
+    /** Lisible par tous : la caisse a besoin de l'en-tête du ticket. */
     @GetMapping
     Parametres lire() {
         return parametreService.lire();
@@ -39,18 +36,11 @@ class ParametreController {
     @PreAuthorize("hasRole('ADMIN')")
     Parametres modifier(@Valid @RequestBody ParametresCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return parametreService.modifier(
-                new Parametres(
-                        commande.plafondRemiseCaissier(),
-                        commande.plafondRemiseResponsable(),
-                        commande.boutiqueNom(),
-                        commande.boutiqueAdresse(),
-                        commande.fuseauHoraire()),
+                new Parametres(commande.boutiqueNom(), commande.boutiqueAdresse(), commande.fuseauHoraire()),
                 UtilisateurConnecte.depuis(jwt).id());
     }
 
     record ParametresCommande(
-            @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal plafondRemiseCaissier,
-            @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal plafondRemiseResponsable,
             @NotNull @Size(max = 120) String boutiqueNom,
             @NotNull @Size(max = 300) String boutiqueAdresse,
             @NotBlank @Size(max = 60) String fuseauHoraire) {}

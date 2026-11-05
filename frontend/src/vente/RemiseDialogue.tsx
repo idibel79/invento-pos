@@ -1,5 +1,6 @@
 import { useState, type Dispatch } from "react";
 import { messageErreur } from "../api/erreurs";
+import { useUtilisateur } from "../auth/AuthContext";
 import { Dialogue } from "../ui/Dialogue";
 import { dh, lireMontant, pourcent } from "../ui/format";
 import { IconeAlerte, IconeRemise } from "../ui/icones";
@@ -16,7 +17,8 @@ interface Props {
 
 /**
  * Remise sur une ligne ou sur le ticket, en % ou en montant. Le serveur calcule le prix remisé et
- * dit si la remise dépasse le plafond du vendeur ; le PIN d'un responsable est alors demandé.
+ * dit si le vendeur peut l'accorder (caissier : jamais ; responsable : dans ses seuils) ; sinon le
+ * PIN d'un responsable dont les seuils la couvrent, ou de l'admin, est demandé.
  */
 export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props) {
   const ligne = produitId === null ? undefined : panier.lignes.find((l) => l.produitId === produitId);
@@ -35,10 +37,16 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
       : { type: "remiseLigne", produitId, remise, motif: null };
   const essai = usePanierCalcule(versCommande(reducteurPanier(panier, action)));
   const apercu = valeur === null || essai.isError ? undefined : essai.data;
-  const niveau = apercu?.autorisationRequise ?? "AUCUNE";
-  const pinRequis = apercu !== undefined && niveau !== "AUCUNE" && !apercu.autorisationAcquise;
+  // Chaque remise (cet article, ou le ticket) a sa propre autorisation.
+  const accord = apercu?.remises.find((r) => (r.produitId ?? null) === produitId);
+  const niveau = accord?.autorisationRequise ?? "AUCUNE";
+  const pinRequis = accord !== undefined && niveau !== "AUCUNE" && accord.valideePar == null;
   const autorisateurs = useAutorisateurs(pinRequis);
   const autoriser = useAutoriserRemise();
+  const role = useUtilisateur().role;
+  // Responsables proposés : ceux dont le seuil (ticket ou ligne) couvre la remise ; le serveur revérifie.
+  const couvre = (seuils: { ligne: number; ticket: number }) =>
+    accord !== undefined && (produitId === null ? seuils.ticket : seuils.ligne) >= accord.tauxRemise;
 
   const ligneCalculee = apercu?.lignes.find((l) => l.produitId === produitId);
   // Aperçu prêt : remise et prix remisé de la ligne (ou du ticket) recalculés par le serveur.
@@ -48,16 +56,25 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
   const possible = apercu !== undefined && !essai.isFetching && !motifManquant && !pinIncomplet;
 
   async function appliquer() {
-    if (pinRequis) {
-      const jeton = await autoriser.mutateAsync({ autorisateurId: Number(autorisateurId), pin });
-      dispatch({ type: "autorisation", jeton: jeton.jeton, autorisePar: jeton.autorisateur });
-    }
+    // Le PIN autorise cette seule remise : le jeton est lié à l'article (ou au ticket) et à sa valeur.
+    const jeton =
+      pinRequis && remise
+        ? await autoriser.mutateAsync({
+            autorisateurId: Number(autorisateurId),
+            pin,
+            produitId,
+            remiseType: remise.type,
+            remiseValeur: remise.valeur,
+          })
+        : null;
     const motifRetenu = niveau === "AUCUNE" ? null : motif.trim();
     dispatch(
       produitId === null
         ? { type: "remiseTicket", remise, motif: motifRetenu }
         : { type: "remiseLigne", produitId, remise, motif: motifRetenu },
     );
+    if (jeton)
+      dispatch({ type: "autorisation", produitId, jeton: jeton.jeton, autorisePar: jeton.autorisateur });
     onFermer();
   }
 
@@ -153,8 +170,10 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
             <IconeAlerte />
             <div>
               <strong>Autorisation {niveau === "ADMIN" ? "de l'admin" : "d'un responsable"} requise</strong>
-              {apercu &&
-                `Remise de ${pourcent(apercu.tauxRemiseMax)}, au-delà de votre plafond fixé par l'admin.`}
+              {accord &&
+                (role === "CAISSIER"
+                  ? `Remise de ${pourcent(accord.tauxRemise)} ${produitId === null ? " sur le ticket" : " sur cet article"} : un caissier n'accorde pas de remise, chacune demande son PIN.`
+                  : `Remise de ${pourcent(accord.tauxRemise)}, au-delà de vos seuils fixés par l'admin.`)}
             </div>
           </div>
           <div className="deux-colonnes">
@@ -169,7 +188,7 @@ export function RemiseDialogue({ panier, dispatch, produitId, onFermer }: Props)
               >
                 <option value="">Choisir…</option>
                 {(autorisateurs.data ?? [])
-                  .filter((a) => niveau !== "ADMIN" || a.role === "ADMIN")
+                  .filter((a) => a.role === "ADMIN" || (niveau === "RESPONSABLE" && couvre(a.seuilsRemise)))
                   .map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.prenom} {a.nom}

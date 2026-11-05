@@ -28,16 +28,18 @@ public final class VenteDtos {
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
             BigDecimal valeur) {}
 
+    /** @param jetonAutorisation jeton du PIN qui autorise la remise de cet article (un par article) */
     public record LigneCommande(
             @NotNull Long produitId,
             @Min(1) @Max(9999) int quantite,
-            @Valid RemiseDto remise) {}
+            @Valid RemiseDto remise,
+            @Size(max = 2000) String jetonAutorisation) {}
 
     /**
      * Panier envoyé par la caisse : produits, quantités et remises, jamais de prix.
      *
-     * @param jetonAutorisation jeton renvoyé par {@code POST /autorisations/remise}, si la remise
-     *     dépasse le plafond du vendeur
+     * @param jetonAutorisation jeton renvoyé par {@code POST /autorisations/remise} pour la remise
+     *     ticket, si le vendeur ne peut pas l'accorder lui-même
      * @param venteEnAttenteId vente en attente reprise, dont ce panier prend la suite
      */
     public record PanierCommande(
@@ -91,8 +93,9 @@ public final class VenteDtos {
     /**
      * Aperçu calculé du panier.
      *
-     * @param autorisationRequise niveau exigé par la plus forte remise
-     * @param autorisationAcquise le vendeur, son jeton ou la vente reprise couvre ce niveau
+     * @param autorisationRequise niveau le plus exigeant parmi les remises
+     * @param autorisationAcquise chaque remise est accordée (vendeur, jeton ou vente reprise)
+     * @param remises autorisation de chaque remise : une par article remisé, et le ticket
      */
     public record PanierDto(
             List<LigneDto> lignes,
@@ -100,7 +103,20 @@ public final class VenteDtos {
             BigDecimal tauxRemiseMax,
             NiveauAutorisation autorisationRequise,
             boolean autorisationAcquise,
-            boolean stockSuffisant) {}
+            boolean stockSuffisant,
+            List<AccordRemiseDto> remises) {}
+
+    /**
+     * @param produitId article remisé, ou null pour la remise ticket
+     * @param tauxRemise remise en % (de la ligne, ou du ticket)
+     * @param autorisationRequise AUCUNE si le vendeur l'accorde lui-même
+     * @param valideePar qui l'a accordée, null tant qu'elle ne l'est pas
+     */
+    public record AccordRemiseDto(
+            @Schema(nullable = true) Long produitId,
+            BigDecimal tauxRemise,
+            NiveauAutorisation autorisationRequise,
+            @Schema(nullable = true) Long valideePar) {}
 
     public record PaiementDto(
             ModePaiement mode,

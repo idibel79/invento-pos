@@ -63,29 +63,6 @@ export function useModifierUtilisateur() {
   });
 }
 
-export function useReinitialiserMotDePasse() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, motDePasseTemporaire }: { id: number; motDePasseTemporaire: string }) =>
-      appel(
-        api.POST("/api/v1/utilisateurs/{id}/mot-de-passe", {
-          params: { path: { id } },
-          body: { motDePasseTemporaire },
-        }),
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cleUtilisateurs }),
-  });
-}
-
-export function useDefinirPin() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, pin }: { id: number; pin: string }) =>
-      appel(api.PUT("/api/v1/utilisateurs/{id}/pin", { params: { path: { id } }, body: { pin } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cleUtilisateurs }),
-  });
-}
-
 export function useDeverrouiller() {
   const queryClient = useQueryClient();
   return useMutation({

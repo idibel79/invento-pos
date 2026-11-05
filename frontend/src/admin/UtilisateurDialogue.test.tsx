@@ -22,6 +22,7 @@ const salma: Schemas["UtilisateurDto"] = {
   doitChangerMotDePasse: false,
   pinDefini: false,
   caisseIds: [3],
+  seuilsRemise: { ligne: 0, ticket: 0 },
   derniereConnexion: null,
   version: 4,
 };
@@ -91,6 +92,8 @@ describe("UtilisateurDialogue", () => {
       role: "RESPONSABLE",
       motDePasseTemporaire: "Temporaire-2026",
       caisseIds: [2],
+      pin: null,
+      seuilsRemise: { ligne: 0, ticket: 0 },
     });
   });
 
@@ -98,7 +101,7 @@ describe("UtilisateurDialogue", () => {
     const requetes = simulerServeur();
     const onFermer = afficher(salma);
 
-    expect(screen.queryByLabelText("Identifiant")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Identifiant")).toHaveValue("salma");
     await userEvent.click(screen.getByLabelText("Ancienne (inactive)"));
     await userEvent.click(screen.getByLabelText("Caisse 1"));
     await userEvent.click(screen.getByRole("button", { name: "Désactivé" }));
@@ -110,11 +113,70 @@ describe("UtilisateurDialogue", () => {
     expect(await requetes[0]?.json()).toEqual({
       nom: "Bennani",
       prenom: "Salma",
+      login: "salma",
+      motDePasseTemporaire: null,
+      pin: null,
       role: "CAISSIER",
       actif: false,
       caisseIds: [1],
+      seuilsRemise: { ligne: 0, ticket: 0 },
       version: 4,
     });
+  });
+
+  it("change l'identifiant, le mot de passe, le PIN et les seuils d'un responsable", async () => {
+    const requetes = simulerServeur();
+    const onFermer = afficher({
+      ...salma,
+      role: "RESPONSABLE",
+      pinDefini: true,
+      seuilsRemise: { ligne: 10, ticket: 5 },
+    });
+
+    const identifiant = screen.getByLabelText("Identifiant");
+    await userEvent.clear(identifiant);
+    await userEvent.type(identifiant, "salma.b");
+    await userEvent.type(screen.getByLabelText("Nouveau mot de passe temporaire"), "court");
+    await userEvent.type(screen.getByLabelText("Nouveau PIN"), "12");
+    const ticket = screen.getByLabelText(/Remise max sur le ticket/);
+    expect(screen.getByLabelText(/Remise max par ligne/)).toHaveValue("10");
+    await userEvent.clear(ticket);
+    await userEvent.type(ticket, "120");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(await screen.findByText("8 caractères minimum")).toBeInTheDocument();
+    expect(screen.getByText("Exactement 4 chiffres")).toBeInTheDocument();
+    expect(screen.getByText("Entre 0 et 100 %")).toBeInTheDocument();
+    expect(requetes).toHaveLength(0);
+
+    // Le bouton œil affiche la saisie.
+    expect(screen.getByLabelText("Nouveau PIN")).toHaveAttribute("type", "password");
+    await userEvent.click(screen.getByRole("button", { name: "Afficher le PIN" }));
+    expect(screen.getByLabelText("Nouveau PIN")).toHaveAttribute("type", "text");
+
+    await userEvent.type(screen.getByLabelText("Nouveau mot de passe temporaire"), "-Provisoire");
+    await userEvent.type(screen.getByLabelText("Nouveau PIN"), "34");
+    await userEvent.clear(ticket);
+    await userEvent.type(ticket, "7,5");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    await waitFor(() => expect(onFermer).toHaveBeenCalled());
+    expect(await requetes[0]?.json()).toMatchObject({
+      login: "salma.b",
+      motDePasseTemporaire: "court-Provisoire",
+      pin: "1234",
+      role: "RESPONSABLE",
+      seuilsRemise: { ligne: 10, ticket: 7.5 },
+    });
+  });
+
+  it("ne propose ni PIN ni seuils pour un caissier", () => {
+    simulerServeur();
+    afficher(salma);
+
+    expect(screen.queryByLabelText(/PIN/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Remise max/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Un caissier n'accorde aucune remise/)).toBeInTheDocument();
   });
 
   it("n'attribue qu'une caisse et grise celles d'un autre compte", async () => {

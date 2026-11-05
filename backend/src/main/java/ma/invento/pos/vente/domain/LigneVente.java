@@ -39,9 +39,12 @@ public class LigneVente {
     private BigDecimal remiseValeur;
     private BigDecimal remiseMontant;
 
+    /** Responsable, admin ou vendeur qui a accordé la remise de cet article. */
+    private Long remiseValideePar;
+
     protected LigneVente() {}
 
-    LigneVente(Vente vente, LigneCalculee calculee) {
+    LigneVente(Vente vente, LigneCalculee calculee, Long remiseValideePar) {
         LignePanier ligne = calculee.ligne();
         this.vente = vente;
         this.produitId = ligne.produitId();
@@ -51,6 +54,7 @@ public class LigneVente {
         this.remiseType = ligne.remise() == null ? null : ligne.remise().type();
         this.remiseValeur = ligne.remise() == null ? null : ligne.remise().valeur();
         this.remiseMontant = calculee.remiseMontant();
+        this.remiseValideePar = calculee.remiseMontant().signum() > 0 ? remiseValideePar : null;
     }
 
     public Long getProduitId() {
@@ -75,5 +79,16 @@ public class LigneVente {
 
     public BigDecimal getRemiseMontant() {
         return remiseMontant;
+    }
+
+    public Long getRemiseValideePar() {
+        return remiseValideePar;
+    }
+
+    /** Remise de la ligne en % de son montant brut, telle qu'elle a été accordée. */
+    public BigDecimal tauxRemise() {
+        if (remiseMontant == null) return Montants.ZERO;
+        return Montants.pourcentage(
+                remiseMontant, Montants.arrondir(prixUnitaire.multiply(BigDecimal.valueOf(quantite))));
     }
 }

@@ -36,6 +36,12 @@ export function PanierPanel({
     : false;
   const pret = apercu !== undefined && !calcul.isFetching && apercu.stockSuffisant && !autorisationManquante;
   const articles = nombreArticles(panier);
+  // Qui a autorisé les remises de ce ticket (une autorisation par article remisé, ou le ticket).
+  const autorisations = [
+    ...new Set(
+      [panier.autorisePar, ...panier.lignes.map((l) => l.autorisePar)].filter((n): n is string => n !== null),
+    ),
+  ];
   // Une seule remise par vente (règle vérifiée par le serveur) : remises sur les lignes ou remise ticket.
   const remiseSurLignes = panier.lignes.some((l) => l.remise !== null);
   const remiseTicket = panier.remiseTicket !== null;
@@ -49,7 +55,7 @@ export function PanierPanel({
           </div>
           <div className="panier-sous-titre">
             {articles} article{articles > 1 ? "s" : ""}
-            {panier.autorisePar ? ` · remise autorisée par ${panier.autorisePar}` : ""}
+            {autorisations.length > 0 ? ` · remise autorisée par ${autorisations.join(", ")}` : ""}
           </div>
         </div>
         <button
@@ -144,8 +150,14 @@ export function PanierPanel({
         )}
         <div className="bloc-totaux">
           <div className="total-ligne">
+            <span>Prix sans remise</span>
+            <span>{apercu ? dh(apercu.totaux.sousTotal) : "–"}</span>
+          </div>
+          <div className="total-ligne">
             <span>Remises</span>
-            <span>{apercu ? dh(apercu.totaux.totalRemises) : "–"}</span>
+            <span>
+              {apercu ? `${apercu.totaux.totalRemises > 0 ? "−" : ""}${dh(apercu.totaux.totalRemises)}` : "–"}
+            </span>
           </div>
           <div className="total-ligne">
             <span>Total HT</span>
