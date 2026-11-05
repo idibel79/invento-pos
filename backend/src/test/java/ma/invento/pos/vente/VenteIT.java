@@ -25,6 +25,7 @@ import ma.invento.pos.IntegrationTest;
 import ma.invento.pos.catalogue.domain.Tva;
 import ma.invento.pos.catalogue.infrastructure.TvaRepository;
 import ma.invento.pos.identite.domain.Role;
+import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.journal.domain.ActionJournal;
 import ma.invento.pos.journal.infrastructure.JournalActionRepository;
@@ -75,13 +76,11 @@ class VenteIT extends IntegrationTest {
         autreCaisseId = creer("/api/v1/caisses", Map.of("nom", "Autre " + suffixe, "active", true));
         categorieId = creer("/api/v1/categories", Map.of("nom", "Catégorie " + suffixe));
         zoneId = creer("/api/v1/zones", Map.of("nom", "Zone " + suffixe));
-        // Plafonds par défaut (10 % / 30 %) : la base est partagée, ParametreIT les modifie.
+        // En-tête du ticket connu : la base est partagée, ParametreIT le modifie.
         mvc.perform(put("/api/v1/parametres")
                         .header(HttpHeaders.AUTHORIZATION, bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of(
-                                "plafondRemiseCaissier", 10,
-                                "plafondRemiseResponsable", 30,
                                 "boutiqueNom", "Parapharmacie Test",
                                 "boutiqueAdresse", "Rabat",
                                 "fuseauHoraire", "Africa/Casablanca"))))
@@ -207,7 +206,7 @@ class VenteIT extends IntegrationTest {
 
     @Test
     void vente_en_attente_reserve_le_stock_et_se_reprend_sur_la_meme_caisse() throws Exception {
-        String caissier = caissierSur(caisseId);
+        String caissier = responsableSur(caisseId);
         ouvrirSession(caissier, caisseId);
         long produit = produit("40.00", 3);
 
@@ -424,70 +423,122 @@ class VenteIT extends IntegrationTest {
     }
 
     @Test
-    void remise_au_dela_du_plafond_exige_le_pin_d_un_responsable() throws Exception {
+    void un_caissier_n_accorde_aucune_remise_sans_le_pin_d_un_responsable_dans_ses_seuils() throws Exception {
         String caissier = caissierSur(caisseId);
         ouvrirSession(caissier, caisseId);
         long produit = produit("100.00", 5);
+        long autreProduit = produit("50.00", 5);
         Utilisateur responsable = creerUtilisateur(Role.RESPONSABLE);
+        responsable.definirSeuilsRemise(new SeuilsRemise(BigDecimal.valueOf(20), BigDecimal.TEN));
         responsable.definirPin(encoder.encode(PIN));
         utilisateurs.save(responsable);
 
-        Map<String, Object> panier = panier(remise(ligne(produit, 1), "POURCENT", "15"));
-        mvc.perform(post("/api/v1/ventes/calcul")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(panier)))
+        // Même 1 % : un caissier n'a plus de remise.
+        Map<String, Object> panier = panier(remise(ligne(produit, 1), "POURCENT", "1"));
+        calcul(caissier, panier)
                 .andExpect(jsonPath("$.autorisationRequise").value("RESPONSABLE"))
                 .andExpect(jsonPath("$.autorisationAcquise").value(false));
+        panier.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "15")));
         panier.put("motifRemise", "Client fidèle");
         valider(caissier, UUID.randomUUID().toString(), panier, "85").andExpect(status().isForbidden());
 
         mvc.perform(get("/api/v1/autorisations/autorisateurs").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
-                .andExpect(jsonPath("$[?(@.id == " + responsable.getId() + ")].role")
-                        .value("RESPONSABLE"));
-        autoriser(caissier, responsable.getId(), "0000")
+                .andExpect(jsonPath("$[?(@.id == " + responsable.getId() + ")].seuilsRemise.ligne")
+                        .value(20.0));
+        autoriser(caissier, responsable.getId(), "0000", produit, "15")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.detail").value("PIN incorrect."));
-        String jeton = lire(autoriser(caissier, responsable.getId(), PIN)
-                        .andExpect(status().isOk())
-                        .andReturn())
-                .get("jeton")
-                .asText();
+        String jeton = jetonPour(caissier, responsable.getId(), produit, "15");
 
         // Le jeton d'autorisation n'est pas un jeton d'accès.
         mvc.perform(get("/api/v1/produits").header(HttpHeaders.AUTHORIZATION, bearer(jeton)))
                 .andExpect(status().isUnauthorized());
         // Ni utilisable par un autre caissier.
-        panier.put("jetonAutorisation", jeton);
+        panier.put("lignes", List.of(avecJeton(remise(ligne(produit, 1), "POURCENT", "15"), jeton)));
         String autre = caissierSur(autreCaisseId);
         ouvrirSession(autre, autreCaisseId);
         valider(autre, UUID.randomUUID().toString(), panier, "85").andExpect(status().isUnprocessableEntity());
+        // Ni pour une autre remise, ni pour un autre article.
+        panier.put("lignes", List.of(avecJeton(remise(ligne(produit, 1), "POURCENT", "16"), jeton)));
+        valider(caissier, UUID.randomUUID().toString(), panier, "84").andExpect(status().isUnprocessableEntity());
+        panier.put(
+                "lignes",
+                List.of(
+                        avecJeton(remise(ligne(produit, 1), "POURCENT", "15"), jeton),
+                        avecJeton(remise(ligne(autreProduit, 1), "POURCENT", "15"), jeton)));
+        valider(caissier, UUID.randomUUID().toString(), panier, "127.50").andExpect(status().isUnprocessableEntity());
 
-        JsonNode vente = lire(valider(caissier, UUID.randomUUID().toString(), panier, "85")
+        // Chaque article remisé a sa propre autorisation.
+        String jetonAutre = jetonPour(caissier, responsable.getId(), autreProduit, "15");
+        panier.put(
+                "lignes",
+                List.of(
+                        avecJeton(remise(ligne(produit, 1), "POURCENT", "15"), jeton),
+                        avecJeton(remise(ligne(autreProduit, 1), "POURCENT", "15"), jetonAutre)));
+        calcul(caissier, panier)
+                .andExpect(jsonPath("$.autorisationAcquise").value(true))
+                .andExpect(jsonPath("$.remises.length()").value(2));
+        JsonNode vente = lire(valider(caissier, UUID.randomUUID().toString(), panier, "127.50")
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.totaux.totalTtc").value(85.00))
+                .andExpect(jsonPath("$.totaux.totalTtc").value(127.50))
                 .andExpect(jsonPath("$.valideePar").value(responsable.getId()))
                 .andReturn());
-        assertThat(journalActions.findAll()).anySatisfy(a -> {
-            assertThat(a.getAction()).isEqualTo(ActionJournal.REMISE_AUTORISEE);
-            assertThat(a.getDetail()).contains(vente.get("numero").asText(), "Client fidèle");
-        });
+        assertThat(journalActions.findAll().stream()
+                        .filter(a -> a.getAction() == ActionJournal.REMISE_AUTORISEE
+                                && a.getDetail().contains(vente.get("numero").asText())))
+                .hasSize(2)
+                .allSatisfy(a -> assertThat(a.getDetail()).contains("Client fidèle"));
 
-        // Au-delà du plafond responsable (30 %), le PIN du responsable ne suffit plus.
-        panier.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "35")));
-        valider(caissier, UUID.randomUUID().toString(), panier, "65").andExpect(status().isForbidden());
+        // Au-delà de ses seuils (20 % par ligne, 10 % sur le ticket), son PIN ne suffit plus : l'admin.
+        Map<String, Object> fort = panier(avecJeton(
+                remise(ligne(produit, 1), "POURCENT", "25"), jetonPour(caissier, responsable.getId(), produit, "25")));
+        fort.put("motifRemise", "Client fidèle");
+        calcul(caissier, fort).andExpect(jsonPath("$.autorisationRequise").value("ADMIN"));
+        valider(caissier, UUID.randomUUID().toString(), fort, "75").andExpect(status().isForbidden());
+        Map<String, Object> ticket = panier(ligne(produit, 1));
+        ticket.put("remiseTicket", Map.of("type", "POURCENT", "valeur", new BigDecimal("15")));
+        ticket.put("motifRemise", "Client fidèle");
+        ticket.put("jetonAutorisation", jetonPour(caissier, responsable.getId(), null, "15"));
+        valider(caissier, UUID.randomUUID().toString(), ticket, "85").andExpect(status().isForbidden());
+        ticket.put("remiseTicket", Map.of("type", "POURCENT", "valeur", new BigDecimal("10")));
+        ticket.put("jetonAutorisation", jetonPour(caissier, responsable.getId(), null, "10"));
+        valider(caissier, UUID.randomUUID().toString(), ticket, "90").andExpect(status().isCreated());
 
-        // Une vente en attente garde l'autorisation accordée, mais pas pour une remise plus forte.
-        panier.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "15")));
-        long attente = mettreEnAttente(caissier, panier);
-        Map<String, Object> reprise = panier(remise(ligne(produit, 1), "POURCENT", "25"));
+        // Une vente en attente garde l'autorisation de chaque article, mais pas pour une remise plus forte.
+        Map<String, Object> attente = panier(avecJeton(
+                remise(ligne(produit, 1), "POURCENT", "15"), jetonPour(caissier, responsable.getId(), produit, "15")));
+        attente.put("motifRemise", "Client fidèle");
+        long venteAttente = mettreEnAttente(caissier, attente);
+        Map<String, Object> reprise = panier(remise(ligne(produit, 1), "POURCENT", "18"));
         reprise.put("motifRemise", "Client fidèle");
-        reprise.put("venteEnAttenteId", attente);
-        valider(caissier, UUID.randomUUID().toString(), reprise, "75").andExpect(status().isForbidden());
+        reprise.put("venteEnAttenteId", venteAttente);
+        valider(caissier, UUID.randomUUID().toString(), reprise, "82").andExpect(status().isForbidden());
         reprise.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "15")));
         valider(caissier, UUID.randomUUID().toString(), reprise, "85")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.valideePar").value(responsable.getId()));
+    }
+
+    @Test
+    void un_responsable_accorde_lui_meme_une_remise_dans_ses_seuils() throws Exception {
+        String responsable = responsableSur(caisseId);
+        ouvrirSession(responsable, caisseId);
+        long produit = produit("100.00", 5);
+
+        Map<String, Object> panier = panier(remise(ligne(produit, 1), "POURCENT", "10"));
+        calcul(responsable, panier).andExpect(jsonPath("$.autorisationRequise").value("AUCUNE"));
+        valider(responsable, UUID.randomUUID().toString(), panier, "90").andExpect(status().isCreated());
+
+        panier.put("lignes", List.of(remise(ligne(produit, 1), "POURCENT", "11")));
+        panier.put("motifRemise", "Client fidèle");
+        valider(responsable, UUID.randomUUID().toString(), panier, "89").andExpect(status().isForbidden());
+    }
+
+    private ResultActions calcul(String jeton, Map<String, Object> panier) throws Exception {
+        return mvc.perform(post("/api/v1/ventes/calcul")
+                .header(HttpHeaders.AUTHORIZATION, bearer(jeton))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(panier)));
     }
 
     @Test
@@ -497,9 +548,9 @@ class VenteIT extends IntegrationTest {
         responsable.definirPin(encoder.encode(PIN));
         utilisateurs.save(responsable);
         for (int i = 0; i < Utilisateur.ESSAIS_MAX; i++) {
-            autoriser(caissier, responsable.getId(), "9999").andExpect(status().isUnprocessableEntity());
+            autoriser(caissier, responsable.getId(), "9999", null, "5").andExpect(status().isUnprocessableEntity());
         }
-        autoriser(caissier, responsable.getId(), PIN).andExpect(status().isForbidden());
+        autoriser(caissier, responsable.getId(), PIN, null, "5").andExpect(status().isForbidden());
         assertThat(utilisateurs.findById(responsable.getId()).orElseThrow().isVerrouille())
                 .isTrue();
     }
@@ -561,11 +612,32 @@ class VenteIT extends IntegrationTest {
                 .asLong();
     }
 
-    private ResultActions autoriser(String jeton, long autorisateurId, String pin) throws Exception {
+    /** PIN pour une remise en % sur un article, ou sur le ticket (produit null). */
+    private ResultActions autoriser(String jeton, long autorisateurId, String pin, Long produitId, String pourcent)
+            throws Exception {
+        Map<String, Object> demande = new HashMap<>();
+        demande.put("autorisateurId", autorisateurId);
+        demande.put("pin", pin);
+        demande.put("produitId", produitId);
+        demande.put("remiseType", "POURCENT");
+        demande.put("remiseValeur", new BigDecimal(pourcent));
         return mvc.perform(post("/api/v1/autorisations/remise")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jeton))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of("autorisateurId", autorisateurId, "pin", pin))));
+                .content(json.writeValueAsString(demande)));
+    }
+
+    private String jetonPour(String jeton, long autorisateurId, Long produitId, String pourcent) throws Exception {
+        return lire(autoriser(jeton, autorisateurId, PIN, produitId, pourcent)
+                        .andExpect(status().isOk())
+                        .andReturn())
+                .get("jeton")
+                .asText();
+    }
+
+    private static Map<String, Object> avecJeton(Map<String, Object> ligne, String jeton) {
+        ligne.put("jetonAutorisation", jeton);
+        return ligne;
     }
 
     private long ouvrirSession(String jeton, long caisse) throws Exception {
@@ -587,6 +659,16 @@ class VenteIT extends IntegrationTest {
                         .content(json.writeValueAsString(Map.of("nom", nom, "active", active))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(active));
+    }
+
+    /** Responsable de la caisse, qui accorde lui-même jusqu'à 10 % par ligne ou sur le ticket. */
+    private String responsableSur(long caisse) throws Exception {
+        Utilisateur responsable = creerUtilisateur(Role.RESPONSABLE);
+        responsable.modifierProfil(
+                responsable.getNom(), responsable.getPrenom(), Role.RESPONSABLE, true, Set.of(caisse));
+        responsable.definirSeuilsRemise(new SeuilsRemise(BigDecimal.TEN, BigDecimal.TEN));
+        utilisateurs.save(responsable);
+        return jeton(responsable.getLogin(), MDP_UTILISATEUR);
     }
 
     private String caissierSur(long caisse) throws Exception {

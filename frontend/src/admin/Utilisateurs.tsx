@@ -6,14 +6,12 @@ import { useCaisses, useParametres } from "../caisse/requetes";
 import { dateHeure } from "../ui/format";
 import { EtatRequete } from "./EtatRequete";
 import { useDeverrouiller, useUtilisateurs } from "./requetes";
-import { SecretDialogue } from "./SecretDialogue";
 import { UtilisateurDialogue } from "./UtilisateurDialogue";
 
 type Utilisateur = Schemas["UtilisateurDto"];
 
-type Fenetre =
-  | { type: "fiche"; utilisateur: Utilisateur | null }
-  | { type: "mot-de-passe" | "pin"; utilisateur: Utilisateur };
+/** Fiche ouverte : utilisateur null pour la création d'un compte. */
+type Fenetre = { utilisateur: Utilisateur | null };
 
 /** Comptes de la boutique : jamais supprimés, seulement désactivés. */
 export function Utilisateurs() {
@@ -38,7 +36,7 @@ export function Utilisateurs() {
         <button
           type="button"
           className="bouton bouton-plein"
-          onClick={() => setFenetre({ type: "fiche", utilisateur: null })}
+          onClick={() => setFenetre({ utilisateur: null })}
         >
           Nouvel utilisateur
         </button>
@@ -94,23 +92,9 @@ export function Utilisateurs() {
                   <button
                     type="button"
                     className="bouton-petit"
-                    onClick={() => setFenetre({ type: "fiche", utilisateur: u })}
+                    onClick={() => setFenetre({ utilisateur: u })}
                   >
                     Modifier
-                  </button>
-                  <button
-                    type="button"
-                    className="bouton-petit"
-                    onClick={() => setFenetre({ type: "mot-de-passe", utilisateur: u })}
-                  >
-                    Mot de passe
-                  </button>
-                  <button
-                    type="button"
-                    className="bouton-petit"
-                    onClick={() => setFenetre({ type: "pin", utilisateur: u })}
-                  >
-                    PIN
                   </button>
                 </div>
               </li>
@@ -118,16 +102,13 @@ export function Utilisateurs() {
           </ul>
         )}
       </EtatRequete>
-      {fenetre?.type === "fiche" && (
+      {fenetre && (
         <UtilisateurDialogue
           utilisateur={fenetre.utilisateur}
           caisses={caisses.data ?? []}
           autres={utilisateurs.data ?? []}
           onFermer={fermer}
         />
-      )}
-      {(fenetre?.type === "mot-de-passe" || fenetre?.type === "pin") && (
-        <SecretDialogue type={fenetre.type} utilisateur={fenetre.utilisateur} onFermer={fermer} />
       )}
     </section>
   );

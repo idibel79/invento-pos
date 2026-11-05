@@ -14,8 +14,10 @@ import ma.invento.pos.catalogue.domain.Tva;
 import ma.invento.pos.catalogue.infrastructure.ProduitRepository;
 import ma.invento.pos.catalogue.infrastructure.TvaRepository;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
+import ma.invento.pos.identite.api.UtilisateurDtos.SeuilsRemiseDto;
 import ma.invento.pos.identite.application.UtilisateurService;
 import ma.invento.pos.identite.domain.Role;
+import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.stock.domain.MouvementStock;
@@ -92,19 +94,41 @@ public class DonneesDemo {
 
         long caisse1 = caisseService.creer("Caisse 1", adminId).id();
         long caisse2 = caisseService.creer("Caisse 2", adminId).id();
-        creerCompte("caissier", "Caissier", Role.CAISSIER, Set.of(caisse1), null, adminId);
-        creerCompte("responsable", "Responsable", Role.RESPONSABLE, Set.of(caisse2), PIN_RESPONSABLE, adminId);
+        creerCompte(
+                "caissier",
+                "Caissier",
+                Role.CAISSIER,
+                Set.of(caisse1),
+                null,
+                SeuilsRemiseDto.depuis(SeuilsRemise.AUCUN),
+                adminId);
+        creerCompte(
+                "responsable",
+                "Responsable",
+                Role.RESPONSABLE,
+                Set.of(caisse2),
+                PIN_RESPONSABLE,
+                new SeuilsRemiseDto(BigDecimal.TEN, BigDecimal.valueOf(5)),
+                adminId);
 
         creerCatalogue(adminId);
         log.info("Données de démo créées : comptes admin, responsable, caissier (mot de passe {}).", MOT_DE_PASSE);
     }
 
-    private void creerCompte(String login, String prenom, Role role, Set<Long> caisseIds, String pin, long adminId) {
+    private void creerCompte(
+            String login,
+            String prenom,
+            Role role,
+            Set<Long> caisseIds,
+            String pin,
+            SeuilsRemiseDto seuils,
+            long adminId) {
         long id = utilisateurService
-                .creer(new CreationUtilisateur("Démo", prenom, login, role, MOT_DE_PASSE, caisseIds), adminId)
+                .creer(
+                        new CreationUtilisateur("Démo", prenom, login, role, MOT_DE_PASSE, caisseIds, pin, seuils),
+                        adminId)
                 .id();
         utilisateurs.findById(id).orElseThrow().changerMotDePasse(encoder.encode(MOT_DE_PASSE));
-        if (pin != null) utilisateurService.definirPin(id, pin, adminId);
     }
 
     private void creerCatalogue(long adminId) {

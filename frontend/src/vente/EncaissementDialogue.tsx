@@ -75,23 +75,33 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
                 ))}
               </ul>
               <div className="recap-totaux">
+                <span>
+                  <span>Prix sans remise</span>
+                  <span>{dh(apercu.totaux.sousTotal)}</span>
+                </span>
                 {apercu.totaux.totalRemises > 0 && (
                   <span>
                     <span>Remises</span>
                     <span>−{dh(apercu.totaux.totalRemises)}</span>
                   </span>
                 )}
-                {apercu.totaux.tva.map((t) => (
-                  <span key={t.taux}>
-                    <span>TVA {pourcent(t.taux)}</span>
-                    <span>{dh(t.totalTva)}</span>
-                  </span>
-                ))}
+                <span>
+                  <span>Total HT</span>
+                  <span>{dh(apercu.totaux.totalHt)}</span>
+                </span>
+                {apercu.totaux.tva
+                  .filter((t) => t.taux > 0)
+                  .map((t) => (
+                    <span key={t.taux}>
+                      <span>TVA {pourcent(t.taux)}</span>
+                      <span>{dh(t.totalTva)}</span>
+                    </span>
+                  ))}
               </div>
             </>
           )}
           <div className="total-a-payer">
-            <span>Total à payer</span>
+            <span>Total TTC à payer</span>
             <strong>{dh(total)}</strong>
           </div>
           <div className="modes-paiement" role="group" aria-label="Mode de paiement">

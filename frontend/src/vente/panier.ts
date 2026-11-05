@@ -10,13 +10,16 @@ export interface LignePanier {
   prixUnitaire: number;
   quantite: number;
   remise: Remise | null;
+  /** Jeton du PIN qui autorise la remise de cet article (une autorisation par article). */
+  jeton: string | null;
+  autorisePar: string | null;
 }
 
 export interface EtatPanier {
   lignes: LignePanier[];
   remiseTicket: Remise | null;
   motifRemise: string | null;
-  /** Jeton remis après le PIN d'un responsable (15 min, lié à ce caissier). */
+  /** Jeton du PIN qui autorise la remise ticket (15 min, lié à ce caissier et à cette remise). */
   jetonAutorisation: string | null;
   autorisePar: string | null;
   /** Vente en attente reprise : sa validation réutilise la même vente (prix et remise autorisée). */
@@ -30,7 +33,7 @@ export type ActionPanier =
   | { type: "retirer"; produitId: number }
   | { type: "remiseLigne"; produitId: number; remise: Remise | null; motif: string | null }
   | { type: "remiseTicket"; remise: Remise | null; motif: string | null }
-  | { type: "autorisation"; jeton: string; autorisePar: string }
+  | { type: "autorisation"; produitId: number | null; jeton: string; autorisePar: string }
   | { type: "reprendre"; vente: Schemas["VenteDto"] }
   | { type: "vider" };
 
@@ -45,6 +48,10 @@ export const panierVide: EtatPanier = {
 };
 
 const QUANTITE_MAX = 9999;
+
+function memeRemise(a: Remise | null, b: Remise | null): boolean {
+  return a?.type === b?.type && a?.valeur === b?.valeur;
+}
 
 function sansRemiseNulle(remise: Remise | null): Remise | null {
   return remise && remise.valeur > 0 ? remise : null;
@@ -67,6 +74,8 @@ export function reducteurPanier(etat: EtatPanier, action: ActionPanier): EtatPan
         prixUnitaire: action.produit.ppv,
         quantite: 1,
         remise: null,
+        jeton: null,
+        autorisePar: null,
       };
       return { ...etat, lignes: [...etat.lignes, ligne] };
     }
@@ -88,7 +97,12 @@ export function reducteurPanier(etat: EtatPanier, action: ActionPanier): EtatPan
         ...etat,
         motifRemise: action.motif ?? etat.motifRemise,
         lignes: etat.lignes.map((l) =>
-          l.produitId === action.produitId ? { ...l, remise: sansRemiseNulle(action.remise) } : l,
+          // Remise changée : l'autorisation donnée pour l'ancienne ne vaut plus.
+          l.produitId === action.produitId
+            ? memeRemise(l.remise, sansRemiseNulle(action.remise))
+              ? l
+              : { ...l, remise: sansRemiseNulle(action.remise), jeton: null, autorisePar: null }
+            : l,
         ),
       };
     case "remiseTicket":
@@ -96,9 +110,21 @@ export function reducteurPanier(etat: EtatPanier, action: ActionPanier): EtatPan
         ...etat,
         remiseTicket: sansRemiseNulle(action.remise),
         motifRemise: action.motif ?? etat.motifRemise,
+        ...(memeRemise(etat.remiseTicket, sansRemiseNulle(action.remise))
+          ? {}
+          : { jetonAutorisation: null, autorisePar: null }),
       };
     case "autorisation":
-      return { ...etat, jetonAutorisation: action.jeton, autorisePar: action.autorisePar };
+      if (action.produitId === null)
+        return { ...etat, jetonAutorisation: action.jeton, autorisePar: action.autorisePar };
+      return {
+        ...etat,
+        lignes: etat.lignes.map((l) =>
+          l.produitId === action.produitId
+            ? { ...l, jeton: action.jeton, autorisePar: action.autorisePar }
+            : l,
+        ),
+      };
     case "reprendre":
       return {
         ...panierVide,
@@ -108,6 +134,8 @@ export function reducteurPanier(etat: EtatPanier, action: ActionPanier): EtatPan
           prixUnitaire: l.prixUnitaire,
           quantite: l.quantite,
           remise: l.remise,
+          jeton: null,
+          autorisePar: null,
         })),
         remiseTicket: action.vente.remiseTicket,
         motifRemise: action.vente.motifRemise,
@@ -126,6 +154,7 @@ export function versCommande(etat: EtatPanier): Schemas["PanierCommande"] {
       produitId: l.produitId,
       quantite: l.quantite,
       remise: l.remise ?? undefined,
+      jetonAutorisation: l.jeton ?? undefined,
     })),
     remiseTicket: etat.remiseTicket ?? undefined,
     motifRemise: etat.motifRemise ?? undefined,

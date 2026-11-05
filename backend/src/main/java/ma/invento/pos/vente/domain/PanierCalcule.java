@@ -29,6 +29,11 @@ public record PanierCalcule(
         public BigDecimal montantNet() {
             return montantBrut.subtract(remiseMontant);
         }
+
+        /** Remise propre de la ligne, en % de son montant brut (hors remise ticket). */
+        public BigDecimal tauxRemise() {
+            return Montants.pourcentage(remiseMontant, montantBrut);
+        }
     }
 
     /** Montants par taux de TVA (les prix publics sont TTC). */

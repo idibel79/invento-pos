@@ -1,6 +1,7 @@
 package ma.invento.pos.identite.application;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
@@ -11,7 +12,9 @@ import java.util.Objects;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import ma.invento.pos.identite.api.UtilisateurDtos.SeuilsRemiseDto;
 import ma.invento.pos.identite.domain.Role;
+import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
@@ -34,8 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Autorisation d'une remise sur la caisse par un responsable ou l'admin, avec son PIN (cadrage
- * § 1). Le PIN est vérifié une fois ; la caisse reçoit un jeton signé, court et lié au caissier
- * demandeur, qu'elle joint à la vente. Ce jeton est signé avec une clé dérivée, distincte de
+ * § 1). Le PIN est vérifié une fois par remise : la caisse reçoit un jeton signé, court, lié au caissier
+ * demandeur et à une seule remise (un article ou le ticket), qu'elle joint à la vente. Ce jeton est signé avec une clé dérivée, distincte de
  * celle des jetons d'accès : il ne peut pas servir à appeler l'API.
  */
 @Service
@@ -44,7 +47,9 @@ public class AutorisationService {
     public static final Duration DUREE = Duration.ofMinutes(15);
     private static final String CLAIM_ROLE = "role";
     private static final String CLAIM_DEMANDEUR = "demandeur";
+    private static final String CLAIM_OBJET = "objet";
     private static final String PIN_REFUSE = "PIN incorrect.";
+    private static final SeuilsRemise SANS_LIMITE = new SeuilsRemise(BigDecimal.valueOf(100), BigDecimal.valueOf(100));
 
     private final UtilisateurRepository utilisateurs;
     private final PasswordEncoder encoder;
@@ -76,14 +81,21 @@ public class AutorisationService {
     @Transactional(readOnly = true)
     public List<Autorisateur> autorisateurs() {
         return utilisateurs.findAutorisateurs(List.of(Role.RESPONSABLE, Role.ADMIN)).stream()
-                .filter(u -> !u.isVerrouille())
-                .map(u -> new Autorisateur(u.getId(), u.getPrenom(), u.getNom(), u.getRole()))
+                // Un responsable sans seuil de remise ne peut rien autoriser.
+                .filter(u -> !u.isVerrouille()
+                        && (u.getRole() == Role.ADMIN || !u.getSeuilsRemise().aucun()))
+                .map(u -> new Autorisateur(
+                        u.getId(),
+                        u.getPrenom(),
+                        u.getNom(),
+                        u.getRole(),
+                        SeuilsRemiseDto.depuis(u.getRole() == Role.ADMIN ? SANS_LIMITE : u.getSeuilsRemise())))
                 .toList();
     }
 
     /** Les essais ratés sont comptés même si l'autorisation échoue ; 5 échecs verrouillent le compte. */
     @Transactional(noRollbackFor = {PinIncorrectException.class, CompteVerrouilleException.class})
-    public JetonAutorisation autoriser(long autorisateurId, String pin, long demandeurId) {
+    public JetonAutorisation autoriser(long autorisateurId, String pin, long demandeurId, String objet) {
         Utilisateur autorisateur = utilisateurs
                 .findById(autorisateurId)
                 .filter(u -> u.isActif() && u.isPinDefini() && u.getRole() != Role.CAISSIER)
@@ -107,6 +119,7 @@ public class AutorisationService {
                 .expiresAt(expiration)
                 .claim(CLAIM_ROLE, autorisateur.getRole().name())
                 .claim(CLAIM_DEMANDEUR, demandeurId)
+                .claim(CLAIM_OBJET, objet)
                 .build();
         String jeton = jwtEncoder
                 .encode(JwtEncoderParameters.from(
@@ -120,7 +133,7 @@ public class AutorisationService {
                 expiration);
     }
 
-    /** Vérifie un jeton joint à une vente : signature, échéance et caissier demandeur. */
+    /** Vérifie un jeton joint à une vente : signature, échéance et caissier demandeur ; l'appelant compare l'objet. */
     public Autorisation verifier(String jeton, long demandeurId) {
         try {
             Jwt jwt = jwtDecoder.decode(jeton);
@@ -139,7 +152,7 @@ public class AutorisationService {
                     .findById(autorisateurId)
                     .filter(u -> u.isActif() && !u.isVerrouille() && u.getRole() == role)
                     .orElseThrow(() -> new RegleMetierException("Autorisation retirée : faites ressaisir le PIN."));
-            return new Autorisation(autorisateurId, role);
+            return new Autorisation(autorisateurId, role, Objects.requireNonNull(jwt.getClaimAsString(CLAIM_OBJET)));
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
             throw new RegleMetierException("Autorisation invalide : faites ressaisir le PIN.");
         }
@@ -156,10 +169,12 @@ public class AutorisationService {
         }
     }
 
-    public record Autorisateur(Long id, String prenom, String nom, Role role) {}
+    /** @param seuilsRemise remises qu'il peut autoriser (100 % pour l'admin, sans limite) */
+    public record Autorisateur(Long id, String prenom, String nom, Role role, SeuilsRemiseDto seuilsRemise) {}
 
     public record JetonAutorisation(
             String jeton, Long autorisateurId, String autorisateur, Role role, Instant expireLe) {}
 
-    public record Autorisation(long autorisateurId, Role role) {}
+    /** @param objet remise autorisée ({@link ma.invento.pos.shared.domain.ObjetAutorisation}) */
+    public record Autorisation(long autorisateurId, Role role, String objet) {}
 }

@@ -41,7 +41,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
           Retour à la caisse
         </button>
         <span className="barre-heure">{heure(new Date(maintenant).toISOString(), fuseau)}</span>
-        <MenuUtilisateur plafond={undefined} />
+        <MenuUtilisateur />
       </header>
       <nav className="admin-onglets" aria-label="Administration">
         {(Object.keys(ONGLETS) as Onglet[]).map((cle) => (

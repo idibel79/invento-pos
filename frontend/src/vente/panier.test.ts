@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "../api/client";
-import { nombreArticles, panierVide, reducteurPanier, versCommande, type EtatPanier } from "./panier";
+import {
+  nombreArticles,
+  panierVide,
+  reducteurPanier,
+  versCommande,
+  type ActionPanier,
+  type EtatPanier,
+} from "./panier";
 
 const doliprane = { id: 1, designation: "DOLIPRANE 1000MG B8", ppv: 13.7 };
 const cerave = { id: 2, designation: "CERAVE GEL 236ML", ppv: 125 };
@@ -61,10 +68,10 @@ describe("reducteurPanier", () => {
   it("la commande envoyée ne contient aucun prix", () => {
     const etat = avec(
       { type: "ajouter", produit: cerave },
-      { type: "autorisation", jeton: "jeton", autorisePar: "Sara Alami" },
+      { type: "autorisation", produitId: null, jeton: "jeton", autorisePar: "Sara Alami" },
     );
     expect(versCommande(etat)).toEqual({
-      lignes: [{ produitId: 2, quantite: 1, remise: undefined }],
+      lignes: [{ produitId: 2, quantite: 1, remise: undefined, jetonAutorisation: undefined }],
       remiseTicket: undefined,
       motifRemise: undefined,
       jetonAutorisation: "jeton",
@@ -94,5 +101,31 @@ describe("reducteurPanier", () => {
     expect(etat.lignes).toHaveLength(1);
     expect(versCommande(etat).venteEnAttenteId).toBe(42);
     expect(reducteurPanier(etat, { type: "vider" })).toEqual(panierVide);
+  });
+});
+
+describe("autorisation par article", () => {
+  it("chaque article garde son autorisation, perdue si sa remise change", () => {
+    const dix = { type: "POURCENT" as const, valeur: 10 };
+    const actions: ActionPanier[] = [
+      { type: "ajouter", produit: doliprane },
+      { type: "ajouter", produit: cerave },
+      { type: "remiseLigne", produitId: 1, remise: dix, motif: "Fidèle" },
+      { type: "autorisation", produitId: 1, jeton: "j1", autorisePar: "Sara" },
+    ];
+    let etat = actions.reduce(reducteurPanier, panierVide);
+
+    expect(versCommande(etat).lignes.map((l) => l.jetonAutorisation)).toEqual(["j1", undefined]);
+    // Même remise réappliquée : l'autorisation reste.
+    etat = reducteurPanier(etat, { type: "remiseLigne", produitId: 1, remise: dix, motif: null });
+    expect(etat.lignes[0]?.jeton).toBe("j1");
+    // Remise modifiée : il faut un nouveau PIN.
+    etat = reducteurPanier(etat, {
+      type: "remiseLigne",
+      produitId: 1,
+      remise: { type: "POURCENT", valeur: 12 },
+      motif: null,
+    });
+    expect(etat.lignes[0]?.jeton).toBeNull();
   });
 });

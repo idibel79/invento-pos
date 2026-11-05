@@ -1,6 +1,5 @@
 import { useEffect, useReducer, useState } from "react";
 import type { Schemas } from "../api/client";
-import { useUtilisateur } from "../auth/AuthContext";
 import { ClotureDialogue } from "../caisse/ClotureDialogue";
 import { useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
@@ -34,7 +33,6 @@ interface Props {
 }
 
 export function EcranVente({ session, onAdministration }: Props) {
-  const utilisateur = useUtilisateur();
   const parametres = useParametres();
   const [panier, dispatch] = useReducer(reducteurPanier, panierVide);
   const commande = versCommande(panier);
@@ -45,12 +43,6 @@ export function EcranVente({ session, onAdministration }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const maintenant = useMaintenant(30_000);
   const fuseau = parametres.data?.fuseauHoraire;
-  const plafond =
-    utilisateur.role === "CAISSIER"
-      ? parametres.data?.plafondRemiseCaissier
-      : utilisateur.role === "RESPONSABLE"
-        ? parametres.data?.plafondRemiseResponsable
-        : 100;
 
   useEffect(() => {
     if (!message) return;
@@ -114,7 +106,7 @@ export function EcranVente({ session, onAdministration }: Props) {
           </button>
         )}
         <span className="barre-heure">{heure(new Date(maintenant).toISOString(), fuseau)}</span>
-        <MenuUtilisateur plafond={plafond} />
+        <MenuUtilisateur enCaisse />
       </header>
 
       <main className="corps-vente">

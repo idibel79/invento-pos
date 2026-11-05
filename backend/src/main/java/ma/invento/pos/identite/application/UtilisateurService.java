@@ -10,6 +10,7 @@ import ma.invento.pos.identite.api.UtilisateurDtos.ModificationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.UtilisateurDto;
 import ma.invento.pos.identite.domain.PolitiqueSecrets;
 import ma.invento.pos.identite.domain.Role;
+import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.identite.infrastructure.RefreshTokenRepository;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
@@ -64,6 +65,7 @@ public class UtilisateurService {
             throw new ConflitException("L'identifiant " + login + " est déjà utilisé.");
         }
         PolitiqueSecrets.verifierMotDePasse(login, commande.motDePasseTemporaire());
+        if (commande.pin() != null) PolitiqueSecrets.verifierPin(commande.pin());
         caisses.verifierExistence(commande.caisseIds());
         verifierCaissesLibres(commande.caisseIds(), null);
         Utilisateur utilisateur = new Utilisateur(
@@ -75,8 +77,11 @@ public class UtilisateurService {
                 Instant.now(clock));
         utilisateur.modifierProfil(
                 utilisateur.getNom(), utilisateur.getPrenom(), commande.role(), true, commande.caisseIds());
+        utilisateur.definirSeuilsRemise(commande.seuilsRemise().versDomaine());
+        if (commande.pin() != null) utilisateur.definirPin(encoder.encode(commande.pin()));
         utilisateurs.save(utilisateur);
         journal.enregistrer(adminId, ActionJournal.UTILISATEUR_CREE, login + " (" + commande.role() + ")");
+        if (commande.pin() != null) journal.enregistrer(adminId, ActionJournal.PIN_DEFINI, login);
         return UtilisateurDto.depuis(utilisateur);
     }
 
@@ -93,30 +98,59 @@ public class UtilisateurService {
         } else {
             refuserAdmin(commande.role());
         }
+        String ancienLogin = utilisateur.getLogin();
+        String login = commande.login().trim();
+        boolean nouveauLogin = !login.equals(ancienLogin);
+        if (nouveauLogin && !login.equalsIgnoreCase(ancienLogin) && utilisateurs.existsByLoginIgnoreCase(login)) {
+            throw new ConflitException("L'identifiant " + login + " est déjà utilisé.");
+        }
+        String motDePasse = vide(commande.motDePasseTemporaire()) ? null : commande.motDePasseTemporaire();
+        if (motDePasse != null) PolitiqueSecrets.verifierMotDePasse(login, motDePasse);
+        if (commande.pin() != null) PolitiqueSecrets.verifierPin(commande.pin());
         caisses.verifierExistence(commande.caisseIds());
         if (utilisateur.getRole() != Role.ADMIN) verifierCaissesLibres(commande.caisseIds(), id);
+
+        if (nouveauLogin) utilisateur.changerLogin(login);
         utilisateur.modifierProfil(
                 commande.nom().trim(),
                 commande.prenom().trim(),
                 commande.role(),
                 commande.actif(),
                 commande.caisseIds());
-        if (!commande.actif()) refreshTokens.revoquerTous(id);
+        utilisateur.definirSeuilsRemise(commande.seuilsRemise().versDomaine());
         journal.enregistrer(
                 adminId,
                 ActionJournal.UTILISATEUR_MODIFIE,
-                utilisateur.getLogin() + " (" + commande.role() + (commande.actif() ? ")" : ", désactivé)"));
-        return UtilisateurDto.depuis(charger(id));
+                (nouveauLogin ? ancienLogin + " → " : "")
+                        + login
+                        + " ("
+                        + commande.role()
+                        + (commande.actif() ? "" : ", désactivé")
+                        + seuils(utilisateur)
+                        + ")");
+        if (motDePasse != null) {
+            // Mot de passe temporaire : déverrouille le compte et oblige à le changer.
+            utilisateur.reinitialiserMotDePasse(encoder.encode(motDePasse));
+            journal.enregistrer(adminId, ActionJournal.MOT_DE_PASSE_REINITIALISE, login);
+        }
+        if (commande.pin() != null) {
+            utilisateur.definirPin(encoder.encode(commande.pin()));
+            journal.enregistrer(adminId, ActionJournal.PIN_DEFINI, login);
+        }
+        if (!commande.actif() || motDePasse != null) refreshTokens.revoquerTous(id);
+        return UtilisateurDto.depuis(utilisateurs.saveAndFlush(utilisateur));
     }
 
-    /** Mot de passe temporaire défini par l'admin : déverrouille et oblige à le changer. */
-    @Transactional
-    public void reinitialiserMotDePasse(long id, String motDePasseTemporaire, long adminId) {
-        Utilisateur utilisateur = charger(id);
-        PolitiqueSecrets.verifierMotDePasse(utilisateur.getLogin(), motDePasseTemporaire);
-        utilisateur.reinitialiserMotDePasse(encoder.encode(motDePasseTemporaire));
-        refreshTokens.revoquerTous(id);
-        journal.enregistrer(adminId, ActionJournal.MOT_DE_PASSE_REINITIALISE, utilisateur.getLogin());
+    /** Seuils de remise d'un responsable, pour le journal. */
+    private static String seuils(Utilisateur utilisateur) {
+        if (utilisateur.getRole() != Role.RESPONSABLE) return "";
+        SeuilsRemise s = utilisateur.getSeuilsRemise();
+        return ", remise max ligne " + s.ligne().stripTrailingZeros().toPlainString() + " %, ticket "
+                + s.ticket().stripTrailingZeros().toPlainString() + " %";
+    }
+
+    private static boolean vide(String valeur) {
+        return valeur == null || valeur.isEmpty();
     }
 
     @Transactional

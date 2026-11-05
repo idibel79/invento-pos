@@ -22,9 +22,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 
 /** Gestion des comptes et des caisses par l'admin. */
 class UtilisateurIT extends IntegrationTest {
+
+    private static final Map<String, Object> AUCUN_SEUIL = Map.of("ligne", 0, "ticket", 0);
 
     @Autowired
     JournalActionRepository journal;
@@ -146,9 +149,11 @@ class UtilisateurIT extends IntegrationTest {
         Map<String, Object> modification = new HashMap<>();
         modification.put("nom", "Administrateur");
         modification.put("prenom", "");
+        modification.put("login", moi.get("login").asText());
         modification.put("role", "CAISSIER");
         modification.put("actif", true);
         modification.put("caisseIds", List.of());
+        modification.put("seuilsRemise", AUCUN_SEUIL);
         modification.put("version", moi.get("version").asLong());
         mvc.perform(put("/api/v1/utilisateurs/" + moi.get("id").asLong())
                         .header(HttpHeaders.AUTHORIZATION, bearer(admin))
@@ -163,9 +168,11 @@ class UtilisateurIT extends IntegrationTest {
         Map<String, Object> modification = new HashMap<>();
         modification.put("nom", "Test");
         modification.put("prenom", "Responsable");
+        modification.put("login", responsable.getLogin());
         modification.put("role", "RESPONSABLE");
         modification.put("actif", false);
         modification.put("caisseIds", List.of());
+        modification.put("seuilsRemise", AUCUN_SEUIL);
         modification.put("version", responsable.getVersion());
 
         mvc.perform(put("/api/v1/utilisateurs/" + responsable.getId())
@@ -180,29 +187,111 @@ class UtilisateurIT extends IntegrationTest {
     }
 
     @Test
-    void reinitialisation_du_mot_de_passe_et_pin() throws Exception {
-        var caissier = creerUtilisateur(Role.CAISSIER);
+    void modifier_identifiant_mot_de_passe_et_pin_en_une_fois() throws Exception {
+        var caissier = creerUtilisateur(Role.RESPONSABLE);
+        var autre = creerUtilisateur(Role.CAISSIER);
+        String nouveauLogin = "nouveau-" + suffixe;
+        Map<String, Object> modification = new HashMap<>();
+        modification.put("nom", caissier.getNom());
+        modification.put("prenom", caissier.getPrenom());
+        modification.put("login", nouveauLogin);
+        modification.put("role", "RESPONSABLE");
+        modification.put("actif", true);
+        modification.put("caisseIds", List.of());
+        modification.put("seuilsRemise", Map.of("ligne", 10, "ticket", 5));
+        modification.put("version", caissier.getVersion());
 
-        mvc.perform(post("/api/v1/utilisateurs/" + caissier.getId() + "/mot-de-passe")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("motDePasseTemporaire", "Provisoire-99"))))
-                .andExpect(status().isNoContent());
-        connexion(caissier.getLogin(), "Provisoire-99")
+        modification.put("pin", "12");
+        modifier(caissier.getId(), modification).andExpect(status().isBadRequest());
+        modification.put("pin", "0420");
+        modification.put("login", autre.getLogin().toUpperCase());
+        modifier(caissier.getId(), modification).andExpect(status().isConflict());
+        modification.put("login", nouveauLogin);
+        modification.put("motDePasseTemporaire", nouveauLogin);
+        modifier(caissier.getId(), modification).andExpect(status().isUnprocessableEntity());
+
+        modification.put("motDePasseTemporaire", "Provisoire-99");
+        modifier(caissier.getId(), modification)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.login").value(nouveauLogin))
+                .andExpect(jsonPath("$.pinDefini").value(true))
+                .andExpect(jsonPath("$.seuilsRemise.ligne").value(10))
+                .andExpect(jsonPath("$.seuilsRemise.ticket").value(5))
+                .andExpect(jsonPath("$.doitChangerMotDePasse").value(true));
+
+        connexion(caissier.getLogin(), "Provisoire-99").andExpect(status().isUnauthorized());
+        connexion(nouveauLogin, "Provisoire-99")
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.utilisateur.doitChangerMotDePasse").value(true));
+        assertThat(journal.findByAction(ActionJournal.UTILISATEUR_MODIFIE))
+                .anyMatch(a -> a.getDetail().startsWith(caissier.getLogin() + " → " + nouveauLogin));
+        assertThat(journal.findByAction(ActionJournal.PIN_DEFINI))
+                .anyMatch(a -> a.getDetail().equals(nouveauLogin));
+    }
 
-        mvc.perform(put("/api/v1/utilisateurs/" + caissier.getId() + "/pin")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"pin\":\"12\"}"))
-                .andExpect(status().isBadRequest());
-        mvc.perform(put("/api/v1/utilisateurs/" + caissier.getId() + "/pin")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"pin\":\"0420\"}"))
-                .andExpect(status().isNoContent());
-        assertThat(utilisateurs.findById(caissier.getId()).orElseThrow().isPinDefini())
-                .isTrue();
+    @Test
+    void un_caissier_n_a_ni_pin_ni_seuils_de_remise() throws Exception {
+        var responsable = creerUtilisateur(Role.RESPONSABLE);
+        Map<String, Object> modification = new HashMap<>();
+        modification.put("nom", responsable.getNom());
+        modification.put("prenom", responsable.getPrenom());
+        modification.put("login", responsable.getLogin());
+        modification.put("pin", "0420");
+        modification.put("role", "RESPONSABLE");
+        modification.put("actif", true);
+        modification.put("caisseIds", List.of());
+        modification.put("seuilsRemise", Map.of("ligne", 101, "ticket", 5));
+        modification.put("version", responsable.getVersion());
+        modifier(responsable.getId(), modification).andExpect(status().isBadRequest());
+
+        modification.put("seuilsRemise", Map.of("ligne", 10, "ticket", 5));
+        long version = lire(modifier(responsable.getId(), modification)
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.pinDefini").value(true))
+                        .andReturn())
+                .get("version")
+                .asLong();
+
+        // Redevenu caissier : PIN et seuils retirés.
+        modification.remove("pin");
+        modification.put("role", "CAISSIER");
+        modification.put("version", version);
+        version = lire(modifier(responsable.getId(), modification)
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.pinDefini").value(false))
+                        .andExpect(jsonPath("$.seuilsRemise.ligne").value(0))
+                        .andReturn())
+                .get("version")
+                .asLong();
+
+        modification.put("pin", "0420");
+        modification.put("version", version);
+        modifier(responsable.getId(), modification).andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void modifier_sans_mot_de_passe_ni_pin_les_garde() throws Exception {
+        var caissier = creerUtilisateur(Role.CAISSIER);
+        Map<String, Object> modification = new HashMap<>();
+        modification.put("nom", "Renommé");
+        modification.put("prenom", caissier.getPrenom());
+        modification.put("login", caissier.getLogin());
+        modification.put("motDePasseTemporaire", "");
+        modification.put("role", "CAISSIER");
+        modification.put("actif", true);
+        modification.put("caisseIds", List.of());
+        modification.put("seuilsRemise", AUCUN_SEUIL);
+        modification.put("version", caissier.getVersion());
+
+        modifier(caissier.getId(), modification).andExpect(status().isOk());
+        connexion(caissier.getLogin(), MDP_UTILISATEUR).andExpect(status().isOk());
+    }
+
+    private ResultActions modifier(long id, Map<String, Object> modification) throws Exception {
+        return mvc.perform(put("/api/v1/utilisateurs/" + id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(modification)));
     }
 
     @Test
@@ -243,6 +332,7 @@ class UtilisateurIT extends IntegrationTest {
         creation.put("role", role.name());
         creation.put("motDePasseTemporaire", "Temporaire-2026");
         creation.put("caisseIds", caisseIds);
+        creation.put("seuilsRemise", AUCUN_SEUIL);
         return creation;
     }
 }

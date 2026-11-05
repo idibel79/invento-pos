@@ -2786,3 +2786,38 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+/* Champ secret (mot de passe, PIN) avec bouton œil pour afficher la saisie. */
+.champ-secret {
+  position: relative;
+  display: flex;
+}
+
+.champ-secret input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 48px;
+}
+
+.champ-secret button {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gris);
+  cursor: pointer;
+}
+
+.champ-secret button:hover,
+.champ-secret button:focus-visible {
+  color: var(--texte-fort);
+  outline: 2px solid var(--primaire);
+  outline-offset: -2px;
+}

@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -62,6 +63,11 @@ public class Utilisateur {
     @Column(name = "caisse_id")
     private Set<Long> caisseIds = new HashSet<>();
 
+    /** Seuils de remise d'un responsable, en % (0 pour les autres rôles ; l'admin n'a pas de limite). */
+    private BigDecimal remiseMaxLigne = BigDecimal.ZERO;
+
+    private BigDecimal remiseMaxTicket = BigDecimal.ZERO;
+
     protected Utilisateur() {}
 
     /** Nouveau compte avec un mot de passe temporaire, à changer à la première connexion. */
@@ -106,7 +112,11 @@ public class Utilisateur {
         this.essaisPinRates = 0;
     }
 
+    /** Le PIN sert à autoriser une remise : un caissier n'en a pas. */
     public void definirPin(String pinHash) {
+        if (role == Role.CAISSIER) {
+            throw new RegleMetierException("Un caissier n'a pas de PIN : il n'accorde pas de remise.");
+        }
         this.pinHash = pinHash;
         this.essaisPinRates = 0;
     }
@@ -127,6 +137,28 @@ public class Utilisateur {
         this.actif = actif;
         this.caisseIds.clear();
         if (role != Role.ADMIN) this.caisseIds.addAll(caisseIds);
+        if (role == Role.CAISSIER) {
+            // Un caissier n'accorde aucune remise : ni PIN, ni seuils.
+            this.pinHash = null;
+            this.essaisPinRates = 0;
+            definirSeuilsRemise(SeuilsRemise.AUCUN);
+        }
+    }
+
+    /** Seuils fixés par l'admin ; seul un responsable en a (l'admin n'a pas de limite). */
+    public void definirSeuilsRemise(SeuilsRemise seuils) {
+        SeuilsRemise retenus = role == Role.RESPONSABLE ? seuils : SeuilsRemise.AUCUN;
+        this.remiseMaxLigne = retenus.ligne();
+        this.remiseMaxTicket = retenus.ticket();
+    }
+
+    public SeuilsRemise getSeuilsRemise() {
+        return new SeuilsRemise(remiseMaxLigne, remiseMaxTicket);
+    }
+
+    /** Nouvel identifiant de connexion (unicité vérifiée par le service, contrainte unique en base). */
+    public void changerLogin(String login) {
+        this.login = login;
     }
 
     /** Réactive le compte admin (récupération). */

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import ma.invento.pos.IntegrationTest;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.journal.domain.ActionJournal;
@@ -23,16 +24,15 @@ class ParametreIT extends IntegrationTest {
     JournalActionRepository journal;
 
     @Test
-    void plafonds_lisibles_par_la_caisse_modifiables_par_l_admin_et_journalises() throws Exception {
+    void parametres_lisibles_par_la_caisse_modifiables_par_l_admin_et_journalises() throws Exception {
         String caissier = jeton(Role.CAISSIER);
         mvc.perform(get("/api/v1/parametres").header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fuseauHoraire").value("Africa/Casablanca"));
 
+        String nom = "Parapharmacie " + UUID.randomUUID().toString().substring(0, 8);
         Map<String, Object> parametres = Map.of(
-                "plafondRemiseCaissier", 15,
-                "plafondRemiseResponsable", 30,
-                "boutiqueNom", "Parapharmacie Test",
+                "boutiqueNom", nom,
                 "boutiqueAdresse", "Rabat",
                 "fuseauHoraire", "Africa/Casablanca");
         mvc.perform(put("/api/v1/parametres")
@@ -47,17 +47,10 @@ class ParametreIT extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(parametres)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.plafondRemiseCaissier").value(15));
+                .andExpect(jsonPath("$.boutiqueNom").value(nom));
         assertThat(journal.findByAction(ActionJournal.PARAMETRE_MODIFIE))
-                .anyMatch(a -> a.getDetail().equals("plafond_remise_caissier : 10 -> 15"));
-
-        Map<String, Object> incoherents = new HashMap<>(parametres);
-        incoherents.put("plafondRemiseCaissier", 40);
-        mvc.perform(put("/api/v1/parametres")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(incoherents)))
-                .andExpect(status().isUnprocessableEntity());
+                .anyMatch(a -> a.getDetail().startsWith("boutique_nom")
+                        && a.getDetail().contains(nom));
 
         Map<String, Object> fuseauInconnu = new HashMap<>(parametres);
         fuseauInconnu.put("fuseauHoraire", "Mars/Olympus");

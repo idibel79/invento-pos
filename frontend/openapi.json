@@ -49,36 +49,6 @@
         }
       }
     },
-    "/api/v1/utilisateurs/{id}/pin" : {
-      "put" : {
-        "tags" : [ "utilisateur-controller" ],
-        "operationId" : "definirPin",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PinCommande"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "204" : {
-            "description" : "No Content"
-          }
-        }
-      }
-    },
     "/api/v1/produits/{id}" : {
       "get" : {
         "tags" : [ "catalogue-controller" ],
@@ -505,36 +475,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v1/utilisateurs/{id}/mot-de-passe" : {
-      "post" : {
-        "tags" : [ "utilisateur-controller" ],
-        "operationId" : "reinitialiserMotDePasse",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/MotDePasseTemporaire"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "204" : {
-            "description" : "No Content"
           }
         }
       }
@@ -1442,6 +1382,21 @@
             "maxLength" : 80,
             "minLength" : 0
           },
+          "login" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0,
+            "pattern" : "[A-Za-z0-9._-]+"
+          },
+          "motDePasseTemporaire" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 72,
+            "minLength" : 0
+          },
+          "pin" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "\\d{4}"
+          },
           "role" : {
             "type" : "string",
             "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
@@ -1457,12 +1412,31 @@
             },
             "uniqueItems" : true
           },
+          "seuilsRemise" : {
+            "$ref" : "#/components/schemas/SeuilsRemiseDto"
+          },
           "version" : {
             "type" : "integer",
             "format" : "int64"
           }
         },
-        "required" : [ "caisseIds", "nom", "prenom", "role" ]
+        "required" : [ "caisseIds", "login", "nom", "prenom", "role", "seuilsRemise" ]
+      },
+      "SeuilsRemiseDto" : {
+        "type" : "object",
+        "properties" : {
+          "ligne" : {
+            "type" : "number",
+            "maximum" : 100,
+            "minimum" : 0
+          },
+          "ticket" : {
+            "type" : "number",
+            "maximum" : 100,
+            "minimum" : 0
+          }
+        },
+        "required" : [ "ligne", "ticket" ]
       },
       "UtilisateurDto" : {
         "type" : "object",
@@ -1504,6 +1478,9 @@
             },
             "uniqueItems" : true
           },
+          "seuilsRemise" : {
+            "$ref" : "#/components/schemas/SeuilsRemiseDto"
+          },
           "derniereConnexion" : {
             "type" : [ "string", "null" ],
             "format" : "date-time"
@@ -1513,18 +1490,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "actif", "caisseIds", "derniereConnexion", "doitChangerMotDePasse", "id", "login", "nom", "pinDefini", "prenom", "role", "verrouille", "version" ]
-      },
-      "PinCommande" : {
-        "type" : "object",
-        "properties" : {
-          "pin" : {
-            "type" : "string",
-            "minLength" : 1,
-            "pattern" : "\\d{4}"
-          }
-        },
-        "required" : [ "pin" ]
+        "required" : [ "actif", "caisseIds", "derniereConnexion", "doitChangerMotDePasse", "id", "login", "nom", "pinDefini", "prenom", "role", "seuilsRemise", "verrouille", "version" ]
       },
       "ProduitCommande" : {
         "type" : "object",
@@ -1697,16 +1663,6 @@
       "ParametresCommande" : {
         "type" : "object",
         "properties" : {
-          "plafondRemiseCaissier" : {
-            "type" : "number",
-            "maximum" : 100,
-            "minimum" : 0
-          },
-          "plafondRemiseResponsable" : {
-            "type" : "number",
-            "maximum" : 100,
-            "minimum" : 0
-          },
           "boutiqueNom" : {
             "type" : "string",
             "maxLength" : 120,
@@ -1723,17 +1679,11 @@
             "minLength" : 0
           }
         },
-        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire", "plafondRemiseCaissier", "plafondRemiseResponsable" ]
+        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire" ]
       },
       "Parametres" : {
         "type" : "object",
         "properties" : {
-          "plafondRemiseCaissier" : {
-            "type" : "number"
-          },
-          "plafondRemiseResponsable" : {
-            "type" : "number"
-          },
           "boutiqueNom" : {
             "type" : "string"
           },
@@ -1744,7 +1694,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire", "plafondRemiseCaissier", "plafondRemiseResponsable" ]
+        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire" ]
       },
       "CaisseCommande" : {
         "type" : "object",
@@ -1802,6 +1752,11 @@
           },
           "remise" : {
             "$ref" : "#/components/schemas/RemiseDto"
+          },
+          "jetonAutorisation" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
           }
         },
         "required" : [ "produitId" ]
@@ -2050,6 +2005,27 @@
         },
         "required" : [ "taux", "totalHt", "totalTtc", "totalTva" ]
       },
+      "AccordRemiseDto" : {
+        "type" : "object",
+        "properties" : {
+          "produitId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "tauxRemise" : {
+            "type" : "number"
+          },
+          "autorisationRequise" : {
+            "type" : "string",
+            "enum" : [ "AUCUNE", "RESPONSABLE", "ADMIN" ]
+          },
+          "valideePar" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "autorisationRequise", "produitId", "tauxRemise", "valideePar" ]
+      },
       "PanierDto" : {
         "type" : "object",
         "properties" : {
@@ -2074,9 +2050,15 @@
           },
           "stockSuffisant" : {
             "type" : "boolean"
+          },
+          "remises" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AccordRemiseDto"
+            }
           }
         },
-        "required" : [ "autorisationAcquise", "autorisationRequise", "lignes", "stockSuffisant", "tauxRemiseMax", "totaux" ]
+        "required" : [ "autorisationAcquise", "autorisationRequise", "lignes", "remises", "stockSuffisant", "tauxRemiseMax", "totaux" ]
       },
       "MiseEnAttenteCommande" : {
         "type" : "object",
@@ -2127,20 +2109,16 @@
               "format" : "int64"
             },
             "uniqueItems" : true
+          },
+          "pin" : {
+            "type" : [ "string", "null" ],
+            "pattern" : "\\d{4}"
+          },
+          "seuilsRemise" : {
+            "$ref" : "#/components/schemas/SeuilsRemiseDto"
           }
         },
-        "required" : [ "caisseIds", "login", "motDePasseTemporaire", "nom", "prenom", "role" ]
-      },
-      "MotDePasseTemporaire" : {
-        "type" : "object",
-        "properties" : {
-          "motDePasseTemporaire" : {
-            "type" : "string",
-            "maxLength" : 72,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "motDePasseTemporaire" ]
+        "required" : [ "caisseIds", "login", "motDePasseTemporaire", "nom", "prenom", "role", "seuilsRemise" ]
       },
       "OuvertureCommande" : {
         "type" : "object",
@@ -2305,9 +2283,21 @@
             "type" : "string",
             "minLength" : 1,
             "pattern" : "\\d{4}"
+          },
+          "produitId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "remiseType" : {
+            "type" : "string",
+            "pattern" : "POURCENT|MONTANT"
+          },
+          "remiseValeur" : {
+            "type" : "number",
+            "minimum" : 0.01
           }
         },
-        "required" : [ "autorisateurId", "pin" ]
+        "required" : [ "autorisateurId", "pin", "remiseType", "remiseValeur" ]
       },
       "JetonAutorisation" : {
         "type" : "object",
@@ -2664,9 +2654,12 @@
           "role" : {
             "type" : "string",
             "enum" : [ "CAISSIER", "RESPONSABLE", "ADMIN" ]
+          },
+          "seuilsRemise" : {
+            "$ref" : "#/components/schemas/SeuilsRemiseDto"
           }
         },
-        "required" : [ "id", "nom", "prenom", "role" ]
+        "required" : [ "id", "nom", "prenom", "role", "seuilsRemise" ]
       }
     },
     "securitySchemes" : {

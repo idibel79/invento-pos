@@ -98,7 +98,7 @@ export function useAutorisateurs(actif: boolean) {
 
 export function useAutoriserRemise() {
   return useMutation({
-    mutationFn: (corps: { autorisateurId: number; pin: string }) =>
+    mutationFn: (corps: Schemas["DemandeAutorisation"]) =>
       appel(api.POST("/api/v1/autorisations/remise", { body: corps })),
   });
 }
