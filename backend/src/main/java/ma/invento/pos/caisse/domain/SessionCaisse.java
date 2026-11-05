@@ -11,8 +11,9 @@ import java.time.Instant;
 import ma.invento.pos.shared.domain.RegleMetierException;
 
 /**
- * Session d'un caissier sur une caisse, de l'ouverture (fond de caisse) à la clôture (comptage
- * des espèces et écart). Une seule session ouverte par caisse et par caissier.
+ * Session d'un caissier sur une caisse, de l'ouverture (fond de caisse pris sur son compte) à la
+ * clôture (comptage du tiroir, espèces et tickets TPE, et écart). Une seule session ouverte par
+ * caisse et par caissier.
  */
 @Entity
 @Table(name = "session_caisse")
@@ -31,6 +32,7 @@ public class SessionCaisse {
     private BigDecimal montantCompte;
     private BigDecimal ecart;
     private boolean clotureForcee;
+    private boolean comptageEnAttente;
 
     protected SessionCaisse() {}
 
@@ -44,29 +46,43 @@ public class SessionCaisse {
         this.ouverture = ouverture;
     }
 
-    /** Écart = espèces comptées − (fond de caisse + espèces encaissées pendant la session). */
-    public void cloturer(BigDecimal montantCompte, BigDecimal especesEncaissees, Instant maintenant) {
+    /** Écart = compté dans le tiroir − attendu (fond + ventes + reçu − versé pendant la session). */
+    public void cloturer(BigDecimal montantCompte, ComptageTiroir tiroir, Instant maintenant) {
         if (!estOuverte()) {
             throw new RegleMetierException("Cette session de caisse est déjà clôturée.");
         }
-        if (montantCompte.signum() < 0) {
-            throw new RegleMetierException("Le montant compté ne peut pas être négatif.");
-        }
-        this.montantCompte = montantCompte;
-        this.ecart = montantCompte.subtract(fondInitial.add(especesEncaissees));
+        enregistrerComptage(montantCompte, tiroir);
         this.fermeture = maintenant;
     }
 
     /**
-     * Clôture d'office (caisse désactivée) : les espèces n'ont pas été comptées, montant compté et
-     * écart restent vides plutôt que d'afficher un écart fabriqué.
+     * Clôture d'office (caisse désactivée) : le tiroir n'a pas été compté, la session attend que l'admin
+     * le compte ({@link #terminerComptage}).
      */
     public void cloturerDOffice(Instant maintenant) {
         if (!estOuverte()) {
             throw new RegleMetierException("Cette session de caisse est déjà clôturée.");
         }
         this.clotureForcee = true;
+        this.comptageEnAttente = true;
         this.fermeture = maintenant;
+    }
+
+    /** Comptage du tiroir par l'admin après une clôture d'office. */
+    public void terminerComptage(BigDecimal montantCompte, ComptageTiroir tiroir) {
+        if (!comptageEnAttente) {
+            throw new RegleMetierException("Le tiroir de cette session a déjà été compté.");
+        }
+        enregistrerComptage(montantCompte, tiroir);
+        this.comptageEnAttente = false;
+    }
+
+    private void enregistrerComptage(BigDecimal montantCompte, ComptageTiroir tiroir) {
+        if (montantCompte.signum() < 0) {
+            throw new RegleMetierException("Le montant compté ne peut pas être négatif.");
+        }
+        this.montantCompte = montantCompte;
+        this.ecart = montantCompte.subtract(tiroir.attendu(fondInitial));
     }
 
     public boolean estOuverte() {
@@ -75,6 +91,10 @@ public class SessionCaisse {
 
     public boolean isClotureForcee() {
         return clotureForcee;
+    }
+
+    public boolean isComptageEnAttente() {
+        return comptageEnAttente;
     }
 
     public Long getId() {

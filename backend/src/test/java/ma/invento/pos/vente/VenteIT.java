@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -313,12 +314,12 @@ class VenteIT extends IntegrationTest {
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissierSur(autreCaisseId)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 0}"))
+                        .content("{\"montantCompte\": 0, \"montantVerse\": 0}"))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 228.50}"))
+                        .content("{\"montantCompte\": 228.50, \"montantVerse\": 228.50}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.especesEncaissees").value(30.00))
                 .andExpect(jsonPath("$.ecart").value(-1.50));
@@ -368,10 +369,24 @@ class VenteIT extends IntegrationTest {
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 0}"))
+                        .content("{\"montantCompte\": 0, \"montantVerse\": 0}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("SESSION_FERMEE"));
         assertThat(stock(produit)).isEqualTo(4);
+
+        // Tant que l'admin n'a pas compté le tiroir, la caisse ne peut pas être réactivée.
+        assertThat(session.get("comptage_en_attente")).isEqualTo(true);
+        mvc.perform(put("/api/v1/caisses/" + caisseId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("nom", "Caisse " + suffixe, "active", true))))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(post("/api/v1/sessions/" + sessionId + "/comptage")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"montantCompte\": 200, \"montantVerse\": 200}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ecart").value(0.0));
 
         // Réactiver ne rouvre rien : le caissier doit ouvrir une nouvelle session.
         modifierCaisse(caisseId, true);
@@ -640,7 +655,15 @@ class VenteIT extends IntegrationTest {
         return ligne;
     }
 
+    /** Le fond de caisse est pris sur le compte du caissier : son compte est crédité avant d'ouvrir. */
     private long ouvrirSession(String jeton, long caisse) throws Exception {
+        long utilisateurId = json.readTree(Base64.getUrlDecoder().decode(jeton.split("\\.")[1]))
+                .get("sub")
+                .asLong();
+        jdbc.update(
+                "insert into pos.compte_tresorerie (type, utilisateur_id, solde) values ('CAISSIER', ?, 1000)"
+                        + " on conflict (utilisateur_id) do update set solde = 1000",
+                utilisateurId);
         return lire(mvc.perform(post("/api/v1/sessions")
                                 .header(HttpHeaders.AUTHORIZATION, bearer(jeton))
                                 .contentType(MediaType.APPLICATION_JSON)

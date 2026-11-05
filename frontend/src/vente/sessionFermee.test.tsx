@@ -19,6 +19,8 @@ const session: Schemas["SessionCaisseDto"] = {
   especesEncaissees: 0,
   ecart: null,
   clotureForcee: false,
+  comptageEnAttente: false,
+  tiroir: null,
 };
 
 const desactivee = "La caisse Caisse 1 a été désactivée : la session est clôturée.";

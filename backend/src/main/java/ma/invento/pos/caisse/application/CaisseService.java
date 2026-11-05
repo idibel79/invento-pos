@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.Set;
 import ma.invento.pos.caisse.domain.Caisse;
 import ma.invento.pos.caisse.infrastructure.CaisseRepository;
+import ma.invento.pos.caisse.infrastructure.SessionCaisseRepository;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
 import ma.invento.pos.journal.domain.ActionJournal;
 import ma.invento.pos.shared.domain.ConflitException;
+import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.shared.domain.RessourceIntrouvableException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,16 +19,19 @@ public class CaisseService {
 
     private final CaisseRepository caisses;
     private final SessionCaisseService sessions;
+    private final SessionCaisseRepository sessionsCaisse;
     private final UtilisateurRepository utilisateurs;
     private final JournalService journal;
 
     public CaisseService(
             CaisseRepository caisses,
             SessionCaisseService sessions,
+            SessionCaisseRepository sessionsCaisse,
             UtilisateurRepository utilisateurs,
             JournalService journal) {
         this.caisses = caisses;
         this.sessions = sessions;
+        this.sessionsCaisse = sessionsCaisse;
         this.utilisateurs = utilisateurs;
         this.journal = journal;
     }
@@ -57,6 +62,7 @@ public class CaisseService {
             throw new ConflitException("La caisse " + propre + " existe déjà.");
         }
         boolean desactivee = caisse.isActive() && !active;
+        if (!caisse.isActive() && active) verifierAucunComptageEnAttente(id, "réactivée");
         caisse.modifier(propre, active);
         journal.enregistrer(adminId, ActionJournal.CAISSE_MODIFIEE, propre + (active ? "" : " (désactivée)"));
         if (desactivee) sessions.cloturerDOffice(id, adminId);
@@ -70,6 +76,7 @@ public class CaisseService {
     @Transactional
     public void supprimer(long id, long adminId) {
         Caisse caisse = charger(id);
+        verifierAucunComptageEnAttente(id, "supprimée");
         caisse.supprimer();
         utilisateurs.retirerCaisse(id);
         journal.enregistrer(adminId, ActionJournal.CAISSE_SUPPRIMEE, caisse.getNom());
@@ -80,6 +87,14 @@ public class CaisseService {
     public void verifierExistence(Set<Long> caisseIds) {
         if (!caisseIds.isEmpty() && caisses.countByIdInAndSupprimeeFalse(caisseIds) != caisseIds.size()) {
             throw new RessourceIntrouvableException("Caisse introuvable.");
+        }
+    }
+
+    /** Session clôturée d'office : l'admin doit d'abord compter son tiroir (Caisse principale). */
+    private void verifierAucunComptageEnAttente(long caisseId, String operation) {
+        if (sessionsCaisse.existsByCaisseIdAndComptageEnAttenteTrue(caisseId)) {
+            throw new RegleMetierException("La caisse ne peut pas être " + operation
+                    + " tant que le tiroir de sa dernière session n'a pas été compté (Caisse principale).");
         }
     }
 

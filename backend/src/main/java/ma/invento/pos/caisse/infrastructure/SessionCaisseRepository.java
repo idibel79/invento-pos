@@ -35,4 +35,9 @@ public interface SessionCaisseRepository extends JpaRepository<SessionCaisse, Lo
     Optional<SessionCaisse> findFirstByCaissierIdOrderByOuvertureDesc(Long caissierId);
 
     List<SessionCaisse> findByFermetureIsNull();
+
+    /** Sessions clôturées d'office dont l'admin n'a pas encore compté le tiroir. */
+    List<SessionCaisse> findByComptageEnAttenteTrueOrderByFermetureAsc();
+
+    boolean existsByCaisseIdAndComptageEnAttenteTrue(Long caisseId);
 }

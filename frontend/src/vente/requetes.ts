@@ -46,8 +46,9 @@ export function useValiderVente() {
       appel(api.POST("/api/v1/ventes", { params: { header: { "Idempotency-Key": cle } }, body: corps })),
     onSuccess: () => {
       invalider();
-      // Espèces encaissées affichées dans la barre de caisse.
+      // Contenu du tiroir affiché dans la barre de caisse, et solde du compte (ventes comprises).
       void queryClient.invalidateQueries({ queryKey: cles.sessionCourante });
+      void queryClient.invalidateQueries({ queryKey: ["tresorerie"] });
     },
   });
 }

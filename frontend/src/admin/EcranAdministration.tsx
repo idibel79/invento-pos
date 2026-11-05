@@ -4,6 +4,7 @@ import { heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeInvento } from "../ui/Logo";
 import { MenuUtilisateur } from "../vente/MenuUtilisateur";
+import { CaissePrincipale } from "./CaissePrincipale";
 import { Caisses } from "./Caisses";
 import { CodeSecours } from "./CodeSecours";
 import { ImportCatalogue } from "./ImportCatalogue";
@@ -13,6 +14,7 @@ import { Utilisateurs } from "./Utilisateurs";
 const ONGLETS = {
   caisses: "Caisses",
   utilisateurs: "Utilisateurs",
+  tresorerie: "Caisse principale",
   import: "Import du catalogue",
   securite: "Code de secours",
   journal: "Journal",
@@ -59,6 +61,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
       <main className="admin-corps">
         {onglet === "caisses" && <Caisses />}
         {onglet === "utilisateurs" && <Utilisateurs />}
+        {onglet === "tresorerie" && <CaissePrincipale />}
         {onglet === "import" && <ImportCatalogue />}
         {onglet === "securite" && <CodeSecours />}
         {onglet === "journal" && <JournalRemises />}
