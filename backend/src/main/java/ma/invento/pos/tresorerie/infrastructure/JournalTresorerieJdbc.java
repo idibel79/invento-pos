@@ -16,7 +16,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/** Journal de la caisse principale : une ligne par mouvement de solde, en ajout seul. */
+/**
+ * Journal de la caisse principale : une ligne par mouvement de solde, en ajout seul. La lecture n'en
+ * présente qu'une par versement.
+ */
 @Component
 public class JournalTresorerieJdbc {
 
@@ -86,7 +89,13 @@ public class JournalTresorerieJdbc {
                 + " left join " + s + "caisse ca on ca.id = o.caisse_id"
                 + " left join " + s + "versement v on v.id = o.versement_id"
                 + " left join " + s + "compte_tresorerie rc on rc.id = v.recepteur_id"
-                + " where true";
+                // Dernier mouvement du versement après l'envoi (réception, refus ou annulation).
+                + " left join lateral (select x.solde_principale_apres, x.solde_caissier_apres from " + s
+                + "operation_tresorerie x where x.versement_id = o.versement_id and x.type <> 'VERSEMENT_ENVOYE'"
+                + " order by x.id desc limit 1) f on true"
+                // Une ligne par versement (son envoi) : réception, refus et annulation n'en changent que le
+                // statut et les soldes. La clôture de session n'est ni un versement ni une entrée d'argent.
+                + " where o.type in ('ALIMENTATION', 'RETRAIT', 'VERSEMENT_ENVOYE', 'AJUSTEMENT')";
     }
 
     public void inserer(NouvelleOperation o) {
@@ -122,14 +131,19 @@ public class JournalTresorerieJdbc {
 
     public List<Operation> lister(Filtre filtre, boolean croissant, int page, int taille) {
         String ordre = croissant ? "asc" : "desc";
+        // Montant d'un versement signé du point de vue de la caisse principale ; soldes après son dernier
+        // mouvement (réception, refus ou annulation), sinon après l'envoi.
         return jdbc.query(
-                "select o.id, o.cree_le, o.type, c.type as compte, o.montant, o.caissier_id,"
+                "select o.id, o.cree_le, o.type, c.type as compte,"
+                        + " case when v.id is null then o.montant when rc.type = 'PRINCIPALE' then v.montant"
+                        + " else -v.montant end as montant, o.caissier_id,"
                         + " trim(uc.prenom || ' ' || uc.nom) as caissier, ca.nom as caisse,"
                         + " trim(ua.prenom || ' ' || ua.nom) as auteur, o.ecart_session, o.versement_id,"
                         + " case when v.id is null then null else rc.type = 'PRINCIPALE' end as vers_principale,"
                         + " v.statut, coalesce(v.auto_valide, false) as auto_valide,"
-                        + " coalesce(v.cloture, false) as cloture, o.motif, o.solde_principale_apres,"
-                        + " o.solde_caissier_apres"
+                        + " coalesce(v.cloture, false) as cloture, coalesce(v.motif, o.motif) as motif,"
+                        + " coalesce(f.solde_principale_apres, o.solde_principale_apres) as solde_principale_apres,"
+                        + " coalesce(f.solde_caissier_apres, o.solde_caissier_apres) as solde_caissier_apres"
                         + depuis + conditions(filtre)
                         + " order by o.cree_le " + ordre + ", o.id " + ordre + " limit :taille offset :decalage",
                 parametres(filtre).addValue("taille", taille).addValue("decalage", (long) page * taille),
