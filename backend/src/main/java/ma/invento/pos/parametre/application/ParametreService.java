@@ -35,6 +35,9 @@ public class ParametreService {
         return new Parametres(
                 valeurs.get(CleParametre.BOUTIQUE_NOM.cle()),
                 valeurs.get(CleParametre.BOUTIQUE_ADRESSE.cle()),
+                valeurs.getOrDefault(CleParametre.BOUTIQUE_TELEPHONE.cle(), ""),
+                valeurs.getOrDefault(CleParametre.BOUTIQUE_EMAIL.cle(), ""),
+                valeurs.getOrDefault(CleParametre.TICKET_MESSAGE.cle(), ""),
                 valeurs.get(CleParametre.FUSEAU_HORAIRE.cle()));
     }
 
@@ -45,6 +48,9 @@ public class ParametreService {
         Map<CleParametre, String> voulus = new EnumMap<>(CleParametre.class);
         voulus.put(CleParametre.BOUTIQUE_NOM, nouveaux.boutiqueNom().trim());
         voulus.put(CleParametre.BOUTIQUE_ADRESSE, nouveaux.boutiqueAdresse().trim());
+        voulus.put(CleParametre.BOUTIQUE_TELEPHONE, sansNull(nouveaux.boutiqueTelephone()));
+        voulus.put(CleParametre.BOUTIQUE_EMAIL, sansNull(nouveaux.boutiqueEmail()));
+        voulus.put(CleParametre.TICKET_MESSAGE, sansNull(nouveaux.ticketMessage()));
         voulus.put(CleParametre.FUSEAU_HORAIRE, nouveaux.fuseauHoraire());
 
         Map<String, Parametre> existants =
@@ -65,6 +71,11 @@ public class ParametreService {
         return lire();
     }
 
+    /** Les champs facultatifs du ticket absents de la requête sont enregistrés vides. */
+    private static String sansNull(String valeur) {
+        return valeur == null ? "" : valeur.trim();
+    }
+
     private static void verifierFuseau(String fuseau) {
         try {
             ZoneId.of(fuseau);
@@ -73,5 +84,12 @@ public class ParametreService {
         }
     }
 
-    public record Parametres(String boutiqueNom, String boutiqueAdresse, String fuseauHoraire) {}
+    /** En-tête et pied du ticket de caisse, et fuseau horaire de la boutique. */
+    public record Parametres(
+            String boutiqueNom,
+            String boutiqueAdresse,
+            String boutiqueTelephone,
+            String boutiqueEmail,
+            String ticketMessage,
+            String fuseauHoraire) {}
 }

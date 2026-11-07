@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState } from "react";
 import type { Schemas } from "../api/client";
+import { useUtilisateur } from "../auth/AuthContext";
 import { ClotureDialogue } from "../caisse/ClotureDialogue";
 import { useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
@@ -15,6 +16,7 @@ import { MenuUtilisateur } from "./MenuUtilisateur";
 import { panierVide, reducteurPanier, versCommande } from "./panier";
 import { PanierPanel } from "./PanierPanel";
 import { RemiseDialogue } from "./RemiseDialogue";
+import { TicketAImprimer } from "./TicketCaisse";
 import { useAbandonnerVente, usePanierCalcule, useVentesEnAttente } from "./requetes";
 import { VentesEnAttenteDialogue } from "./VentesEnAttenteDialogue";
 
@@ -44,6 +46,8 @@ export function EcranVente({ session, onAdministration }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const maintenant = useMaintenant(30_000);
   const fuseau = parametres.data?.fuseauHoraire;
+  const utilisateur = useUtilisateur();
+  const nomVendeur = `${utilisateur.prenom} ${utilisateur.nom}`.trim();
 
   useEffect(() => {
     if (!message) return;
@@ -190,10 +194,19 @@ export function EcranVente({ session, onAdministration }: Props) {
             </div>
           )}
           <div className="rangee-boutons">
+            <button type="button" className="bouton bouton-contour" onClick={() => window.print()}>
+              Imprimer le ticket
+            </button>
             <button type="button" className="bouton bouton-plein" onClick={fermer} autoFocus>
               Nouvelle vente
             </button>
           </div>
+          <TicketAImprimer
+            vente={fenetre.vente}
+            boutique={parametres.data}
+            vendeur={nomVendeur}
+            fuseau={fuseau}
+          />
         </Dialogue>
       )}
       {message && (

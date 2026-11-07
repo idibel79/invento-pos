@@ -2305,6 +2305,23 @@
             "maxLength" : 300,
             "minLength" : 0
           },
+          "boutiqueTelephone" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0,
+            "pattern" : "[0-9+ ().-]*"
+          },
+          "boutiqueEmail" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "ticketMessage" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
           "fuseauHoraire" : {
             "type" : "string",
             "maxLength" : 60,
@@ -2322,11 +2339,20 @@
           "boutiqueAdresse" : {
             "type" : "string"
           },
+          "boutiqueTelephone" : {
+            "type" : "string"
+          },
+          "boutiqueEmail" : {
+            "type" : "string"
+          },
+          "ticketMessage" : {
+            "type" : "string"
+          },
           "fuseauHoraire" : {
             "type" : "string"
           }
         },
-        "required" : [ "boutiqueAdresse", "boutiqueNom", "fuseauHoraire" ]
+        "required" : [ "boutiqueAdresse", "boutiqueEmail", "boutiqueNom", "boutiqueTelephone", "fuseauHoraire", "ticketMessage" ]
       },
       "CaisseCommande" : {
         "type" : "object",
