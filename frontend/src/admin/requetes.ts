@@ -45,6 +45,16 @@ export function useSupprimerCaisse() {
   });
 }
 
+/** En-tête et pied du ticket (Paramètres > Boutique) ; la caisse relit les paramètres ensuite. */
+export function useModifierParametres() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (corps: Schemas["ParametresCommande"]) =>
+      appel(api.PUT("/api/v1/parametres", { body: corps })),
+    onSuccess: (parametres) => queryClient.setQueryData(cles.parametres, parametres),
+  });
+}
+
 export function useCreerUtilisateur() {
   const queryClient = useQueryClient();
   return useMutation({

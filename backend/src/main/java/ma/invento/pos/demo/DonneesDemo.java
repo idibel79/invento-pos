@@ -20,6 +20,8 @@ import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
+import ma.invento.pos.parametre.application.ParametreService;
+import ma.invento.pos.parametre.application.ParametreService.Parametres;
 import ma.invento.pos.stock.domain.MouvementStock;
 import ma.invento.pos.stock.domain.TypeMouvement;
 import ma.invento.pos.stock.infrastructure.MouvementStockRepository;
@@ -58,6 +60,7 @@ public class DonneesDemo {
     private final ProduitRepository produits;
     private final MouvementStockRepository mouvements;
     private final TresorerieService tresorerie;
+    private final ParametreService parametres;
     private final PasswordEncoder encoder;
     private final Clock clock;
 
@@ -71,6 +74,7 @@ public class DonneesDemo {
             ProduitRepository produits,
             MouvementStockRepository mouvements,
             TresorerieService tresorerie,
+            ParametreService parametres,
             PasswordEncoder encoder,
             Clock clock) {
         this.utilisateurs = utilisateurs;
@@ -82,6 +86,7 @@ public class DonneesDemo {
         this.produits = produits;
         this.mouvements = mouvements;
         this.tresorerie = tresorerie;
+        this.parametres = parametres;
         this.encoder = encoder;
         this.clock = clock;
     }
@@ -120,6 +125,15 @@ public class DonneesDemo {
                 adminId);
 
         creerCatalogue(adminId);
+        parametres.modifier(
+                new Parametres(
+                        "Boutique de démo",
+                        "12, avenue Mohammed V, Rabat",
+                        "05 37 00 00 00",
+                        "contact@boutique-demo.ma",
+                        "Merci de votre visite, à bientôt !",
+                        parametres.lire().fuseauHoraire()),
+                adminId);
         log.info("Données de démo créées : comptes admin, responsable, caissier (mot de passe {}).", MOT_DE_PASSE);
     }
 

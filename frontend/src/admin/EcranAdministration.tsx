@@ -4,6 +4,7 @@ import { heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeInvento } from "../ui/Logo";
 import { MenuUtilisateur } from "../vente/MenuUtilisateur";
+import { Boutique } from "./Boutique";
 import { CaissePrincipale } from "./CaissePrincipale";
 import { Caisses } from "./Caisses";
 import { CodeSecours } from "./CodeSecours";
@@ -23,6 +24,7 @@ const ONGLETS = {
 type Onglet = keyof typeof ONGLETS;
 
 const PARAMETRES: EntreeMenu[] = [
+  { nom: "Boutique", detail: "Nom, adresse, contact du ticket", ecran: () => <Boutique /> },
   { nom: "Caisses", detail: "Créer, renommer, espèces", ecran: () => <Caisses /> },
   { nom: "Utilisateurs", detail: "Comptes, rôles, seuils de remise", ecran: () => <Utilisateurs /> },
 ];

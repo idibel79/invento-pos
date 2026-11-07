@@ -60,4 +60,44 @@ class ParametreIT extends IntegrationTest {
                         .content(json.writeValueAsString(fuseauInconnu)))
                 .andExpect(status().isUnprocessableEntity());
     }
+
+    @Test
+    void informations_du_ticket_enregistrees_et_controlees() throws Exception {
+        String admin = jetonAdmin();
+        Map<String, Object> parametres = new HashMap<>(Map.of(
+                "boutiqueNom", "Parapharmacie Test",
+                "boutiqueAdresse", "Rabat",
+                "boutiqueTelephone", " 05 37 00 00 00 ",
+                "boutiqueEmail", "contact@boutique.ma",
+                "ticketMessage", "Merci de votre visite",
+                "fuseauHoraire", "Africa/Casablanca"));
+        mvc.perform(put("/api/v1/parametres")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(parametres)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.boutiqueTelephone").value("05 37 00 00 00"))
+                .andExpect(jsonPath("$.boutiqueEmail").value("contact@boutique.ma"))
+                .andExpect(jsonPath("$.ticketMessage").value("Merci de votre visite"));
+
+        mvc.perform(get("/api/v1/parametres").header(HttpHeaders.AUTHORIZATION, bearer(jeton(Role.CAISSIER))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ticketMessage").value("Merci de votre visite"));
+
+        Map<String, Object> emailInvalide = new HashMap<>(parametres);
+        emailInvalide.put("boutiqueEmail", "pas-un-email");
+        mvc.perform(put("/api/v1/parametres")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(emailInvalide)))
+                .andExpect(status().isBadRequest());
+
+        Map<String, Object> telephoneInvalide = new HashMap<>(parametres);
+        telephoneInvalide.put("boutiqueTelephone", "appelez-nous");
+        mvc.perform(put("/api/v1/parametres")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(telephoneInvalide)))
+                .andExpect(status().isBadRequest());
+    }
 }
