@@ -17,7 +17,10 @@ interface Produit {
   codesBarres: string[];
 }
 
-/** Catalogue Sobrus importé, une caisse et un caissier dédiés à ce passage. */
+/**
+ * Catalogue Sobrus importé, une caisse et un caissier dédiés à ce passage. Le fond de caisse est pris
+ * sur le compte du caissier : la caisse principale lui verse 500 DH, qu'il confirme à sa connexion.
+ */
 async function preparer(api: APIRequestContext) {
   const admin = await jetonAdmin(api);
   const auth = { Authorization: `Bearer ${admin}` };
@@ -58,11 +61,23 @@ async function preparer(api: APIRequestContext) {
       role: "CAISSIER",
       motDePasseTemporaire: MDP_TEMPORAIRE,
       caisseIds: [(await caisse.json()).id],
+      seuilsRemise: { ligne: 0, ticket: 0 },
     },
   });
   expect(caissier.ok()).toBeTruthy();
+  const alimentation = await api.post("/api/v1/tresorerie/principale/alimentation", {
+    headers: auth,
+    data: { montant: 500, motif: "Fond de caisse E2E" },
+  });
+  expect(alimentation.ok()).toBeTruthy();
+  const versement = await api.post("/api/v1/tresorerie/principale/versements", {
+    headers: auth,
+    data: { utilisateurId: (await caissier.json()).id, montant: 500 },
+  });
+  expect(versement.ok()).toBeTruthy();
   return {
     login,
+    versementId: (await versement.json()).id as number,
     scanne: vendables[0] as Produit,
     attente: vendables[1] as Produit,
     caisse: `E2E ${suffixe}`,
@@ -70,7 +85,7 @@ async function preparer(api: APIRequestContext) {
 }
 
 test("vente en espèces, vente mise en attente puis reprise, clôture de caisse", async ({ page, request }) => {
-  const { login, scanne, attente, caisse } = await preparer(request);
+  const { login, versementId, scanne, attente, caisse } = await preparer(request);
 
   // Première connexion : mot de passe temporaire à remplacer, puis ouverture de la caisse.
   await page.goto("/");
@@ -83,8 +98,11 @@ test("vente en espèces, vente mise en attente puis reprise, clôture de caisse"
   await page.getByRole("button", { name: "Enregistrer" }).click();
 
   await expect(page.getByRole("heading", { name: "Ouvrir la caisse" })).toBeVisible();
+  await recevoir(request, login, versementId);
+  await page.reload();
+  await expect(page.getByText("Disponible : 500,00 DH")).toBeVisible();
   await page.getByLabel("Caisse", { exact: true }).selectOption({ label: caisse });
-  await page.getByLabel("Fond de caisse (DH)").fill("500");
+  await page.getByLabel("Fond de caisse pris sur mon compte (DH)").fill("500");
   await page.getByRole("button", { name: "Ouvrir la caisse" }).click();
 
   // Scan à la douchette : code-barre puis Entrée.
@@ -100,13 +118,16 @@ test("vente en espèces, vente mise en attente puis reprise, clôture de caisse"
   await expect(encaisser).toBeEnabled();
   await encaisser.click();
   const encaissement = page.getByRole("dialog", { name: "Encaissement" });
-  await encaissement.getByLabel("Montant reçu").fill("1000");
+  // Billet arrondi au-dessus du total : la monnaie à rendre reste dans ce que contient le tiroir (fond de 500 DH).
+  const total = Math.round(scanne.ppv * 2 * 100) / 100;
+  const recu = (Math.floor(total / 100) + 1) * 100;
+  await encaissement.getByLabel("Montant reçu").fill(String(recu));
   await expect(encaissement.getByText("Rendu monnaie")).toBeVisible();
   await encaissement.getByRole("button", { name: /^Valider · rendre/ }).click();
 
   const validee = page.getByRole("dialog", { name: /Vente C\d+-\d+ validée/ });
   await expect(validee).toBeVisible();
-  const rendu = 1000 - Math.round(scanne.ppv * 2 * 100) / 100;
+  const rendu = Math.round((recu - total) * 100) / 100;
   await expect(validee.getByTestId("rendu")).toHaveText(
     `${new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2 }).format(rendu)} DH`,
   );
@@ -140,15 +161,28 @@ test("vente en espèces, vente mise en attente puis reprise, clôture de caisse"
   await page.getByRole("button", { name: "Nouvelle vente" }).click();
   await expect(page.getByRole("button", { name: "En attente (0)" })).toBeVisible();
 
-  // Clôture : écart entre le compté et le fond + les espèces encaissées.
+  // Clôture : le tiroir contient le fond et les espèces encaissées, tout est versé à la caisse principale.
+  const attendu = Math.round((500 + total + attente.ppv) * 100) / 100;
   await page.getByRole("button", { name: "Clôturer" }).click();
   const cloture = page.getByRole("dialog", { name: "Clôturer la caisse" });
-  await cloture.getByLabel("Espèces comptées").fill("500");
-  await cloture.getByRole("button", { name: "Clôturer" }).click();
+  await cloture.getByLabel("1. Compté dans le tiroir").fill(String(attendu));
+  await expect(cloture.getByRole("status")).toContainText("0,00");
+  await cloture.getByRole("button", { name: "Tout le compté" }).click();
+  await cloture.getByRole("button", { name: /^Clôturer et verser/ }).click();
   await expect(page.getByRole("dialog", { name: "Caisse clôturée" })).toBeVisible();
   await page.getByRole("button", { name: "Terminer" }).click();
   await expect(page.getByRole("heading", { name: "Ouvrir la caisse" })).toBeVisible();
 });
+
+/** Le caissier confirme avoir reçu le versement de la caisse principale. */
+async function recevoir(api: APIRequestContext, login: string, versementId: number) {
+  const connexion = await api.post("/api/v1/auth/connexion", { data: { login, motDePasse: MDP_CAISSIER } });
+  expect(connexion.ok()).toBeTruthy();
+  const reponse = await api.post(`/api/v1/tresorerie/versements/${versementId}/validation`, {
+    headers: { Authorization: `Bearer ${(await connexion.json()).accessToken}` },
+  });
+  expect(reponse.ok()).toBeTruthy();
+}
 
 function escape(texte: string): string {
   return texte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

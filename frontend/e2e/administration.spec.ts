@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { jetonAdmin, MDP_ADMIN } from "./admin";
 
-test("l'admin crée une caisse et un caissier, définit son PIN et régénère le code de secours", async ({
+test("l'admin crée une caisse et un responsable avec son PIN, puis régénère le code de secours", async ({
   page,
   request,
 }) => {
@@ -20,12 +20,12 @@ test("l'admin crée une caisse et un caissier, définit son PIN et régénère l
   await page.getByRole("button", { name: "Nouvelle caisse" }).click();
   const fiche = page.getByRole("dialog", { name: "Nouvelle caisse" });
   await fiche.getByLabel("Nom").fill(caisse);
-  await fiche.getByRole("button", { name: "Enregistrer" }).click();
+  await fiche.getByRole("button", { name: "Créer" }).click();
   await expect(fiche).toBeHidden();
   const ligneCaisse = page.getByRole("listitem").filter({ hasText: caisse });
   await expect(ligneCaisse).toContainText("Active");
 
-  // Utilisateurs : création avec la caisse attribuée, puis PIN.
+  // Utilisateurs : un responsable, avec sa caisse, son PIN et ses seuils de remise.
   await page.getByRole("button", { name: "Utilisateurs" }).click();
   await page.getByRole("button", { name: "Nouvel utilisateur" }).click();
   const compte = page.getByRole("dialog", { name: "Nouvel utilisateur" });
@@ -33,20 +33,17 @@ test("l'admin crée une caisse et un caissier, définit son PIN et régénère l
   await compte.getByLabel("Nom", { exact: true }).fill("Tazi");
   await compte.getByLabel("Identifiant").fill(login);
   await compte.getByLabel("Mot de passe temporaire").fill("Temporaire-2026");
+  await compte.getByRole("button", { name: "Responsable" }).click();
+  await compte.getByLabel("PIN", { exact: true }).fill("4821");
+  await compte.getByLabel("Remise max par ligne (%)").fill("10");
+  await compte.getByLabel("Remise max sur le ticket (%)").fill("5");
   await compte.getByLabel(caisse).check();
   await compte.getByRole("button", { name: "Enregistrer" }).click();
   await expect(compte).toBeHidden();
   const ligne = page.getByRole("listitem").filter({ hasText: login });
   await expect(ligne).toContainText(caisse);
+  await expect(ligne).toContainText("Responsable");
   await expect(ligne).toContainText("Mot de passe temporaire");
-
-  await ligne.getByRole("button", { name: "PIN" }).click();
-  const pin = page.getByRole("dialog", { name: "PIN de Nadia" });
-  await pin.getByLabel("Nouveau PIN").fill("4821");
-  await pin.getByLabel("Confirmation").fill("4821");
-  await pin.getByRole("button", { name: "Enregistrer" }).click();
-  await expect(pin).toBeHidden();
-  await expect(ligne.getByText("PIN défini")).toBeVisible();
 
   // Code de secours : montré une seule fois.
   await page.getByRole("button", { name: "Code de secours" }).click();
