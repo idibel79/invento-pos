@@ -9,21 +9,30 @@ import { Caisses } from "./Caisses";
 import { CodeSecours } from "./CodeSecours";
 import { ImportCatalogue } from "./ImportCatalogue";
 import { JournalRemises } from "./JournalRemises";
+import { type EntreeMenu, RubriqueAvecMenu } from "./RubriqueAvecMenu";
 import { Utilisateurs } from "./Utilisateurs";
 
 const ONGLETS = {
-  caisses: "Caisses",
-  utilisateurs: "Utilisateurs",
+  parametres: "Paramètres",
   tresorerie: "Caisse principale",
   import: "Import du catalogue",
   securite: "Code de secours",
-  journal: "Journal",
+  journaux: "Journaux",
 } as const;
 type Onglet = keyof typeof ONGLETS;
 
+const PARAMETRES: EntreeMenu[] = [
+  { nom: "Caisses", detail: "Créer, renommer, espèces", ecran: () => <Caisses /> },
+  { nom: "Utilisateurs", detail: "Comptes, rôles, seuils de remise", ecran: () => <Utilisateurs /> },
+];
+
+const JOURNAUX: EntreeMenu[] = [
+  { nom: "Remises", detail: "Remises accordées sur les ventes", ecran: () => <JournalRemises /> },
+];
+
 /** Écrans réservés à l'admin ; le serveur vérifie le rôle sur chaque appel. */
 export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
-  const [onglet, setOnglet] = useState<Onglet>("caisses");
+  const [onglet, setOnglet] = useState<Onglet>("parametres");
   const fuseau = useParametres().data?.fuseauHoraire;
   const maintenant = useMaintenant(30_000);
 
@@ -59,12 +68,11 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         ))}
       </nav>
       <main className="admin-corps">
-        {onglet === "caisses" && <Caisses />}
-        {onglet === "utilisateurs" && <Utilisateurs />}
+        {onglet === "parametres" && <RubriqueAvecMenu titre="Paramètres" entrees={PARAMETRES} />}
         {onglet === "tresorerie" && <CaissePrincipale />}
         {onglet === "import" && <ImportCatalogue />}
         {onglet === "securite" && <CodeSecours />}
-        {onglet === "journal" && <JournalRemises />}
+        {onglet === "journaux" && <RubriqueAvecMenu titre="Journaux" entrees={JOURNAUX} />}
       </main>
     </div>
   );
