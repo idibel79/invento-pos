@@ -1804,6 +1804,140 @@
         }
       }
     },
+    "/api/v1/historique-ventes" : {
+      "get" : {
+        "tags" : [ "historique-ventes-controller" ],
+        "operationId" : "lister_4",
+        "parameters" : [ {
+          "name" : "jour",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "caisseId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "vendeurId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "taille",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 200,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseVenteHistorique"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/historique-ventes/{id}" : {
+      "get" : {
+        "tags" : [ "historique-ventes-controller" ],
+        "operationId" : "detail",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DetailVente"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/historique-ventes/resume" : {
+      "get" : {
+        "tags" : [ "historique-ventes-controller" ],
+        "operationId" : "resumer_1",
+        "parameters" : [ {
+          "name" : "jour",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "caisseId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "vendeurId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResumeVentes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/caisses/suivi" : {
       "get" : {
         "tags" : [ "caisse-controller" ],
@@ -3560,6 +3694,213 @@
           }
         },
         "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "PageResponseVenteHistorique" : {
+        "type" : "object",
+        "properties" : {
+          "contenu" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VenteHistorique"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "taille" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "VenteHistorique" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "numero" : {
+            "type" : "string"
+          },
+          "le" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "caisse" : {
+            "type" : "string"
+          },
+          "vendeur" : {
+            "type" : "string"
+          },
+          "articles" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "remisesLignes" : {
+            "type" : "number"
+          },
+          "remiseTicket" : {
+            "type" : "number"
+          },
+          "remises" : {
+            "type" : "number"
+          },
+          "autorisePar" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalTtc" : {
+            "type" : "number"
+          },
+          "mode" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ESPECES", "CARTE" ]
+          },
+          "montantRecu" : {
+            "type" : [ "number", "null" ]
+          },
+          "rendu" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "articles", "autorisePar", "caisse", "id", "le", "mode", "montantRecu", "numero", "remiseTicket", "remises", "remisesLignes", "rendu", "totalTtc", "vendeur" ]
+      },
+      "DetailVente" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "numero" : {
+            "type" : "string"
+          },
+          "le" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "caisse" : {
+            "type" : "string"
+          },
+          "vendeur" : {
+            "type" : "string"
+          },
+          "autorisePar" : {
+            "type" : [ "string", "null" ]
+          },
+          "lignes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LigneHistorique"
+            }
+          },
+          "sousTotal" : {
+            "type" : "number"
+          },
+          "remisesLignes" : {
+            "type" : "number"
+          },
+          "remiseTicketType" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "POURCENT", "MONTANT" ]
+          },
+          "remiseTicketValeur" : {
+            "type" : [ "number", "null" ]
+          },
+          "remiseTicketMontant" : {
+            "type" : [ "number", "null" ]
+          },
+          "motifRemise" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalHt" : {
+            "type" : "number"
+          },
+          "totalTva" : {
+            "type" : "number"
+          },
+          "totalTtc" : {
+            "type" : "number"
+          },
+          "mode" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ESPECES", "CARTE" ]
+          },
+          "montantRecu" : {
+            "type" : [ "number", "null" ]
+          },
+          "rendu" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "autorisePar", "caisse", "id", "le", "lignes", "mode", "montantRecu", "motifRemise", "numero", "remiseTicketMontant", "remiseTicketType", "remiseTicketValeur", "remisesLignes", "rendu", "sousTotal", "totalHt", "totalTtc", "totalTva", "vendeur" ]
+      },
+      "LigneHistorique" : {
+        "type" : "object",
+        "properties" : {
+          "designation" : {
+            "type" : "string"
+          },
+          "quantite" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "prixUnitaire" : {
+            "type" : "number"
+          },
+          "tauxTva" : {
+            "type" : "number"
+          },
+          "remiseType" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "POURCENT", "MONTANT" ]
+          },
+          "remiseValeur" : {
+            "type" : [ "number", "null" ]
+          },
+          "remiseMontant" : {
+            "type" : "number"
+          },
+          "montantBrut" : {
+            "type" : "number"
+          },
+          "montantNet" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "designation", "montantBrut", "montantNet", "prixUnitaire", "quantite", "remiseMontant", "remiseType", "remiseValeur", "tauxTva" ]
+      },
+      "ResumeVentes" : {
+        "type" : "object",
+        "properties" : {
+          "nombre" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalTtc" : {
+            "type" : "number"
+          },
+          "remises" : {
+            "type" : "number"
+          },
+          "especes" : {
+            "type" : "number"
+          },
+          "carte" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "carte", "especes", "nombre", "remises", "totalTtc" ]
       },
       "SessionEnCours" : {
         "type" : "object",

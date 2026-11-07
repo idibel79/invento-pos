@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -672,6 +674,89 @@ class VenteIT extends IntegrationTest {
                         .andReturn())
                 .get("id")
                 .asLong();
+    }
+
+    @Test
+    void historique_des_ventes_validees_par_jour_caisse_et_vendeur() throws Exception {
+        String caissier = responsableSur(caisseId);
+        ouvrirSession(caissier, caisseId);
+        long produit = produit("100.00", 10);
+        long autreProduit = produit("26.20", 10);
+
+        JsonNode especes = lire(valider(
+                        caissier,
+                        UUID.randomUUID().toString(),
+                        panier(remise(ligne(produit, 2), "POURCENT", "5")),
+                        "200")
+                .andExpect(status().isCreated())
+                .andReturn());
+        Map<String, Object> parCarte = panier(ligne(autreProduit, 1));
+        parCarte.put("remiseTicket", Map.of("type", "MONTANT", "valeur", new BigDecimal("2")));
+        JsonNode carte = lire(mvc.perform(post("/api/v1/ventes")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("panier", parCarte, "mode", "CARTE"))))
+                .andExpect(status().isCreated())
+                .andReturn());
+        // Vente en attente : pas encore finalisée, absente de l'historique.
+        mvc.perform(post("/api/v1/ventes/attente")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("panier", panier(ligne(produit, 1))))))
+                .andExpect(status().isCreated());
+
+        String jour = LocalDate.ofInstant(
+                        Instant.parse(carte.get("finaliseeLe").asText()), ZoneId.of("Africa/Casablanca"))
+                .toString();
+        String filtre = "?jour=" + jour + "&caisseId=" + caisseId;
+        mvc.perform(get("/api/v1/historique-ventes" + filtre).header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.contenu[0].numero")
+                        .value(carte.get("numero").asText()))
+                .andExpect(jsonPath("$.contenu[0].mode").value("CARTE"))
+                .andExpect(jsonPath("$.contenu[0].remises").value(2.00))
+                .andExpect(jsonPath("$.contenu[0].remiseTicket").value(2.00))
+                .andExpect(jsonPath("$.contenu[0].montantRecu").doesNotExist())
+                .andExpect(jsonPath("$.contenu[1].numero")
+                        .value(especes.get("numero").asText()))
+                .andExpect(jsonPath("$.contenu[1].articles").value(2))
+                .andExpect(jsonPath("$.contenu[1].remises").value(10.00))
+                .andExpect(jsonPath("$.contenu[1].remisesLignes").value(10.00))
+                .andExpect(jsonPath("$.contenu[1].montantRecu").value(200.00))
+                .andExpect(jsonPath("$.contenu[1].rendu").value(10.00))
+                .andExpect(jsonPath("$.contenu[1].totalTtc").value(190.00));
+        mvc.perform(get("/api/v1/historique-ventes/resume" + filtre).header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(jsonPath("$.nombre").value(2))
+                .andExpect(jsonPath("$.totalTtc").value(214.20))
+                .andExpect(jsonPath("$.remises").value(12.00))
+                .andExpect(jsonPath("$.especes").value(190.00))
+                .andExpect(jsonPath("$.carte").value(24.20));
+        mvc.perform(get("/api/v1/historique-ventes?jour="
+                                + LocalDate.parse(jour).minusDays(1) + "&caisseId=" + caisseId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mvc.perform(get("/api/v1/historique-ventes" + filtre + "&vendeurId="
+                                + creerUtilisateur(Role.CAISSIER).getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+
+        String detail = "/api/v1/historique-ventes/" + especes.get("id").asLong();
+        mvc.perform(get(detail).header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lignes[0].quantite").value(2))
+                .andExpect(jsonPath("$.lignes[0].remiseType").value("POURCENT"))
+                .andExpect(jsonPath("$.lignes[0].montantBrut").value(200.00))
+                .andExpect(jsonPath("$.lignes[0].montantNet").value(190.00))
+                .andExpect(jsonPath("$.sousTotal").value(200.00))
+                .andExpect(jsonPath("$.remisesLignes").value(10.00))
+                .andExpect(jsonPath("$.mode").value("ESPECES"))
+                .andExpect(jsonPath("$.montantRecu").value(200.00))
+                .andExpect(jsonPath("$.rendu").value(10.00));
+        mvc.perform(get(detail).header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(status().isForbidden());
     }
 
     private void modifierCaisse(long caisse, boolean active) throws Exception {
