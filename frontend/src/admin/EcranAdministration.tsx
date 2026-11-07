@@ -7,6 +7,7 @@ import { MenuUtilisateur } from "../vente/MenuUtilisateur";
 import { CaissePrincipale } from "./CaissePrincipale";
 import { Caisses } from "./Caisses";
 import { CodeSecours } from "./CodeSecours";
+import { HistoriqueVentes } from "./HistoriqueVentes";
 import { ImportCatalogue } from "./ImportCatalogue";
 import { JournalRemises } from "./JournalRemises";
 import { type EntreeMenu, RubriqueAvecMenu } from "./RubriqueAvecMenu";
@@ -27,6 +28,7 @@ const PARAMETRES: EntreeMenu[] = [
 ];
 
 const JOURNAUX: EntreeMenu[] = [
+  { nom: "Ventes", detail: "Ventes validées, jour par jour", ecran: () => <HistoriqueVentes /> },
   { nom: "Remises", detail: "Remises accordées sur les ventes", ecran: () => <JournalRemises /> },
 ];
 

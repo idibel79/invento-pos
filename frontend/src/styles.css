@@ -2327,6 +2327,140 @@ button:disabled {
   color: var(--alerte);
 }
 
+/* Historique des ventes : mêmes lignes que le journal des remises, colonnes propres, ligne cliquable. */
+.tableau-remises.tableau-ventes {
+  grid-template-columns:
+    auto auto minmax(90px, 1fr) minmax(110px, 1.2fr) auto auto auto minmax(90px, 1fr)
+    auto auto auto auto;
+}
+
+.vente-portees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tableau-ventes .a-droite {
+  white-space: nowrap;
+}
+
+.vente-ligne {
+  cursor: pointer;
+}
+
+.vente-ligne:hover {
+  background: var(--fond);
+}
+
+.lien-vente {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--primaire);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lien-vente:hover {
+  text-decoration: underline;
+}
+
+.vente-total {
+  font-weight: 600;
+  color: var(--texte-fort);
+  white-space: nowrap;
+}
+
+.filtre-jour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filtre-jour input,
+.bouton-jour {
+  height: 34px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--texte-fort);
+  font: inherit;
+  font-size: 13px;
+}
+
+.filtre-jour input {
+  padding: 0 8px;
+}
+
+.bouton-jour {
+  width: 34px;
+  cursor: pointer;
+}
+
+.bouton-jour:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.detail-vente {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+}
+
+.detail-vente-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 84px 150px 90px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-vente-ligne:last-child {
+  border-bottom: 0;
+}
+
+.detail-vente-entete {
+  position: sticky;
+  top: 0;
+  background: var(--rupture-fond);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gris-clair);
+}
+
+.detail-vente-totaux {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.detail-vente-infos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.detail-vente-infos dt {
+  color: var(--gris-clair);
+}
+
+.detail-vente-infos dd {
+  margin: 0;
+  color: var(--designation);
+}
+
 /* ------------------------------------------------------------------ Administration */
 
 .ecran-admin {

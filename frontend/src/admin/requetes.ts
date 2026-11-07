@@ -145,3 +145,40 @@ export function useResumeRemises(filtre: FiltreRemises) {
     queryFn: () => appel(api.GET("/api/v1/remises/resume", { params: { query: filtre } })),
   });
 }
+
+/** Filtres de l'historique des ventes : un jour (AAAA-MM-JJ, fuseau de la boutique), une caisse, un vendeur. */
+export interface FiltreVentes {
+  jour?: string;
+  caisseId?: number;
+  vendeurId?: number;
+}
+
+export function useHistoriqueVentes(filtre: FiltreVentes) {
+  return useInfiniteQuery({
+    queryKey: ["historique-ventes", filtre],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      appel(
+        api.GET("/api/v1/historique-ventes", {
+          params: { query: { ...filtre, page: pageParam, taille: TAILLE_JOURNAL } },
+        }),
+      ),
+    getNextPageParam: (derniere) => (derniere.page + 1 < derniere.totalPages ? derniere.page + 1 : undefined),
+  });
+}
+
+export function useResumeVentes(filtre: FiltreVentes) {
+  return useQuery({
+    queryKey: ["historique-ventes", "resume", filtre],
+    queryFn: () => appel(api.GET("/api/v1/historique-ventes/resume", { params: { query: filtre } })),
+  });
+}
+
+/** Une vente validée ne change plus : son détail reste en cache. */
+export function useDetailVente(id: number) {
+  return useQuery({
+    queryKey: ["historique-ventes", "detail", id],
+    queryFn: () => appel(api.GET("/api/v1/historique-ventes/{id}", { params: { path: { id } } })),
+    staleTime: Infinity,
+  });
+}

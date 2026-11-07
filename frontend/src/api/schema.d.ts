@@ -804,6 +804,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/historique-ventes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/historique-ventes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/historique-ventes/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["resumer_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/caisses/suivi": {
         parameters: {
             query?: never;
@@ -1441,6 +1489,83 @@ export interface components {
             totalElements: number;
             /** Format: int32 */
             totalPages: number;
+        };
+        PageResponseVenteHistorique: {
+            contenu: components["schemas"]["VenteHistorique"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            taille: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        VenteHistorique: {
+            /** Format: int64 */
+            id: number;
+            numero: string;
+            /** Format: date-time */
+            le: string;
+            caisse: string;
+            vendeur: string;
+            /** Format: int32 */
+            articles: number;
+            remisesLignes: number;
+            remiseTicket: number;
+            remises: number;
+            autorisePar: string | null;
+            totalTtc: number;
+            /** @enum {string|null} */
+            mode: "ESPECES" | "CARTE" | null;
+            montantRecu: number | null;
+            rendu: number | null;
+        };
+        DetailVente: {
+            /** Format: int64 */
+            id: number;
+            numero: string;
+            /** Format: date-time */
+            le: string;
+            caisse: string;
+            vendeur: string;
+            autorisePar: string | null;
+            lignes: components["schemas"]["LigneHistorique"][];
+            sousTotal: number;
+            remisesLignes: number;
+            /** @enum {string|null} */
+            remiseTicketType: "POURCENT" | "MONTANT" | null;
+            remiseTicketValeur: number | null;
+            remiseTicketMontant: number | null;
+            motifRemise: string | null;
+            totalHt: number;
+            totalTva: number;
+            totalTtc: number;
+            /** @enum {string|null} */
+            mode: "ESPECES" | "CARTE" | null;
+            montantRecu: number | null;
+            rendu: number | null;
+        };
+        LigneHistorique: {
+            designation: string;
+            /** Format: int32 */
+            quantite: number;
+            prixUnitaire: number;
+            tauxTva: number;
+            /** @enum {string|null} */
+            remiseType: "POURCENT" | "MONTANT" | null;
+            remiseValeur: number | null;
+            remiseMontant: number;
+            montantBrut: number;
+            montantNet: number;
+        };
+        ResumeVentes: {
+            /** Format: int64 */
+            nombre: number;
+            totalTtc: number;
+            remises: number;
+            especes: number;
+            carte: number;
         };
         SessionEnCours: {
             /** Format: int64 */
@@ -2843,6 +2968,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PageResponseJournalDto"];
+                };
+            };
+        };
+    };
+    lister_4: {
+        parameters: {
+            query?: {
+                jour?: string;
+                caisseId?: number;
+                vendeurId?: number;
+                page?: number;
+                taille?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseVenteHistorique"];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetailVente"];
+                };
+            };
+        };
+    };
+    resumer_1: {
+        parameters: {
+            query?: {
+                jour?: string;
+                caisseId?: number;
+                vendeurId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeVentes"];
                 };
             };
         };
