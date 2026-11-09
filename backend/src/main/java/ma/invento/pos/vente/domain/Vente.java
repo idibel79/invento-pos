@@ -88,15 +88,17 @@ public class Vente {
 
     /** Remplace le panier par celui calculé (lignes, remises, totaux). */
     public void remplirPanier(PanierCalcule panier, Remise remiseTicket, String motifRemise, Long valideePar) {
-        remplirPanier(panier, remiseTicket, motifRemise, valideePar, Map.of());
+        remplirPanier(panier, Map.of(), remiseTicket, motifRemise, valideePar, Map.of());
     }
 
     /**
+     * @param designations libellé de chaque produit au moment de la vente, figé sur sa ligne
      * @param valideePar qui a accordé la remise ticket (ou une remise d'article, pour l'historique)
      * @param remisesValideesPar qui a accordé la remise de chaque article, par produit
      */
     public void remplirPanier(
             PanierCalcule panier,
+            Map<Long, String> designations,
             Remise remiseTicket,
             String motifRemise,
             Long valideePar,
@@ -104,8 +106,8 @@ public class Vente {
         verifierModifiable();
         lignes.clear();
         for (LigneCalculee ligne : panier.lignes()) {
-            lignes.add(new LigneVente(
-                    this, ligne, remisesValideesPar.get(ligne.ligne().produitId())));
+            long produitId = ligne.ligne().produitId();
+            lignes.add(new LigneVente(this, ligne, designations.get(produitId), remisesValideesPar.get(produitId)));
         }
         this.totalHt = panier.totalHt();
         this.totalTva = panier.totalTva();

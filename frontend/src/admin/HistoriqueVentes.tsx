@@ -4,7 +4,14 @@ import { messageErreur } from "../api/erreurs";
 import { useCaisses, useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
 import { dateHeure, decimal, dh, heure, pourcent } from "../ui/format";
-import { useDetailVente, useHistoriqueVentes, useResumeVentes, useUtilisateurs } from "./requetes";
+import { TicketAImprimer } from "../vente/TicketCaisse";
+import {
+  useDetailVente,
+  useHistoriqueVentes,
+  useResumeVentes,
+  useTicketVente,
+  useUtilisateurs,
+} from "./requetes";
 
 const MODES = { ESPECES: "Espèces", CARTE: "Carte" } as const;
 const COLONNES = [
@@ -258,6 +265,8 @@ function DetailVente({
   onFermer: () => void;
 }) {
   const { data: v, isError, error } = useDetailVente(id);
+  const ticket = useTicketVente(id).data;
+  const boutique = useParametres().data;
   return (
     <Dialogue
       titre={v ? `Vente ${v.numero}` : "Vente"}
@@ -374,11 +383,22 @@ function DetailVente({
           </>
         )}
         <div className="rangee-boutons">
+          <button
+            type="button"
+            className="bouton bouton-contour"
+            disabled={!ticket || !v}
+            onClick={() => window.print()}
+          >
+            Imprimer le ticket
+          </button>
           <button type="button" className="bouton bouton-contour" onClick={onFermer}>
             Fermer
           </button>
         </div>
       </div>
+      {ticket && v && (
+        <TicketAImprimer vente={ticket} boutique={boutique} vendeur={v.vendeur} fuseau={fuseau} />
+      )}
     </Dialogue>
   );
 }

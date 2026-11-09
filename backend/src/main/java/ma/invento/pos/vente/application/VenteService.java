@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import ma.invento.pos.caisse.application.SessionCaisseCloturee;
 import ma.invento.pos.caisse.application.SessionCaisseService;
 import ma.invento.pos.caisse.application.SessionCaisseService.SessionOuverte;
@@ -148,6 +149,7 @@ public class VenteService {
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
         vente.remplirPanier(
                 panier.calcul(),
+                designations(panier),
                 remiseTicket(commande.panier()),
                 motif(commande.panier()),
                 accords.principal(),
@@ -155,7 +157,7 @@ public class VenteService {
         vente.mettreEnAttente(texte(commande.note()), maintenant.plus(DUREE_ATTENTE));
         ventes.save(vente);
         stock.reserver(quantites(panier));
-        return versDto(vente, panier.produits());
+        return versDto(vente);
     }
 
     /** Validation et encaissement (espèces ou carte) ; la monnaie à rendre est calculée ici. */
@@ -179,6 +181,7 @@ public class VenteService {
         Vente vente = reprise != null ? reprise : nouvelle(session, cle, vendeur, maintenant);
         vente.remplirPanier(
                 panier.calcul(),
+                designations(panier),
                 remiseTicket(commande.panier()),
                 motif(commande.panier()),
                 accords.principal(),
@@ -195,7 +198,7 @@ public class VenteService {
         ventes.save(vente);
         stock.sortirPourVente(quantites(panier), vente.getNumero(), vendeur.id(), maintenant);
         journaliserAccords(accords, vente, vendeur);
-        return versDto(vente, panier.produits());
+        return versDto(vente);
     }
 
     /**
@@ -237,12 +240,21 @@ public class VenteService {
         return versDto(vente);
     }
 
+    /** Vente validée telle qu'elle a été encaissée, pour réimprimer son ticket. */
+    @Transactional(readOnly = true)
+    public VenteDto venteValidee(long venteId) {
+        return ventes.findById(venteId)
+                .filter(v -> v.getStatut() == StatutVente.VALIDEE)
+                .map(VenteService::versDto)
+                .orElseThrow(() -> new RessourceIntrouvableException("Vente introuvable."));
+    }
+
     /** Ventes en attente de la session ouverte du vendeur (vide sans session). */
     @Transactional(readOnly = true)
     public List<VenteDto> enAttente(UtilisateurConnecte vendeur) {
         return sessions.courante(vendeur.id())
                 .map(s -> ventes.findBySessionCaisseIdAndStatutOrderByCreeLeAsc(s.id(), StatutVente.EN_ATTENTE))
-                .map(this::versDtos)
+                .map(l -> l.stream().map(VenteService::versDto).toList())
                 .orElse(List.of());
     }
 
@@ -410,7 +422,7 @@ public class VenteService {
 
     private static List<Quantite> quantites(Vente vente) {
         return vente.getLignes().stream()
-                .map(l -> new Quantite(l.getProduitId(), "le produit " + l.getProduitId(), l.getQuantite()))
+                .map(l -> new Quantite(l.getProduitId(), l.getDesignation(), l.getQuantite()))
                 .toList();
     }
 
@@ -418,22 +430,13 @@ public class VenteService {
         return vente.getLignes().stream().collect(Collectors.toMap(LigneVente::getProduitId, LigneVente::getQuantite));
     }
 
-    private VenteDto versDto(Vente vente) {
-        return versDtos(List.of(vente)).getFirst();
+    /** Désignation actuelle de chaque produit du panier, figée sur les lignes de la vente. */
+    private static Map<Long, String> designations(Panier panier) {
+        return panier.produits().values().stream().collect(Collectors.toMap(Produit::getId, Produit::getDesignation));
     }
 
-    /** Désignations chargées en une requête pour toutes les ventes. */
-    private List<VenteDto> versDtos(List<Vente> liste) {
-        Set<Long> ids = liste.stream()
-                .flatMap(v -> v.getLignes().stream())
-                .map(LigneVente::getProduitId)
-                .collect(Collectors.toSet());
-        Map<Long, Produit> parId =
-                produits.findAllById(ids).stream().collect(Collectors.toMap(Produit::getId, Function.identity()));
-        return liste.stream().map(v -> versDto(v, parId)).toList();
-    }
-
-    private static VenteDto versDto(Vente vente, Map<Long, Produit> parId) {
+    /** Les lignes de la vente sont dans l'ordre de son calcul : la désignation figée suit le même index. */
+    private static VenteDto versDto(Vente vente) {
         List<LignePanier> lignes = vente.getLignes().stream()
                 .map(l -> new LignePanier(
                         l.getProduitId(), l.getQuantite(), l.getPrixUnitaire(), l.getTauxTva(), l.getRemise()))
@@ -449,13 +452,9 @@ public class VenteService {
                 vente.getStatut(),
                 vente.getCaisseId(),
                 vente.getCaissierId(),
-                calcul.lignes().stream()
-                        .map(l -> ligneDto(
-                                l,
-                                Optional.ofNullable(parId.get(l.ligne().produitId()))
-                                        .map(Produit::getDesignation)
-                                        .orElse("?"),
-                                true))
+                IntStream.range(0, calcul.lignes().size())
+                        .mapToObj(i -> ligneDto(
+                                calcul.lignes().get(i), vente.getLignes().get(i).getDesignation(), true))
                         .toList(),
                 remiseDto(vente.getRemiseTicket()),
                 totaux(calcul),

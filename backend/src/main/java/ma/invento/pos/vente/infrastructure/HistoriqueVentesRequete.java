@@ -119,11 +119,10 @@ public class HistoriqueVentesRequete {
                 + " left join " + s + "utilisateur ua on ua.id = v.validee_par"
                 + paiement
                 + " where v.statut = 'VALIDEE' and v.id = :id";
-        this.lignes = "select p.designation, lv.quantite, lv.prix_unitaire, lv.taux_tva, lv.remise_type,"
+        this.lignes = "select lv.designation, lv.quantite, lv.prix_unitaire, lv.taux_tva, lv.remise_type,"
                 + " lv.remise_valeur, coalesce(lv.remise_montant, 0) as remise_montant,"
                 + " lv.prix_unitaire * lv.quantite as brut"
                 + " from " + s + "ligne_vente lv"
-                + " join " + s + "produit p on p.id = lv.produit_id"
                 + " where lv.vente_id = :id order by lv.id";
     }
 
