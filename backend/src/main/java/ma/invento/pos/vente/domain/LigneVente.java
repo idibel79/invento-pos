@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import ma.invento.pos.vente.domain.PanierCalcule.LigneCalculee;
 
-/** Ligne de ticket : prix et taux de TVA figés au moment de la vente. */
+/** Ligne de ticket : désignation, prix et taux de TVA figés au moment de la vente. */
 @Entity
 @Table(name = "ligne_vente")
 public class LigneVente {
@@ -29,6 +29,7 @@ public class LigneVente {
     private Vente vente;
 
     private Long produitId;
+    private String designation;
     private int quantite;
     private BigDecimal prixUnitaire;
     private BigDecimal tauxTva;
@@ -44,10 +45,11 @@ public class LigneVente {
 
     protected LigneVente() {}
 
-    LigneVente(Vente vente, LigneCalculee calculee, Long remiseValideePar) {
+    LigneVente(Vente vente, LigneCalculee calculee, String designation, Long remiseValideePar) {
         LignePanier ligne = calculee.ligne();
         this.vente = vente;
         this.produitId = ligne.produitId();
+        this.designation = designation;
         this.quantite = ligne.quantite();
         this.prixUnitaire = ligne.prixUnitaire();
         this.tauxTva = ligne.tauxTva();
@@ -59,6 +61,11 @@ public class LigneVente {
 
     public Long getProduitId() {
         return produitId;
+    }
+
+    /** Libellé du produit tel qu'il a été vendu. */
+    public String getDesignation() {
+        return designation;
     }
 
     public int getQuantite() {

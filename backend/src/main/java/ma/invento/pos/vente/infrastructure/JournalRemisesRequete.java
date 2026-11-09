@@ -70,11 +70,10 @@ public class JournalRemisesRequete {
         String colonnesVente = "v.numero, v.finalisee_le, c.nom as caisse,"
                 + " uv.prenom || ' ' || uv.nom as vendeur, ua.prenom || ' ' || ua.nom as autorise_par,"
                 + " v.motif_remise as motif";
-        this.lignes = "select " + colonnesVente + ", 'LIGNE' as portee, p.designation as produit,"
+        this.lignes = "select " + colonnesVente + ", 'LIGNE' as portee, lv.designation as produit,"
                 + " lv.quantite, lv.remise_type as type, lv.remise_valeur as valeur, lv.remise_montant as montant"
                 + communs
                 + " join " + s + "ligne_vente lv on lv.vente_id = v.id"
-                + " join " + s + "produit p on p.id = lv.produit_id"
                 + autoriseLigne
                 + " where v.statut = 'VALIDEE' and lv.remise_montant > 0";
         this.tickets = "select " + colonnesVente + ", 'TICKET' as portee, null as produit, null as quantite,"

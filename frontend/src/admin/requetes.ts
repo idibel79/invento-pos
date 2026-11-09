@@ -192,3 +192,12 @@ export function useDetailVente(id: number) {
     staleTime: Infinity,
   });
 }
+
+/** Vente validée au format du ticket de caisse, pour le réimprimer. */
+export function useTicketVente(id: number) {
+  return useQuery({
+    queryKey: ["historique-ventes", "ticket", id],
+    queryFn: () => appel(api.GET("/api/v1/historique-ventes/{id}/ticket", { params: { path: { id } } })),
+    staleTime: Infinity,
+  });
+}

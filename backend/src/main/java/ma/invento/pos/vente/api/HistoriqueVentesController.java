@@ -7,6 +7,8 @@ import java.time.ZoneId;
 import ma.invento.pos.parametre.application.ParametreService;
 import ma.invento.pos.shared.api.PageResponse;
 import ma.invento.pos.shared.domain.RessourceIntrouvableException;
+import ma.invento.pos.vente.api.VenteDtos.VenteDto;
+import ma.invento.pos.vente.application.VenteService;
 import ma.invento.pos.vente.infrastructure.HistoriqueVentesRequete;
 import ma.invento.pos.vente.infrastructure.HistoriqueVentesRequete.DetailVente;
 import ma.invento.pos.vente.infrastructure.HistoriqueVentesRequete.Filtre;
@@ -34,10 +36,12 @@ class HistoriqueVentesController {
 
     private final HistoriqueVentesRequete requete;
     private final ParametreService parametres;
+    private final VenteService ventes;
 
-    HistoriqueVentesController(HistoriqueVentesRequete requete, ParametreService parametres) {
+    HistoriqueVentesController(HistoriqueVentesRequete requete, ParametreService parametres, VenteService ventes) {
         this.requete = requete;
         this.parametres = parametres;
+        this.ventes = ventes;
     }
 
     @GetMapping
@@ -67,6 +71,12 @@ class HistoriqueVentesController {
     @Transactional(readOnly = true)
     DetailVente detail(@PathVariable long id) {
         return requete.detail(id).orElseThrow(() -> new RessourceIntrouvableException("Vente introuvable."));
+    }
+
+    /** Vente validée au format du ticket de caisse, pour le réimprimer. */
+    @GetMapping("/{id}/ticket")
+    VenteDto ticket(@PathVariable long id) {
+        return ventes.venteValidee(id);
     }
 
     /** Le jour s'entend dans le fuseau de la boutique : de minuit à minuit, heure locale. */

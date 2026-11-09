@@ -1895,6 +1895,33 @@
         }
       }
     },
+    "/api/v1/historique-ventes/{id}/ticket" : {
+      "get" : {
+        "tags" : [ "historique-ventes-controller" ],
+        "operationId" : "ticket",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VenteDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/historique-ventes/resume" : {
       "get" : {
         "tags" : [ "historique-ventes-controller" ],
