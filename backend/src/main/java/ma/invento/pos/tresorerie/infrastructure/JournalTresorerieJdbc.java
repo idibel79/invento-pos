@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import ma.invento.pos.tresorerie.domain.StatutVersement;
 import ma.invento.pos.tresorerie.domain.TypeCompte;
@@ -39,8 +40,14 @@ public class JournalTresorerieJdbc {
             UUID cle,
             Instant creeLe) {}
 
-    /** Filtre du journal ; un critère null ne filtre pas. */
-    public record Filtre(Instant debut, Instant fin, Long caisseId, Long utilisateurId, FiltreStatut statut) {}
+    /** Filtre du journal ; un critère null ne filtre pas ({@code types} vide : tous les types). */
+    public record Filtre(
+            Instant debut,
+            Instant fin,
+            Long caisseId,
+            Long utilisateurId,
+            FiltreStatut statut,
+            Set<TypeOperation> types) {}
 
     public enum FiltreStatut {
         EN_TRANSIT,
@@ -72,7 +79,10 @@ public class JournalTresorerieJdbc {
             boolean cloture,
             @Schema(nullable = true) String motif,
             BigDecimal soldePrincipaleApres,
-            @Schema(nullable = true) BigDecimal soldeCaissierApres) {}
+            @Schema(nullable = true) BigDecimal soldeCaissierApres,
+
+            @Schema(nullable = true, description = "Ventes de la session, sur un versement de clôture")
+            BigDecimal ventesSession) {}
 
     private final NamedParameterJdbcTemplate jdbc;
     private final String s;
@@ -143,7 +153,11 @@ public class JournalTresorerieJdbc {
                         + " v.statut, coalesce(v.auto_valide, false) as auto_valide,"
                         + " coalesce(v.cloture, false) as cloture, coalesce(v.motif, o.motif) as motif,"
                         + " coalesce(f.solde_principale_apres, o.solde_principale_apres) as solde_principale_apres,"
-                        + " coalesce(f.solde_caissier_apres, o.solde_caissier_apres) as solde_caissier_apres"
+                        + " coalesce(f.solde_caissier_apres, o.solde_caissier_apres) as solde_caissier_apres,"
+                        // Ventes de la session : crédits de clôture, hors excédent du tiroir.
+                        + " case when v.cloture then (select sum(x.montant - greatest(coalesce(x.ecart_session, 0), 0))"
+                        + " from " + s + "operation_tresorerie x where x.session_caisse_id = o.session_caisse_id"
+                        + " and x.type = 'CLOTURE_SESSION') end as ventes_session"
                         + depuis + conditions(filtre)
                         + " order by o.cree_le " + ordre + ", o.id " + ordre + " limit :taille offset :decalage",
                 parametres(filtre).addValue("taille", taille).addValue("decalage", (long) page * taille),
@@ -165,7 +179,8 @@ public class JournalTresorerieJdbc {
                     case AUTO_VALIDE -> " and v.auto_valide";
                     default -> " and v.statut = :statut";
                 };
-        return (f.debut() == null ? "" : " and o.cree_le >= :debut")
+        return (f.types().isEmpty() ? "" : " and o.type in (:types)")
+                + (f.debut() == null ? "" : " and o.cree_le >= :debut")
                 + (f.fin() == null ? "" : " and o.cree_le < :fin")
                 + (f.caisseId() == null ? "" : " and o.caisse_id = :caisseId")
                 + (f.utilisateurId() == null
@@ -181,6 +196,8 @@ public class JournalTresorerieJdbc {
         if (f.caisseId() != null) p.addValue("caisseId", f.caisseId());
         if (f.utilisateurId() != null) p.addValue("utilisateurId", f.utilisateurId());
         if (f.statut() != null) p.addValue("statut", f.statut().name());
+        if (!f.types().isEmpty())
+            p.addValue("types", f.types().stream().map(Enum::name).toList());
         return p;
     }
 
@@ -204,6 +221,7 @@ public class JournalTresorerieJdbc {
                 r.getBoolean("cloture"),
                 r.getString("motif"),
                 r.getBigDecimal("solde_principale_apres"),
-                r.getBigDecimal("solde_caissier_apres"));
+                r.getBigDecimal("solde_caissier_apres"),
+                r.getBigDecimal("ventes_session"));
     }
 }

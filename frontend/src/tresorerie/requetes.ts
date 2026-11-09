@@ -49,23 +49,6 @@ export function useMonCompte() {
   });
 }
 
-/** Jours du mois (AAAA-MM) où l'utilisateur a au moins une opération. */
-export function useCalendrier(mois: string) {
-  return useQuery({
-    queryKey: [...TRESORERIE, "calendrier", mois],
-    queryFn: () =>
-      appel(api.GET("/api/v1/tresorerie/mon-compte/calendrier", { params: { query: { mois } } })),
-  });
-}
-
-/** Journée du compte : soldes de début et de fin, totaux et chronologie. */
-export function useJournee(jour: string) {
-  return useQuery({
-    queryKey: [...TRESORERIE, "journee", jour],
-    queryFn: () => appel(api.GET("/api/v1/tresorerie/mon-compte/journee", { params: { query: { jour } } })),
-  });
-}
-
 export function useVerserALaPrincipale() {
   const apres = useApresOperation();
   return useMutation({
@@ -203,16 +186,26 @@ export function useTerminerComptage() {
   });
 }
 
-export function useJournalTresorerie(filtre: FiltreJournal) {
+/**
+ * Journal de la caisse principale (admin) ou, avec `monCompte`, celui de l'utilisateur connecté : ses
+ * versements et alimentations (ventes de la session sur un versement de clôture), sans filtre de caisse ni d'utilisateur.
+ */
+export function useJournalTresorerie(filtre: FiltreJournal, monCompte = false) {
   return useInfiniteQuery({
-    queryKey: [...TRESORERIE, "journal", filtre],
+    queryKey: [...TRESORERIE, monCompte ? "journal-mon-compte" : "journal", filtre],
     initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      appel(
-        api.GET("/api/v1/tresorerie/journal", {
-          params: { query: { ...filtre, page: pageParam, taille: TAILLE_JOURNAL } },
-        }),
-      ),
+    queryFn: ({ pageParam }) => {
+      const { jour, statut, croissant } = filtre;
+      return appel(
+        monCompte
+          ? api.GET("/api/v1/tresorerie/mon-compte/journal", {
+              params: { query: { jour, statut, croissant, page: pageParam, taille: TAILLE_JOURNAL } },
+            })
+          : api.GET("/api/v1/tresorerie/journal", {
+              params: { query: { ...filtre, page: pageParam, taille: TAILLE_JOURNAL } },
+            }),
+      );
+    },
     getNextPageParam: (derniere) => (derniere.page + 1 < derniere.totalPages ? derniere.page + 1 : undefined),
   });
 }

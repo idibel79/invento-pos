@@ -1,10 +1,13 @@
 package ma.invento.pos.tresorerie.api;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
+import ma.invento.pos.shared.api.PageResponse;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.CalendrierDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.JourneeDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.MonCompteDto;
@@ -13,6 +16,8 @@ import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementCommande;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementDto;
 import ma.invento.pos.tresorerie.application.HistoriqueCompteService;
 import ma.invento.pos.tresorerie.application.TresorerieService;
+import ma.invento.pos.tresorerie.infrastructure.JournalTresorerieJdbc.FiltreStatut;
+import ma.invento.pos.tresorerie.infrastructure.JournalTresorerieJdbc.Operation;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,6 +67,21 @@ class MonCompteController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
             @AuthenticationPrincipal Jwt jwt) {
         return historique.journee(UtilisateurConnecte.depuis(jwt).id(), jour);
+    }
+
+    /**
+     * Journal de l'utilisateur connecté, présenté comme celui de la caisse principale : ses versements (vers la
+     * caisse principale ou reçus d'elle), alimentations, avec les ventes de la session sur un versement de clôture.
+     */
+    @GetMapping("/mon-compte/journal")
+    PageResponse<Operation> journalMonCompte(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+            @RequestParam(required = false) FiltreStatut statut,
+            @RequestParam(defaultValue = "false") boolean croissant,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille,
+            @AuthenticationPrincipal Jwt jwt) {
+        return tresorerie.journalDe(UtilisateurConnecte.depuis(jwt).id(), jour, statut, croissant, page, taille);
     }
 
     /** Versement à la caisse principale, en transit jusqu'à sa validation par l'admin. */

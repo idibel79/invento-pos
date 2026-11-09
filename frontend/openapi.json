@@ -1389,6 +1389,70 @@
         }
       }
     },
+    "/api/v1/tresorerie/mon-compte/journal" : {
+      "get" : {
+        "tags" : [ "mon-compte-controller" ],
+        "operationId" : "journalMonCompte",
+        "parameters" : [ {
+          "name" : "jour",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "statut",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EN_TRANSIT", "VALIDE", "AUTO_VALIDE", "REFUSE", "ANNULE" ]
+          }
+        }, {
+          "name" : "croissant",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "taille",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 200,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseOperation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tresorerie/mon-compte/calendrier" : {
       "get" : {
         "tags" : [ "mon-compte-controller" ],
@@ -3391,22 +3455,6 @@
         },
         "required" : [ "caisse", "fermeture", "ouverture" ]
       },
-      "CalendrierDto" : {
-        "type" : "object",
-        "properties" : {
-          "mois" : {
-            "type" : "string"
-          },
-          "jours" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string",
-              "format" : "date"
-            }
-          }
-        },
-        "required" : [ "jours", "mois" ]
-      },
       "Operation" : {
         "type" : "object",
         "properties" : {
@@ -3470,9 +3518,13 @@
           },
           "soldeCaissierApres" : {
             "type" : [ "number", "null" ]
+          },
+          "ventesSession" : {
+            "type" : [ "number", "null" ],
+            "description" : "Ventes de la session, sur un versement de clôture"
           }
         },
-        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "versLaPrincipale", "versementId" ]
+        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "ventesSession", "versLaPrincipale", "versementId" ]
       },
       "PageResponseOperation" : {
         "type" : "object",
@@ -3501,6 +3553,22 @@
           }
         },
         "required" : [ "contenu", "page", "taille", "totalElements", "totalPages" ]
+      },
+      "CalendrierDto" : {
+        "type" : "object",
+        "properties" : {
+          "mois" : {
+            "type" : "string"
+          },
+          "jours" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
+            }
+          }
+        },
+        "required" : [ "jours", "mois" ]
       },
       "CompteCaissierDto" : {
         "type" : "object",
