@@ -1006,11 +1006,18 @@ export interface components {
         ParametresCommande: {
             boutiqueNom: string;
             boutiqueAdresse: string;
+            boutiqueTelephone?: string;
+            /** Format: email */
+            boutiqueEmail?: string;
+            ticketMessage?: string;
             fuseauHoraire: string;
         };
         Parametres: {
             boutiqueNom: string;
             boutiqueAdresse: string;
+            boutiqueTelephone: string;
+            boutiqueEmail: string;
+            ticketMessage: string;
             fuseauHoraire: string;
         };
         CaisseCommande: {

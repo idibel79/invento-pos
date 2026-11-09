@@ -3880,3 +3880,175 @@ button.filtre-compact {
   align-self: center;
   min-height: 40px;
 }
+
+/* Paramètres > Boutique : formulaire à gauche, aperçu du ticket à droite. */
+.boutique-ecran {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.boutique-ecran > form {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.boutique-apercu {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.boutique-apercu .ticket-caisse {
+  border: 1px solid var(--bordure-carte);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+}
+
+/* Ticket de caisse (rouleau 80 mm) : noir sur blanc, à l'écran comme à l'impression. */
+.ticket-caisse {
+  width: 72mm;
+  box-sizing: border-box;
+  padding: 4mm 3mm;
+  background: #ffffff;
+  color: #000000;
+  font-family: "Segoe UI", Inter, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticket-entete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.ticket-boutique {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ticket-infos {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px dashed #000000;
+  padding-top: 4px;
+}
+
+.ticket-lignes {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ticket-lignes th,
+.ticket-lignes td {
+  padding: 2px 0;
+  text-align: right;
+  vertical-align: top;
+}
+
+.ticket-lignes th:first-child,
+.ticket-lignes td:first-child {
+  text-align: left;
+  padding-right: 4px;
+  overflow-wrap: anywhere;
+}
+
+.ticket-lignes th:not(:first-child),
+.ticket-lignes td:not(:first-child) {
+  white-space: nowrap;
+  padding-left: 6px;
+}
+
+.ticket-lignes thead th {
+  font-weight: 700;
+  border-top: 1px dashed #000000;
+  border-bottom: 1px dashed #000000;
+}
+
+.ticket-remise {
+  display: block;
+  font-size: 11px;
+}
+
+.ticket-totaux,
+.ticket-paiement {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px dashed #000000;
+  padding-top: 4px;
+}
+
+.ticket-totaux > div,
+.ticket-paiement > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ticket-totaux dd,
+.ticket-paiement dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.ticket-net {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ticket-tva {
+  font-size: 11px;
+}
+
+.ticket-vendeur {
+  margin: 0;
+  border-top: 1px dashed #000000;
+  padding-top: 4px;
+}
+
+.ticket-pied {
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Ticket imprimé : caché à l'écran ; à l'impression, il est seul sur la page. */
+.zone-impression {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  body > :not(.zone-impression) {
+    display: none !important;
+  }
+
+  .zone-impression {
+    display: block;
+  }
+
+  .zone-impression .ticket-caisse {
+    width: 100%;
+  }
+}

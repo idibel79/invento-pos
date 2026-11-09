@@ -1,8 +1,10 @@
 package ma.invento.pos.parametre.api;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.parametre.application.ParametreService;
@@ -36,12 +38,26 @@ class ParametreController {
     @PreAuthorize("hasRole('ADMIN')")
     Parametres modifier(@Valid @RequestBody ParametresCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return parametreService.modifier(
-                new Parametres(commande.boutiqueNom(), commande.boutiqueAdresse(), commande.fuseauHoraire()),
+                new Parametres(
+                        commande.boutiqueNom(),
+                        commande.boutiqueAdresse(),
+                        commande.boutiqueTelephone(),
+                        commande.boutiqueEmail(),
+                        commande.ticketMessage(),
+                        commande.fuseauHoraire()),
                 UtilisateurConnecte.depuis(jwt).id());
     }
 
     record ParametresCommande(
             @NotNull @Size(max = 120) String boutiqueNom,
             @NotNull @Size(max = 300) String boutiqueAdresse,
+
+            @Size(max = 40) @Pattern(regexp = "[0-9+ ().-]*", message = "Téléphone invalide")
+            String boutiqueTelephone,
+
+            @Size(max = 120) @Email(message = "Adresse email invalide")
+            String boutiqueEmail,
+
+            @Size(max = 300) String ticketMessage,
             @NotBlank @Size(max = 60) String fuseauHoraire) {}
 }

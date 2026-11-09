@@ -16,7 +16,8 @@ test("l'admin crée une caisse et un responsable avec son PIN, puis régénère 
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.getByRole("button", { name: "Administration" }).click();
 
-  // Caisses
+  // Caisses (les Paramètres s'ouvrent sur Boutique).
+  await page.getByRole("button", { name: "Caisses" }).click();
   await page.getByRole("button", { name: "Nouvelle caisse" }).click();
   const fiche = page.getByRole("dialog", { name: "Nouvelle caisse" });
   await fiche.getByLabel("Nom").fill(caisse);
