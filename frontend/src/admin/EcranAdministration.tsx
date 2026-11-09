@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useUtilisateur } from "../auth/AuthContext";
 import { useParametres } from "../caisse/requetes";
+import { MonCompte } from "../tresorerie/MonCompte";
+import { useMonCompte } from "../tresorerie/requetes";
 import { heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeInvento } from "../ui/Logo";
@@ -20,8 +23,13 @@ const ONGLETS = {
   import: "Import du catalogue",
   securite: "Code de secours",
   journaux: "Journaux",
+  compte: "Mon compte",
 } as const;
 type Onglet = keyof typeof ONGLETS;
+
+/** L'admin a toutes les rubriques ; les responsables et caissiers seulement leur compte et leurs journaux. */
+const ONGLETS_ADMIN: Onglet[] = ["parametres", "tresorerie", "import", "securite", "journaux", "compte"];
+const ONGLETS_VENDEUR: Onglet[] = ["compte", "journaux"];
 
 const PARAMETRES: EntreeMenu[] = [
   { nom: "Boutique", detail: "Nom, adresse, contact du ticket", ecran: () => <Boutique /> },
@@ -34,11 +42,14 @@ const JOURNAUX: EntreeMenu[] = [
   { nom: "Remises", detail: "Remises accordées sur les ventes", ecran: () => <JournalRemises /> },
 ];
 
-/** Écrans réservés à l'admin ; le serveur vérifie le rôle sur chaque appel. */
+/** Administration ; le serveur vérifie le rôle sur chaque appel et filtre les journaux hors admin. */
 export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
-  const [onglet, setOnglet] = useState<Onglet>("parametres");
+  const admin = useUtilisateur().role === "ADMIN";
+  const onglets = admin ? ONGLETS_ADMIN : ONGLETS_VENDEUR;
+  const [onglet, setOnglet] = useState<Onglet>(onglets[0] ?? "compte");
   const fuseau = useParametres().data?.fuseauHoraire;
   const maintenant = useMaintenant(30_000);
+  const aValider = useMonCompte().data?.aValider.length ?? 0;
 
   return (
     <div className="ecran-admin">
@@ -49,7 +60,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         </span>
         <span className="barre-session">
           <strong>Administration</strong>
-          <span>réservée à l'admin</span>
+          {admin && <span>réservée à l'admin</span>}
         </span>
         <span className="barre-espace" />
         <button type="button" className="barre-bouton" onClick={onQuitter}>
@@ -59,7 +70,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         <MenuUtilisateur />
       </header>
       <nav className="admin-onglets" aria-label="Administration">
-        {(Object.keys(ONGLETS) as Onglet[]).map((cle) => (
+        {onglets.map((cle) => (
           <button
             key={cle}
             type="button"
@@ -68,6 +79,11 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
             onClick={() => setOnglet(cle)}
           >
             {ONGLETS[cle]}
+            {cle === "compte" && aValider > 0 && (
+              <span className="pastille-nombre" aria-label={`${aValider} à valider`}>
+                {aValider}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -77,6 +93,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         {onglet === "import" && <ImportCatalogue />}
         {onglet === "securite" && <CodeSecours />}
         {onglet === "journaux" && <RubriqueAvecMenu titre="Journaux" entrees={JOURNAUX} />}
+        {onglet === "compte" && <MonCompte />}
       </main>
     </div>
   );

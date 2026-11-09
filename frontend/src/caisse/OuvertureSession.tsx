@@ -5,7 +5,7 @@ import { messageErreur } from "../api/erreurs";
 import { useAuth, useUtilisateur } from "../auth/AuthContext";
 import { lireMontant } from "../ui/format";
 import { Logo } from "../ui/Logo";
-import { BoutonMonCompte } from "../tresorerie/MonComptePanneau";
+import { BoutonAdministration } from "../admin/BoutonAdministration";
 import { useMonCompte } from "../tresorerie/requetes";
 import { dh } from "../ui/format";
 import { useCaisses, useOuvrirSession } from "./requetes";
@@ -19,7 +19,7 @@ type Champs = z.infer<typeof schema>;
 interface Props {
   /** Raison du retour à cet écran (session clôturée d'office), s'il y en a une. */
   avis?: string | null;
-  onAdministration?: () => void;
+  onAdministration: () => void;
 }
 
 /** Ouverture de la caisse avec le fond de caisse, pris sur le solde du compte du caissier. */
@@ -61,7 +61,7 @@ export function OuvertureSession({ avis, onAdministration }: Props) {
         )}
         {caisses.isSuccess && autorisees.length === 0 ? (
           <p className="alerte alerte-danger" role="alert">
-            {onAdministration
+            {utilisateur.role === "ADMIN"
               ? "Aucune caisse active. Créez-en une dans l'administration."
               : "Aucune caisse ne vous est attribuée. Demandez à l'administrateur de vous en affecter une."}
           </p>
@@ -104,12 +104,7 @@ export function OuvertureSession({ avis, onAdministration }: Props) {
           Ouvrir la caisse
         </button>
         <div className="ouverture-secondaires">
-          <BoutonMonCompte classe="bouton bouton-contour" page />
-          {onAdministration && (
-            <button type="button" className="bouton bouton-contour" onClick={onAdministration}>
-              Administration
-            </button>
-          )}
+          <BoutonAdministration classe="bouton bouton-contour" onClick={onAdministration} />
         </div>
         <button
           type="button"

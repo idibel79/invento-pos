@@ -1,11 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
-import { useUtilisateur } from "../auth/AuthContext";
 import { useParametres } from "../caisse/requetes";
 import { decimal, heure } from "../ui/format";
-import { IconeInvento } from "../ui/Logo";
 import { AValiderDialogue, VerserDialogue } from "./ComptePopups";
 import { decalerMois, grilleMois, libelleJour, libelleMois } from "./calendrier";
 import { useCalendrier, useJournee, useMonCompte } from "./requetes";
@@ -25,19 +22,11 @@ function signe(montant: number): string {
   return `${montant > 0 ? "+" : "−"} ${decimal(Math.abs(montant))}`;
 }
 
-interface Props {
-  /** Texte du bouton de retour : « Retour à la caisse » ou « Retour à l'ouverture ». */
-  retour: string;
-  onFermer: () => void;
-}
-
 /**
- * Page Mon compte (maquette B) : solde dû et mini-calendrier à gauche, journée choisie à droite avec
- * ses totaux et la chronologie de toutes les opérations de l'utilisateur.
+ * Rubrique Mon compte de l'administration (maquette B) : solde dû et mini-calendrier à gauche, journée
+ * choisie à droite avec ses totaux et la chronologie de toutes les opérations de l'utilisateur.
  */
-export function PageMonCompte({ retour, onFermer }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const utilisateur = useUtilisateur();
+export function MonCompte() {
   const fuseau = useParametres().data?.fuseauHoraire;
   const jourCourant = aujourdhui(fuseau);
   const [jour, setJour] = useState(jourCourant);
@@ -49,38 +38,8 @@ export function PageMonCompte({ retour, onFermer }: Props) {
   const actifs = new Set(calendrier.data?.jours ?? []);
   const aValider = compte.data?.aValider.length ?? 0;
 
-  useEffect(() => {
-    const dialogue = ref.current;
-    if (dialogue && !dialogue.open) dialogue.showModal?.();
-  }, []);
-
-  return createPortal(
-    <dialog
-      ref={ref}
-      className="page-mon-compte"
-      aria-label="Mon compte"
-      onCancel={(e) => {
-        e.preventDefault();
-        onFermer();
-      }}
-    >
-      <header className="barre-haut">
-        <span className="barre-marque">
-          <IconeInvento />
-          Invento POS
-        </span>
-        <span className="barre-session">
-          <strong>Mon compte</strong>
-        </span>
-        <span className="barre-espace" />
-        <button type="button" className="barre-bouton" onClick={onFermer}>
-          {retour}
-        </button>
-        <span className="barre-nom">
-          {utilisateur.prenom} {utilisateur.nom}
-        </span>
-      </header>
-
+  return (
+    <>
       <div className="mon-compte-corps">
         <aside className="mon-compte-gauche">
           <section className="carte-blanche">
@@ -198,8 +157,7 @@ export function PageMonCompte({ retour, onFermer }: Props) {
       </div>
       {popup === "verser" && <VerserDialogue onFermer={() => setPopup(null)} />}
       {popup === "valider" && <AValiderDialogue onFermer={() => setPopup(null)} />}
-    </dialog>,
-    document.body,
+    </>
   );
 }
 

@@ -157,10 +157,18 @@ public class HistoriqueVentesRequete {
                         r.getBigDecimal("carte")));
     }
 
-    /** Vente validée et ses lignes ; vide si elle n'existe pas ou n'est pas validée. */
-    public Optional<DetailVente> detail(long id) {
+    /**
+     * Vente validée et ses lignes ; vide si elle n'existe pas, n'est pas validée ou, quand {@code vendeurId}
+     * est donné, n'a pas été faite par ce vendeur.
+     */
+    public Optional<DetailVente> detail(long id, Long vendeurId) {
         MapSqlParameterSource parametres = new MapSqlParameterSource("id", id);
-        return jdbc.query(detail, parametres, (r, i) -> versDetail(r)).stream()
+        String requete = detail;
+        if (vendeurId != null) {
+            requete += " and v.caissier_id = :vendeurId";
+            parametres.addValue("vendeurId", vendeurId);
+        }
+        return jdbc.query(requete, parametres, (r, i) -> versDetail(r)).stream()
                 .findFirst()
                 .map(entete -> entete.apply(jdbc.query(lignes, parametres, HistoriqueVentesRequete::versLigne)));
     }

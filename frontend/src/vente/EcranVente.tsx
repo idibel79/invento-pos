@@ -8,7 +8,7 @@ import { decimal, dh, heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeValide } from "../ui/icones";
 import { IconeInvento } from "../ui/Logo";
-import { BoutonMonCompte } from "../tresorerie/MonComptePanneau";
+import { BoutonAdministration } from "../admin/BoutonAdministration";
 import { AttenteDialogue } from "./AttenteDialogue";
 import { Catalogue } from "./Catalogue";
 import { EncaissementDialogue } from "./EncaissementDialogue";
@@ -31,8 +31,8 @@ type Fenetre =
 /** Écran de vente (direction « Table pro ») : barre de caisse en haut, tableau des produits, ticket à droite. */
 interface Props {
   session: Schemas["SessionCaisseDto"];
-  /** Présent pour l'admin seulement. */
-  onAdministration?: () => void;
+  /** Ouvre l'administration (rubriques selon le rôle). */
+  onAdministration: () => void;
 }
 
 export function EcranVente({ session, onAdministration }: Props) {
@@ -98,7 +98,6 @@ export function EcranVente({ session, onAdministration }: Props) {
           </button>
         </span>
         <span className="barre-espace" />
-        <BoutonMonCompte classe="barre-bouton" />
         <button
           type="button"
           className={`barre-bouton barre-attente${nombreEnAttente > 0 ? " signalee" : ""}`}
@@ -109,11 +108,7 @@ export function EcranVente({ session, onAdministration }: Props) {
             ? `${nombreEnAttente} vente${nombreEnAttente > 1 ? "s" : ""} en attente`
             : "Aucune vente en attente"}
         </button>
-        {onAdministration && (
-          <button type="button" className="barre-bouton" onClick={onAdministration}>
-            Administration
-          </button>
-        )}
+        <BoutonAdministration classe="barre-bouton" onClick={onAdministration} />
         <span className="barre-heure">{heure(new Date(maintenant).toISOString(), fuseau)}</span>
         <MenuUtilisateur enCaisse />
       </header>

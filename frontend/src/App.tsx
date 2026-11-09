@@ -12,14 +12,14 @@ export function App() {
   if (statut === "chargement") return <p className="chargement">Chargement…</p>;
   if (!utilisateur) return <Connexion />;
   if (utilisateur.doitChangerMotDePasse) return <ChangementMotDePasse />;
-  return utilisateur.role === "ADMIN" ? <EspaceAdmin /> : <Caisse />;
+  return <Espace />;
 }
 
 /**
- * L'admin passe de la caisse à l'administration ; l'écran de caisse reste monté (caché) pour ne
- * pas perdre le ticket en cours.
+ * Chacun passe de la caisse à l'administration (rubriques selon le rôle) ; l'écran de caisse reste
+ * monté (caché) pour ne pas perdre le ticket en cours.
  */
-function EspaceAdmin() {
+function Espace() {
   const [administration, setAdministration] = useState(false);
   return (
     <>
@@ -32,7 +32,7 @@ function EspaceAdmin() {
 }
 
 /** Vente si une session de caisse est ouverte, sinon ouverture de la caisse. */
-function Caisse({ onAdministration }: { onAdministration?: () => void }) {
+function Caisse({ onAdministration }: { onAdministration: () => void }) {
   const session = useSessionCourante();
   const avis = useAvisSessionFermee();
   if (session.isPending) return <p className="chargement">Chargement de la caisse…</p>;

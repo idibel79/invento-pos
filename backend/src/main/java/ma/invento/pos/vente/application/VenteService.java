@@ -240,11 +240,15 @@ public class VenteService {
         return versDto(vente);
     }
 
-    /** Vente validée telle qu'elle a été encaissée, pour réimprimer son ticket. */
+    /**
+     * Vente validée telle qu'elle a été encaissée, pour réimprimer son ticket. Hors admin, seulement une
+     * vente de l'utilisateur : celle d'un autre est introuvable pour lui.
+     */
     @Transactional(readOnly = true)
-    public VenteDto venteValidee(long venteId) {
+    public VenteDto venteValidee(long venteId, UtilisateurConnecte utilisateur) {
         return ventes.findById(venteId)
                 .filter(v -> v.getStatut() == StatutVente.VALIDEE)
+                .filter(v -> utilisateur.estAdmin() || v.getCaissierId() == utilisateur.id())
                 .map(VenteService::versDto)
                 .orElseThrow(() -> new RessourceIntrouvableException("Vente introuvable."));
     }

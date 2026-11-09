@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
+import { useUtilisateur } from "../auth/AuthContext";
 import { useCaisses, useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
 import { dateHeure, decimal, dh, heure, pourcent } from "../ui/format";
@@ -56,7 +57,9 @@ export function HistoriqueVentes() {
   const jour = jourChoisi ?? aujourdhui(fuseau);
   const filtre = { jour, caisseId, vendeurId };
   const caisses = useCaisses().data ?? [];
-  const vendeurs = useUtilisateurs().data ?? [];
+  // Hors admin, le serveur ne renvoie que les ventes de l'utilisateur : pas de filtre par vendeur.
+  const admin = useUtilisateur().role === "ADMIN";
+  const vendeurs = useUtilisateurs(admin).data ?? [];
   const ventes = useHistoriqueVentes(filtre);
   const resume = useResumeVentes(filtre);
   const liste = ventes.data?.pages.flatMap((p) => p.contenu) ?? [];
@@ -67,8 +70,8 @@ export function HistoriqueVentes() {
         <div>
           <h1 className="admin-titre">Ventes</h1>
           <p className="texte-secondaire">
-            Les ventes encaissées du jour choisi, de la plus récente à la plus ancienne. Cliquez sur une vente
-            pour voir son détail.
+            {admin ? "Les ventes encaissées" : "Vos ventes encaissées"} du jour choisi, de la plus récente à
+            la plus ancienne. Cliquez sur une vente pour voir son détail.
           </p>
         </div>
       </div>
@@ -115,20 +118,22 @@ export function HistoriqueVentes() {
             ))}
           </select>
         </label>
-        <label className="filtre">
-          <span>Vendeur :</span>
-          <select
-            value={vendeurId ?? ""}
-            onChange={(e) => setVendeurId(e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">Tous</option>
-            {vendeurs.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.prenom} {u.nom}
-              </option>
-            ))}
-          </select>
-        </label>
+        {admin && (
+          <label className="filtre">
+            <span>Vendeur :</span>
+            <select
+              value={vendeurId ?? ""}
+              onChange={(e) => setVendeurId(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">Tous</option>
+              {vendeurs.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.prenom} {u.nom}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <div className="resume-remises">

@@ -10,7 +10,8 @@ import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.Filtre;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.Portee;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.RemiseJournal;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.ResumeRemises;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,13 +20,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Journal des remises accordées (ventes validées), consulté par l'admin. Filtres : les {@code jours}
- * derniers jours (absent : tout l'historique), la portée de la remise (ligne ou ticket), la caisse et le
- * vendeur.
+ * Journal des remises accordées (ventes validées). Filtres : les {@code jours} derniers jours (absent : tout
+ * l'historique), la portée de la remise (ligne ou ticket), la caisse et le vendeur. L'admin voit toutes les
+ * remises ; les autres rôles seulement celles de leurs propres ventes.
  */
 @RestController
 @RequestMapping("/api/v1/remises")
-@PreAuthorize("hasRole('ADMIN')")
 @Validated
 class JournalRemisesController {
 
@@ -40,13 +40,14 @@ class JournalRemisesController {
     @GetMapping
     @Transactional(readOnly = true)
     PageResponse<RemiseJournal> lister(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
             @RequestParam(required = false) Portee portee,
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long vendeurId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille) {
-        Filtre filtre = filtre(jours, portee, caisseId, vendeurId);
+        Filtre filtre = filtre(jwt, jours, portee, caisseId, vendeurId);
         long total = requete.resumer(filtre).nombre();
         return new PageResponse<>(
                 requete.lister(filtre, page, taille), page, taille, total, (int) ((total + taille - 1) / taille));
@@ -55,15 +56,19 @@ class JournalRemisesController {
     @GetMapping("/resume")
     @Transactional(readOnly = true)
     ResumeRemises resumer(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
             @RequestParam(required = false) Portee portee,
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long vendeurId) {
-        return requete.resumer(filtre(jours, portee, caisseId, vendeurId));
+        return requete.resumer(filtre(jwt, jours, portee, caisseId, vendeurId));
     }
 
-    private Filtre filtre(Integer jours, Portee portee, Long caisseId, Long vendeurId) {
+    private Filtre filtre(Jwt jwt, Integer jours, Portee portee, Long caisseId, Long vendeurId) {
         return new Filtre(
-                jours == null ? null : clock.instant().minus(Duration.ofDays(jours)), portee, caisseId, vendeurId);
+                jours == null ? null : clock.instant().minus(Duration.ofDays(jours)),
+                portee,
+                caisseId,
+                HistoriqueVentesController.vendeurAutorise(jwt, vendeurId));
     }
 }

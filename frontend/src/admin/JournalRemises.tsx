@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
+import { useUtilisateur } from "../auth/AuthContext";
 import { useCaisses, useParametres } from "../caisse/requetes";
 import { dh, pourcent } from "../ui/format";
 import { useJournalRemises, useResumeRemises, useUtilisateurs, type FiltreRemises } from "./requetes";
@@ -21,7 +22,9 @@ export function JournalRemises() {
     vendeurId,
   };
   const caisses = useCaisses().data ?? [];
-  const vendeurs = useUtilisateurs().data ?? [];
+  // Hors admin, le serveur ne renvoie que les ventes de l'utilisateur : pas de filtre par vendeur.
+  const admin = useUtilisateur().role === "ADMIN";
+  const vendeurs = useUtilisateurs(admin).data ?? [];
   const remises = useJournalRemises(filtre);
   const resume = useResumeRemises(filtre);
   const fuseau = useParametres().data?.fuseauHoraire;
@@ -33,7 +36,8 @@ export function JournalRemises() {
         <div>
           <h1 className="admin-titre">Journal des remises</h1>
           <p className="texte-secondaire">
-            Toutes les remises accordées sur les ventes validées, de la plus récente à la plus ancienne.
+            {admin ? "Toutes les remises accordées" : "Les remises accordées sur vos ventes"} validées, de la
+            plus récente à la plus ancienne.
           </p>
         </div>
       </div>
@@ -63,20 +67,22 @@ export function JournalRemises() {
             ))}
           </select>
         </label>
-        <label className="filtre">
-          <span>Vendeur :</span>
-          <select
-            value={vendeurId ?? ""}
-            onChange={(e) => setVendeurId(e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">Tous</option>
-            {vendeurs.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.prenom} {u.nom}
-              </option>
-            ))}
-          </select>
-        </label>
+        {admin && (
+          <label className="filtre">
+            <span>Vendeur :</span>
+            <select
+              value={vendeurId ?? ""}
+              onChange={(e) => setVendeurId(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">Tous</option>
+              {vendeurs.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.prenom} {u.nom}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="filtre">
           <span>Portée :</span>
           <select value={portee} onChange={(e) => setPortee(e.target.value as keyof typeof PORTEES)}>
