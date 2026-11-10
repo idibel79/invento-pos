@@ -755,8 +755,25 @@ class VenteIT extends IntegrationTest {
                 .andExpect(jsonPath("$.mode").value("ESPECES"))
                 .andExpect(jsonPath("$.montantRecu").value(200.00))
                 .andExpect(jsonPath("$.rendu").value(10.00));
+        // Hors admin, chacun ne voit que ses ventes et ses remises, quel que soit le vendeur demandé.
         mvc.perform(get(detail).header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/historique-ventes" + filtre).header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(jsonPath("$.totalElements").value(2));
+        String autre = jeton(creerUtilisateur(Role.CAISSIER).getLogin(), MDP_UTILISATEUR);
+        long vendeur = especes.get("caissierId").asLong();
+        mvc.perform(get(detail).header(HttpHeaders.AUTHORIZATION, bearer(autre)))
+                .andExpect(status().isNotFound());
+        mvc.perform(get(detail + "/ticket").header(HttpHeaders.AUTHORIZATION, bearer(autre)))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/historique-ventes" + filtre + "&vendeurId=" + vendeur)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(autre)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mvc.perform(get("/api/v1/remises?caisseId=" + caisseId + "&vendeurId=" + vendeur)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(autre)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mvc.perform(get("/api/v1/remises?caisseId=" + caisseId).header(HttpHeaders.AUTHORIZATION, bearer(caissier)))
+                .andExpect(jsonPath("$.totalElements").value(2));
     }
 
     private void modifierCaisse(long caisse, boolean active) throws Exception {

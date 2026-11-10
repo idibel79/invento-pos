@@ -5,8 +5,13 @@ import { cles } from "../caisse/requetes";
 
 const cleUtilisateurs = ["utilisateurs"] as const;
 
-export function useUtilisateurs() {
-  return useQuery({ queryKey: cleUtilisateurs, queryFn: () => appel(api.GET("/api/v1/utilisateurs")) });
+/** Comptes des utilisateurs, réservés à l'admin : `actif` à faux n'appelle pas le serveur. */
+export function useUtilisateurs(actif = true) {
+  return useQuery({
+    queryKey: cleUtilisateurs,
+    queryFn: () => appel(api.GET("/api/v1/utilisateurs")),
+    enabled: actif,
+  });
 }
 
 /** Caisses avec le fond et les espèces de leur session ouverte ; relu régulièrement pendant que l'écran est affiché. */
