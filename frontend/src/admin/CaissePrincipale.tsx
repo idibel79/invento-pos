@@ -3,13 +3,19 @@ import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { useParametres } from "../caisse/requetes";
 import { JournalTresorerie } from "../tresorerie/JournalTresorerie";
-import { useAValiderPrincipale, useComptagesEnAttente, useComptes } from "../tresorerie/requetes";
+import { MonCompte } from "../tresorerie/MonCompte";
+import {
+  useAValiderPrincipale,
+  useComptagesEnAttente,
+  useComptes,
+  useMonCompte,
+} from "../tresorerie/requetes";
 import { VersementAValider } from "../tresorerie/VersementAValider";
 import { decimal, heure } from "../ui/format";
 import { ComptageDialogue } from "./ComptageDialogue";
 import { OperationTresorerieDialogue, type TypeOperation } from "./OperationTresorerieDialogue";
 
-type Selection = "principale" | number;
+type Selection = "principale" | "monCompte" | number;
 type Compte = Schemas["CompteCaissierDto"];
 type Session = Schemas["SessionCaisseDto"];
 
@@ -22,13 +28,15 @@ function SoldeDh({ montant }: { montant: number }) {
 }
 
 /**
- * Caisse principale (admin), maquette B : comptes dans une colonne à gauche (caisse principale puis
- * chaque caissier), à droite le compte choisi (solde et opérations), les versements à valider et le
- * journal de toutes les opérations.
+ * Rubrique Comptes de l'admin, maquette B : comptes dans une colonne à gauche (caisse principale, Mon
+ * compte puis chaque caissier), à droite le compte choisi (solde et opérations), les versements à
+ * valider et le journal de toutes les opérations ; Mon compte affiche l'écran du même nom.
  */
 export function CaissePrincipale() {
   const fuseau = useParametres().data?.fuseauHoraire;
   const comptes = useComptes();
+  const monCompte = useMonCompte().data;
+  const monAValider = monCompte?.aValider.length ?? 0;
   const comptages = useComptagesEnAttente();
   const [selection, setSelection] = useState<Selection>("principale");
   const [operation, setOperation] = useState<{ type: TypeOperation; utilisateurId?: number } | null>(null);
@@ -55,6 +63,17 @@ export function CaissePrincipale() {
               courant={selection === "principale"}
               onChoisir={() => setSelection("principale")}
             />
+            <LigneCompte
+              nom="Mon compte"
+              detail={
+                monAValider > 0
+                  ? `${monAValider} versement${monAValider > 1 ? "s" : ""} à valider`
+                  : "Solde dû, versements et ventes"
+              }
+              solde={monCompte?.solde ?? 0}
+              courant={selection === "monCompte"}
+              onChoisir={() => setSelection("monCompte")}
+            />
             {caissiers.map((c) => (
               <LigneCompte
                 key={c.utilisateurId}
@@ -76,7 +95,9 @@ export function CaissePrincipale() {
             {messageErreur(comptes.error)}
           </p>
         )}
+        {selection === "monCompte" && <MonCompte />}
         {donnees &&
+          selection !== "monCompte" &&
           (choisi ? (
             <EnteteCaissier
               compte={choisi}
@@ -92,12 +113,14 @@ export function CaissePrincipale() {
               onOperation={(type) => setOperation({ type })}
             />
           ))}
-        <JournalTresorerie
-          key={String(selection)}
-          caissiers={caissiers}
-          utilisateurInitial={choisi?.utilisateurId}
-          fuseau={fuseau}
-        />
+        {selection !== "monCompte" && (
+          <JournalTresorerie
+            key={String(selection)}
+            caissiers={caissiers}
+            utilisateurInitial={choisi?.utilisateurId}
+            fuseau={fuseau}
+          />
+        )}
       </main>
 
       {operation && donnees && (
