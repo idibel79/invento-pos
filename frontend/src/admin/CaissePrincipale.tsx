@@ -74,17 +74,20 @@ export function CaissePrincipale() {
               courant={selection === "monCompte"}
               onChoisir={() => setSelection("monCompte")}
             />
-            {caissiers.map((c) => (
-              <LigneCompte
-                key={c.utilisateurId}
-                nom={c.nom}
-                detail={detailCaissier(c, enAttente)}
-                solde={c.solde}
-                courant={selection === c.utilisateurId}
-                inactif={!c.actif}
-                onChoisir={() => setSelection(c.utilisateurId)}
-              />
-            ))}
+            {/* L'administrateur a déjà son entrée « Mon compte ». */}
+            {caissiers
+              .filter((c) => c.role !== "ADMIN")
+              .map((c) => (
+                <LigneCompte
+                  key={c.utilisateurId}
+                  nom={c.nom}
+                  detail={detailCaissier(c, enAttente)}
+                  solde={c.solde}
+                  courant={selection === c.utilisateurId}
+                  inactif={!c.actif}
+                  onChoisir={() => setSelection(c.utilisateurId)}
+                />
+              ))}
           </>
         )}
       </nav>
