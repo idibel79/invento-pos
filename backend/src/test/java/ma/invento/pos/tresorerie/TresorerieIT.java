@@ -208,24 +208,20 @@ class TresorerieIT extends IntegrationTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.detail").value(startsWith("Monnaie insuffisante dans le tiroir")));
         vendre(produit, "50").andExpect(status().isCreated());
-        // Manque de 10 : attendu 50, compté 40, tout versé. Le solde ne baisse pas du manque.
-        cloturer(session0, "40", "40")
+        // Manque de 10 : attendu 50, compté 40. Le solde ne baisse pas du manque ; rien n'est versé.
+        cloturer(session0, "40")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ecart").value(-10.0));
-        assertThat(soldeCaissier()).isEqualByComparingTo("110"); // 100 + 50 ventes − 40 versés
+        assertThat(soldeCaissier()).isEqualByComparingTo("150"); // 100 + 50 ventes
 
-        // Excédent de 5 : il s'ajoute au solde ; rien n'est versé.
+        // Excédent de 5 : il s'ajoute au solde.
         ouvrir("100").andExpect(status().isCreated());
         long session1 = sessionCourante();
         vendre(produit, "100").andExpect(status().isCreated());
-        cloturer(session1, "155", "0")
+        cloturer(session1, "155")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ecart").value(5.0));
-        assertThat(soldeCaissier()).isEqualByComparingTo("165"); // 110 + 50 + 5
-
-        // Versé supérieur au compté : refusé.
-        ouvrir("0").andExpect(status().isCreated());
-        cloturer(sessionCourante(), "10", "20").andExpect(status().isUnprocessableEntity());
+        assertThat(soldeCaissier()).isEqualByComparingTo("205"); // 150 + 50 + 5
     }
 
     // ---------------------------------------------------------------- Aides
@@ -281,17 +277,12 @@ class TresorerieIT extends IntegrationTest {
                 .asLong();
     }
 
-    private ResultActions cloturer(long sessionId, String compte, String verse) throws Exception {
+    private ResultActions cloturer(long sessionId, String compte) throws Exception {
         return mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of(
-                        "montantCompteEspeces",
-                        new BigDecimal(compte),
-                        "montantCompteTpe",
-                        BigDecimal.ZERO,
-                        "montantVerse",
-                        new BigDecimal(verse)))));
+                .content(json.writeValueAsString(
+                        Map.of("montantCompteEspeces", new BigDecimal(compte), "montantCompteTpe", BigDecimal.ZERO))));
     }
 
     private ResultActions vendre(long produit, String recu) throws Exception {

@@ -189,16 +189,12 @@ public class SessionCaisseService {
 
     /**
      * Clôture par le caissier de la session (ou l'admin) : ventes en attente annulées, tiroir compté
-     * (espèces et tickets TPE), écart calculé, puis le tiroir est vidé : {@code montantVerse} part vers
-     * la caisse principale, le reste demeure sur le compte du caissier.
+     * (espèces et tickets TPE), écart calculé. Rien n'est versé à la caisse principale : le compté reste
+     * sur le compte du caissier, qui le verse ensuite depuis Mon compte.
      */
     @Transactional
     public SessionCaisseDto cloturer(
-            long sessionId,
-            BigDecimal especes,
-            BigDecimal tpe,
-            BigDecimal montantVerse,
-            UtilisateurConnecte utilisateur) {
+            long sessionId, BigDecimal especes, BigDecimal tpe, UtilisateurConnecte utilisateur) {
         SessionCaisse session = sessions.findForUpdate(sessionId)
                 .orElseThrow(() -> new RessourceIntrouvableException("Session de caisse introuvable."));
         if (!utilisateur.estAdmin() && session.getCaissierId() != utilisateur.id()) {
@@ -207,17 +203,12 @@ public class SessionCaisseService {
         if (!session.estOuverte()) {
             throw new RegleMetierException("Cette session de caisse est déjà clôturée.", SESSION_FERMEE);
         }
-        verifierVerse(especes.add(tpe), montantVerse);
         evenements.publishEvent(new SessionCaisseCloturee(sessionId));
         ComptageTiroir tiroir = tiroir(sessionId);
         session.cloturer(especes, tpe, tiroir, Instant.now(clock));
-        comptes.cloturer(session, tiroir.ventes(), montantVerse, utilisateur.id());
+        comptes.cloturer(session, tiroir.ventes(), utilisateur.id());
         String caisse = nomCaisse(session.getCaisseId());
-        journal.enregistrer(
-                utilisateur.id(),
-                ActionJournal.SESSION_CLOTUREE,
-                caisse + ", " + comptage(session) + ", versé " + montantVerse.toPlainString()
-                        + " DH à la caisse principale");
+        journal.enregistrer(utilisateur.id(), ActionJournal.SESSION_CLOTUREE, caisse + ", " + comptage(session));
         return SessionCaisseDto.depuis(
                 session, caisse, tiroir.ventesEspeces(), TiroirDto.depuis(session, tiroir, null));
     }

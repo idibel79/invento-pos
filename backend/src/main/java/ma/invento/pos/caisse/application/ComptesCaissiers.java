@@ -17,10 +17,10 @@ public interface ComptesCaissiers {
     MouvementsSession mouvementsSession(long sessionId);
 
     /**
-     * Clôture par le caissier : le compte reçoit les ventes et l'excédent, puis {@code montantVerse}
-     * part en transit vers la caisse principale.
+     * Clôture par le caissier : le compte reçoit les ventes et l'excédent. Rien ne part vers la caisse
+     * principale ; le caissier verse ensuite depuis Mon compte.
      */
-    void cloturer(SessionCaisse session, BigDecimal ventes, BigDecimal montantVerse, long auteurId);
+    void cloturer(SessionCaisse session, BigDecimal ventes, long auteurId);
 
     /** Clôture d'office : les ventes sont reportées sur le compte, le tiroir sera compté par l'admin. */
     void cloturerDOffice(SessionCaisse session, BigDecimal ventes, long adminId);

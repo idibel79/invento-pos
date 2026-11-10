@@ -150,8 +150,6 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
               id: session.id,
               montantCompteEspeces: comptage.especes,
               montantCompteTpe: comptage.tpe,
-              // Plus de versement à la clôture : le caissier verse ensuite depuis « Mon compte ».
-              montantVerse: 0,
             })
           }
         >

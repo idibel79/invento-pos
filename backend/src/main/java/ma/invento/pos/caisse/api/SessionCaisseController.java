@@ -52,11 +52,7 @@ class SessionCaisseController {
     SessionCaisseDto cloturer(
             @PathVariable long id, @Valid @RequestBody ClotureCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return sessionService.cloturer(
-                id,
-                commande.montantCompteEspeces(),
-                commande.montantCompteTpe(),
-                commande.montantVerse(),
-                UtilisateurConnecte.depuis(jwt));
+                id, commande.montantCompteEspeces(), commande.montantCompteTpe(), UtilisateurConnecte.depuis(jwt));
     }
 
     /** Sessions clôturées d'office dont le tiroir attend le comptage de l'admin. */
@@ -70,7 +66,7 @@ class SessionCaisseController {
     @PostMapping("/{id}/comptage")
     @PreAuthorize("hasRole('ADMIN')")
     SessionCaisseDto terminerComptage(
-            @PathVariable long id, @Valid @RequestBody ClotureCommande commande, @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable long id, @Valid @RequestBody ComptageCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return sessionService.terminerComptage(
                 id,
                 commande.montantCompteEspeces(),
@@ -86,10 +82,21 @@ class SessionCaisseController {
             BigDecimal fondInitial) {}
 
     /**
-     * Compté dans le tiroir, espèces et tickets TPE séparément, et montant versé à la caisse principale
-     * (de 0 à tout le compté).
+     * Clôture par le caissier : compté dans le tiroir, espèces et tickets TPE séparément. Rien n'est versé
+     * à la caisse principale, le caissier verse ensuite depuis Mon compte.
      */
     record ClotureCommande(
+            @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantCompteEspeces,
+
+            @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantCompteTpe) {}
+
+    /**
+     * Comptage par l'admin d'un tiroir clôturé d'office : compté espèces et tickets TPE, et montant entré
+     * dans la caisse principale (de 0 à tout le compté).
+     */
+    record ComptageCommande(
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
             BigDecimal montantCompteEspeces,
 

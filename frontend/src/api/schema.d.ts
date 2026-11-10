@@ -1267,10 +1267,14 @@ export interface components {
             attenduTpe: number;
             soldeCompte: number | null;
         };
-        ClotureCommande: {
+        ComptageCommande: {
             montantCompteEspeces: number;
             montantCompteTpe: number;
             montantVerse: number;
+        };
+        ClotureCommande: {
+            montantCompteEspeces: number;
+            montantCompteTpe: number;
         };
         InventaireDisponible: {
             numero: string;
@@ -2286,7 +2290,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ClotureCommande"];
+                "application/json": components["schemas"]["ComptageCommande"];
             };
         };
         responses: {
