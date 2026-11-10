@@ -393,10 +393,15 @@ public class TresorerieService implements ComptesCaissiers {
             boolean croissant,
             int page,
             int taille) {
-        return journal(jour, caisseId, utilisateurId, statut, Set.of(), croissant, page, taille);
+        // Sans utilisateur : les seules opérations de la caisse principale. Avec : tout le compte de cet
+        // utilisateur, clôtures (ventes) et ajustements compris.
+        Set<TypeOperation> types = utilisateurId == null
+                ? Set.of(TypeOperation.ALIMENTATION, TypeOperation.RETRAIT, TypeOperation.VERSEMENT_ENVOYE)
+                : Set.of();
+        return journal(jour, caisseId, utilisateurId, statut, types, croissant, page, taille);
     }
 
-    /** Journal de l'utilisateur connecté (Mon compte) : ses versements et alimentations. */
+    /** Journal de l'utilisateur connecté (Mon compte) : ses versements, alimentations et écarts de clôture. */
     @Transactional(readOnly = true)
     public PageResponse<Operation> journalDe(
             long utilisateurId,
@@ -410,7 +415,7 @@ public class TresorerieService implements ComptesCaissiers {
                 null,
                 utilisateurId,
                 statut,
-                Set.of(TypeOperation.ALIMENTATION, TypeOperation.VERSEMENT_ENVOYE),
+                Set.of(TypeOperation.ALIMENTATION, TypeOperation.VERSEMENT_ENVOYE, TypeOperation.CLOTURE_SESSION),
                 croissant,
                 page,
                 taille);

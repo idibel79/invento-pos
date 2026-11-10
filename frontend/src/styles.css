@@ -2020,13 +2020,6 @@ button:disabled {
   border-top: 1px solid var(--bordure);
 }
 
-.journal-ecarts-modes {
-  display: block;
-  font-size: 11.5px;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
 .cloture-ecarts-modes {
   margin: 6px 0 0;
   font-size: 13px;
@@ -3560,20 +3553,20 @@ button.filtre-compact {
 
 .journal-ligne {
   display: grid;
-  grid-template-columns: 96px minmax(200px, 1fr) 130px 104px 76px 100px 110px 150px;
+  grid-template-columns: 96px 80px minmax(200px, 1fr) 130px 104px 100px 110px 150px;
   gap: 10px;
   align-items: center;
-  min-width: 1000px;
+  min-width: 1010px;
   min-height: 42px;
   padding: 6px 14px;
   border-bottom: 1px solid var(--bordure);
   font-size: 13px;
 }
 
-/* Journal de Mon compte : colonne Ventes, sans Utilisateur ni Solde CP. */
+/* Journal de Mon compte : écarts espèces et TPE de clôture, sans Solde CP. */
 .journal-mon-compte .journal-ligne {
-  grid-template-columns: 96px minmax(200px, 1fr) 130px 104px 104px 76px 100px 130px;
-  min-width: 990px;
+  grid-template-columns: 96px 80px minmax(200px, 1fr) 130px 104px 104px 104px 100px 130px;
+  min-width: 1110px;
 }
 
 /* Rubrique Mon compte de l'administration : solde dû et actions en tête, journal dessous. */
