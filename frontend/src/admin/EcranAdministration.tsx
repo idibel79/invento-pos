@@ -19,17 +19,21 @@ import { Utilisateurs } from "./Utilisateurs";
 
 const ONGLETS = {
   parametres: "Paramètres",
-  tresorerie: "Caisse principale",
+  comptes: "Comptes",
   import: "Import du catalogue",
   securite: "Code de secours",
   journaux: "Journaux",
-  compte: "Mon compte",
 } as const;
 type Onglet = keyof typeof ONGLETS;
 
 /** L'admin a toutes les rubriques ; les responsables et caissiers seulement leur compte et leurs journaux. */
-const ONGLETS_ADMIN: Onglet[] = ["parametres", "tresorerie", "import", "securite", "journaux", "compte"];
-const ONGLETS_VENDEUR: Onglet[] = ["compte", "journaux"];
+const ONGLETS_ADMIN: Onglet[] = ["parametres", "comptes", "import", "securite", "journaux"];
+const ONGLETS_VENDEUR: Onglet[] = ["comptes", "journaux"];
+
+/** Comptes d'un responsable ou d'un caissier : son seul compte (l'admin voit tous les comptes). */
+const COMPTES_VENDEUR: EntreeMenu[] = [
+  { nom: "Mon compte", detail: "Solde dû, versements et ventes", ecran: () => <MonCompte /> },
+];
 
 const PARAMETRES: EntreeMenu[] = [
   { nom: "Boutique", detail: "Nom, adresse, contact du ticket", ecran: () => <Boutique /> },
@@ -46,7 +50,7 @@ const JOURNAUX: EntreeMenu[] = [
 export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
   const admin = useUtilisateur().role === "ADMIN";
   const onglets = admin ? ONGLETS_ADMIN : ONGLETS_VENDEUR;
-  const [onglet, setOnglet] = useState<Onglet>(onglets[0] ?? "compte");
+  const [onglet, setOnglet] = useState<Onglet>(onglets[0] ?? "comptes");
   const fuseau = useParametres().data?.fuseauHoraire;
   const maintenant = useMaintenant(30_000);
   const aValider = useMonCompte().data?.aValider.length ?? 0;
@@ -79,7 +83,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
             onClick={() => setOnglet(cle)}
           >
             {ONGLETS[cle]}
-            {cle === "compte" && aValider > 0 && (
+            {cle === "comptes" && aValider > 0 && (
               <span className="pastille-nombre" aria-label={`${aValider} à valider`}>
                 {aValider}
               </span>
@@ -89,11 +93,11 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
       </nav>
       <main className="admin-corps">
         {onglet === "parametres" && <RubriqueAvecMenu titre="Paramètres" entrees={PARAMETRES} />}
-        {onglet === "tresorerie" && <CaissePrincipale />}
+        {onglet === "comptes" &&
+          (admin ? <CaissePrincipale /> : <RubriqueAvecMenu titre="Comptes" entrees={COMPTES_VENDEUR} />)}
         {onglet === "import" && <ImportCatalogue />}
         {onglet === "securite" && <CodeSecours />}
         {onglet === "journaux" && <RubriqueAvecMenu titre="Journaux" entrees={JOURNAUX} />}
-        {onglet === "compte" && <MonCompte />}
       </main>
     </div>
   );
