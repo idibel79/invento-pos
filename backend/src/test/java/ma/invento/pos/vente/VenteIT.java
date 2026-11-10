@@ -316,12 +316,14 @@ class VenteIT extends IntegrationTest {
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissierSur(autreCaisseId)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 0, \"montantVerse\": 0}"))
+                        .content("{\"montantCompteEspeces\": 0, \"montantCompteTpe\": 0, \"montantVerse\": 0}"))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 228.50, \"montantVerse\": 228.50}"))
+        mvc.perform(
+                        post("/api/v1/sessions/" + sessionId + "/cloture")
+                                .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"montantCompteEspeces\": 228.50, \"montantCompteTpe\": 0, \"montantVerse\": 228.50}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.especesEncaissees").value(30.00))
                 .andExpect(jsonPath("$.ecart").value(-1.50));
@@ -371,7 +373,7 @@ class VenteIT extends IntegrationTest {
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                         .header(HttpHeaders.AUTHORIZATION, bearer(caissier))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 0, \"montantVerse\": 0}"))
+                        .content("{\"montantCompteEspeces\": 0, \"montantCompteTpe\": 0, \"montantVerse\": 0}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("SESSION_FERMEE"));
         assertThat(stock(produit)).isEqualTo(4);
@@ -386,7 +388,7 @@ class VenteIT extends IntegrationTest {
         mvc.perform(post("/api/v1/sessions/" + sessionId + "/comptage")
                         .header(HttpHeaders.AUTHORIZATION, bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"montantCompte\": 200, \"montantVerse\": 200}"))
+                        .content("{\"montantCompteEspeces\": 200, \"montantCompteTpe\": 0, \"montantVerse\": 200}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ecart").value(0.0));
 

@@ -1247,8 +1247,12 @@ export interface components {
             fermeture: string | null;
             fondInitial: number;
             montantCompte: number | null;
+            montantCompteEspeces: number | null;
+            montantCompteTpe: number | null;
             especesEncaissees: number | null;
             ecart: number | null;
+            ecartEspeces: number | null;
+            ecartTpe: number | null;
             clotureForcee: boolean;
             comptageEnAttente: boolean;
             tiroir: components["schemas"]["TiroirDto"] | null;
@@ -1259,10 +1263,13 @@ export interface components {
             recu: number;
             verse: number;
             attendu: number;
+            attenduEspeces: number;
+            attenduTpe: number;
             soldeCompte: number | null;
         };
         ClotureCommande: {
-            montantCompte: number;
+            montantCompteEspeces: number;
+            montantCompteTpe: number;
             montantVerse: number;
         };
         InventaireDisponible: {
@@ -1407,6 +1414,10 @@ export interface components {
             caisse: string | null;
             auteur: string;
             ecartSession: number | null;
+            /** @description Écart sur les espèces, sur un versement de clôture */
+            ecartEspecesSession: number | null;
+            /** @description Écart sur les tickets TPE, sur un versement de clôture */
+            ecartTpeSession: number | null;
             /** Format: int64 */
             versementId: number | null;
             versLaPrincipale: boolean | null;

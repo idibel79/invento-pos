@@ -194,7 +194,11 @@ public class SessionCaisseService {
      */
     @Transactional
     public SessionCaisseDto cloturer(
-            long sessionId, BigDecimal montantCompte, BigDecimal montantVerse, UtilisateurConnecte utilisateur) {
+            long sessionId,
+            BigDecimal especes,
+            BigDecimal tpe,
+            BigDecimal montantVerse,
+            UtilisateurConnecte utilisateur) {
         SessionCaisse session = sessions.findForUpdate(sessionId)
                 .orElseThrow(() -> new RessourceIntrouvableException("Session de caisse introuvable."));
         if (!utilisateur.estAdmin() && session.getCaissierId() != utilisateur.id()) {
@@ -203,17 +207,16 @@ public class SessionCaisseService {
         if (!session.estOuverte()) {
             throw new RegleMetierException("Cette session de caisse est déjà clôturée.", SESSION_FERMEE);
         }
-        verifierVerse(montantCompte, montantVerse);
+        verifierVerse(especes.add(tpe), montantVerse);
         evenements.publishEvent(new SessionCaisseCloturee(sessionId));
         ComptageTiroir tiroir = tiroir(sessionId);
-        session.cloturer(montantCompte, tiroir, Instant.now(clock));
+        session.cloturer(especes, tpe, tiroir, Instant.now(clock));
         comptes.cloturer(session, tiroir.ventes(), montantVerse, utilisateur.id());
         String caisse = nomCaisse(session.getCaisseId());
         journal.enregistrer(
                 utilisateur.id(),
                 ActionJournal.SESSION_CLOTUREE,
-                caisse + ", compté " + montantCompte.toPlainString() + " DH, écart "
-                        + session.getEcart().toPlainString() + " DH, versé " + montantVerse.toPlainString()
+                caisse + ", " + comptage(session) + ", versé " + montantVerse.toPlainString()
                         + " DH à la caisse principale");
         return SessionCaisseDto.depuis(
                 session, caisse, tiroir.ventesEspeces(), TiroirDto.depuis(session, tiroir, null));
@@ -225,21 +228,19 @@ public class SessionCaisseService {
      */
     @Transactional
     public SessionCaisseDto terminerComptage(
-            long sessionId, BigDecimal montantCompte, BigDecimal montantVerse, long adminId) {
+            long sessionId, BigDecimal especes, BigDecimal tpe, BigDecimal montantVerse, long adminId) {
         SessionCaisse session = sessions.findForUpdate(sessionId)
                 .orElseThrow(() -> new RessourceIntrouvableException("Session de caisse introuvable."));
-        verifierVerse(montantCompte, montantVerse);
+        verifierVerse(especes.add(tpe), montantVerse);
         ComptageTiroir tiroir = tiroir(sessionId);
-        session.terminerComptage(montantCompte, tiroir);
+        session.terminerComptage(especes, tpe, tiroir);
         comptes.terminerComptage(session, montantVerse, adminId);
         String caisse = nomCaisse(session.getCaisseId());
         journal.enregistrer(
                 adminId,
                 ActionJournal.SESSION_COMPTEE,
-                caisse + ", session de l'utilisateur " + session.getCaissierId() + " : compté "
-                        + montantCompte.toPlainString() + " DH, écart "
-                        + session.getEcart().toPlainString()
-                        + " DH, versé " + montantVerse.toPlainString() + " DH à la caisse principale");
+                caisse + ", session de l'utilisateur " + session.getCaissierId() + " : " + comptage(session)
+                        + ", versé " + montantVerse.toPlainString() + " DH à la caisse principale");
         return SessionCaisseDto.depuis(
                 session, caisse, tiroir.ventesEspeces(), TiroirDto.depuis(session, tiroir, null));
     }
@@ -261,6 +262,16 @@ public class SessionCaisseService {
         if (montantVerse.signum() < 0 || montantVerse.compareTo(montantCompte) > 0) {
             throw new RegleMetierException("Le montant versé doit être compris entre 0 et le montant compté.");
         }
+    }
+
+    /** Résumé du comptage pour le journal d'audit : compté et écart, au total puis par mode. */
+    private static String comptage(SessionCaisse s) {
+        return "compté " + s.getMontantCompte().toPlainString() + " DH (espèces "
+                + s.getMontantCompteEspeces().toPlainString() + ", TPE "
+                + s.getMontantCompteTpe().toPlainString()
+                + "), écart " + s.getEcart().toPlainString() + " DH (espèces "
+                + s.getEcartEspeces().toPlainString()
+                + ", TPE " + s.getEcartTpe().toPlainString() + ")";
     }
 
     /** Plus de session ouverte : le message précise si la dernière a été clôturée d'office. */
@@ -319,8 +330,12 @@ public class SessionCaisseService {
             @Schema(nullable = true) Instant fermeture,
             BigDecimal fondInitial,
             @Schema(nullable = true) BigDecimal montantCompte,
+            @Schema(nullable = true) BigDecimal montantCompteEspeces,
+            @Schema(nullable = true) BigDecimal montantCompteTpe,
             @Schema(nullable = true) BigDecimal especesEncaissees,
             @Schema(nullable = true) BigDecimal ecart,
+            @Schema(nullable = true) BigDecimal ecartEspeces,
+            @Schema(nullable = true) BigDecimal ecartTpe,
             boolean clotureForcee,
             boolean comptageEnAttente,
             @Schema(nullable = true) TiroirDto tiroir) {
@@ -336,8 +351,12 @@ public class SessionCaisseService {
                     s.getFermeture(),
                     s.getFondInitial(),
                     s.getMontantCompte(),
+                    s.getMontantCompteEspeces(),
+                    s.getMontantCompteTpe(),
                     especesEncaissees,
                     s.getEcart(),
+                    s.getEcartEspeces(),
+                    s.getEcartTpe(),
                     s.isClotureForcee(),
                     s.isComptageEnAttente(),
                     tiroir);
@@ -355,6 +374,8 @@ public class SessionCaisseService {
             BigDecimal recu,
             BigDecimal verse,
             BigDecimal attendu,
+            BigDecimal attenduEspeces,
+            BigDecimal attenduTpe,
             @Schema(nullable = true) BigDecimal soldeCompte) {
 
         static TiroirDto depuis(SessionCaisse s, ComptageTiroir tiroir, BigDecimal soldeCompte) {
@@ -364,6 +385,8 @@ public class SessionCaisseService {
                     tiroir.recu(),
                     tiroir.verse(),
                     tiroir.attendu(s.getFondInitial()),
+                    tiroir.attenduEspeces(s.getFondInitial()),
+                    tiroir.attenduTpe(),
                     soldeCompte);
         }
     }

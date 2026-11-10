@@ -77,8 +77,15 @@ export function useCloturerSession() {
     // Le compte du caissier change à la clôture (ventes, excédent, versement en transit).
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["tresorerie"] }),
     mutationKey: cles.operationCaisse,
-    mutationFn: ({ id, ...corps }: { id: number; montantCompte: number; montantVerse: number }) =>
-      appel(api.POST("/api/v1/sessions/{id}/cloture", { params: { path: { id } }, body: corps })),
+    mutationFn: ({
+      id,
+      ...corps
+    }: {
+      id: number;
+      montantCompteEspeces: number;
+      montantCompteTpe: number;
+      montantVerse: number;
+    }) => appel(api.POST("/api/v1/sessions/{id}/cloture", { params: { path: { id } }, body: corps })),
     onError: siSessionFermee,
   });
 }
