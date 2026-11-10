@@ -628,6 +628,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tresorerie/mon-compte/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["journalMonCompte"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tresorerie/mon-compte/calendrier": {
         parameters: {
             query?: never;
@@ -1375,10 +1391,6 @@ export interface components {
             /** Format: date-time */
             fermeture: string | null;
         };
-        CalendrierDto: {
-            mois: string;
-            jours: string[];
-        };
         Operation: {
             /** Format: int64 */
             id: number;
@@ -1405,6 +1417,8 @@ export interface components {
             motif: string | null;
             soldePrincipaleApres: number;
             soldeCaissierApres: number | null;
+            /** @description Ventes de la session, sur un versement de clôture */
+            ventesSession: number | null;
         };
         PageResponseOperation: {
             contenu: components["schemas"]["Operation"][];
@@ -1416,6 +1430,10 @@ export interface components {
             totalElements: number;
             /** Format: int32 */
             totalPages: number;
+        };
+        CalendrierDto: {
+            mois: string;
+            jours: string[];
         };
         CompteCaissierDto: {
             /** Format: int64 */
@@ -2738,6 +2756,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JourneeDto"];
+                };
+            };
+        };
+    };
+    journalMonCompte: {
+        parameters: {
+            query?: {
+                jour?: string;
+                statut?: "EN_TRANSIT" | "VALIDE" | "AUTO_VALIDE" | "REFUSE" | "ANNULE";
+                croissant?: boolean;
+                page?: number;
+                taille?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseOperation"];
                 };
             };
         };

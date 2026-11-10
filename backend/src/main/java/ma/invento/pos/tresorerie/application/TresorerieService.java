@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -397,13 +398,46 @@ public class TresorerieService implements ComptesCaissiers {
             boolean croissant,
             int page,
             int taille) {
+        return journal(jour, caisseId, utilisateurId, statut, Set.of(), croissant, page, taille);
+    }
+
+    /** Journal de l'utilisateur connecté (Mon compte) : ses versements et alimentations. */
+    @Transactional(readOnly = true)
+    public PageResponse<Operation> journalDe(
+            long utilisateurId,
+            LocalDate jour,
+            JournalTresorerieJdbc.FiltreStatut statut,
+            boolean croissant,
+            int page,
+            int taille) {
+        return journal(
+                jour,
+                null,
+                utilisateurId,
+                statut,
+                Set.of(TypeOperation.ALIMENTATION, TypeOperation.VERSEMENT_ENVOYE),
+                croissant,
+                page,
+                taille);
+    }
+
+    private PageResponse<Operation> journal(
+            LocalDate jour,
+            Long caisseId,
+            Long utilisateurId,
+            JournalTresorerieJdbc.FiltreStatut statut,
+            Set<TypeOperation> types,
+            boolean croissant,
+            int page,
+            int taille) {
         ZoneId fuseau = fuseau();
         Filtre filtre = new Filtre(
                 jour == null ? null : jour.atStartOfDay(fuseau).toInstant(),
                 jour == null ? null : jour.plusDays(1).atStartOfDay(fuseau).toInstant(),
                 caisseId,
                 utilisateurId,
-                statut);
+                statut,
+                types);
         long total = operations.compter(filtre);
         return new PageResponse<>(operations.lister(filtre, croissant, page, taille), page, taille, total, (int)
                 ((total + taille - 1) / taille));

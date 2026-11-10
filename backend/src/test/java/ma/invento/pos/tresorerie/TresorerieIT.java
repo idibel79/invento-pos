@@ -136,6 +136,33 @@ class TresorerieIT extends IntegrationTest {
     }
 
     @Test
+    void journal_de_mon_compte_ne_montre_que_mes_propres_versements() throws Exception {
+        valider(verserAuCaissier("400"));
+        verserALaPrincipale("100");
+        // Un versement à un autre caissier n'apparaît pas dans mon journal.
+        Utilisateur autre = creerUtilisateur(Role.CAISSIER);
+        mvc.perform(post("/api/v1/tresorerie/principale/versements")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(
+                                Map.of("utilisateurId", autre.getId(), "montant", new BigDecimal("50")))))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/v1/tresorerie/mon-compte/journal")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.contenu[0].type").value("VERSEMENT_ENVOYE"))
+                .andExpect(jsonPath("$.contenu[0].versLaPrincipale").value(true))
+                .andExpect(jsonPath("$.contenu[0].statut").value("EN_TRANSIT"))
+                .andExpect(jsonPath("$.contenu[1].versLaPrincipale").value(false))
+                .andExpect(jsonPath("$.contenu[1].statut").value("VALIDE"));
+        // Le journal de la caisse principale reste réservé à l'admin.
+        mvc.perform(get("/api/v1/tresorerie/journal").header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void solde_insuffisant_refuse_versement_retrait_fond_et_desactivation() throws Exception {
         valider(verserAuCaissier("100"));
         mvc.perform(post("/api/v1/tresorerie/mon-compte/versements")
