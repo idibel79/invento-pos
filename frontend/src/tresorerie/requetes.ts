@@ -177,8 +177,15 @@ export function useTerminerComptage() {
   const queryClient = useQueryClient();
   const apres = useApresOperation();
   return useMutation({
-    mutationFn: ({ id, ...corps }: { id: number; montantCompte: number; montantVerse: number }) =>
-      appel(api.POST("/api/v1/sessions/{id}/comptage", { params: { path: { id } }, body: corps })),
+    mutationFn: ({
+      id,
+      ...corps
+    }: {
+      id: number;
+      montantCompteEspeces: number;
+      montantCompteTpe: number;
+      montantVerse: number;
+    }) => appel(api.POST("/api/v1/sessions/{id}/comptage", { params: { path: { id } }, body: corps })),
     onSuccess: () => {
       apres();
       void queryClient.invalidateQueries({ queryKey: clesCaisse.caisses });

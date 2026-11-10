@@ -25,7 +25,8 @@ class SessionCaisseTest {
 
         // Attendu = 500 + 260,60 espèces + 100 carte + 200 reçus − 300 versés = 760,60.
         session.cloturer(
-                new BigDecimal("755.00"),
+                new BigDecimal("657.00"),
+                new BigDecimal("98.00"),
                 new ComptageTiroir(
                         new BigDecimal("260.60"),
                         new BigDecimal("100.00"),
@@ -36,9 +37,13 @@ class SessionCaisseTest {
         assertThat(session.estOuverte()).isFalse();
         assertThat(session.getEcart()).isEqualByComparingTo("-5.60");
         assertThat(session.getMontantCompte()).isEqualByComparingTo("755.00");
+        // Espèces attendues = 660,60, tickets TPE attendus = 100.
+        assertThat(session.getEcartEspeces()).isEqualByComparingTo("-3.60");
+        assertThat(session.getEcartTpe()).isEqualByComparingTo("-2.00");
         assertThat(session.getFermeture()).isEqualTo(T0.plusSeconds(3600));
         assertThat(session.isComptageEnAttente()).isFalse();
-        assertThatThrownBy(() -> session.cloturer(BigDecimal.ZERO, VIDE, T0)).isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(() -> session.cloturer(BigDecimal.ZERO, BigDecimal.ZERO, VIDE, T0))
+                .isInstanceOf(RegleMetierException.class);
     }
 
     @Test
@@ -54,25 +59,28 @@ class SessionCaisseTest {
         assertThat(session.getMontantCompte()).isNull();
         assertThat(session.getEcart()).isNull();
         assertThatThrownBy(() -> session.cloturerDOffice(T0)).isInstanceOf(RegleMetierException.class);
-        assertThatThrownBy(() -> session.cloturer(BigDecimal.ZERO, VIDE, T0)).isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(() -> session.cloturer(BigDecimal.ZERO, BigDecimal.ZERO, VIDE, T0))
+                .isInstanceOf(RegleMetierException.class);
 
-        session.terminerComptage(new BigDecimal("520.00"), especes("10.00"));
+        session.terminerComptage(new BigDecimal("500.00"), new BigDecimal("20.00"), especes("10.00"));
 
         assertThat(session.isComptageEnAttente()).isFalse();
         assertThat(session.getMontantCompte()).isEqualByComparingTo("520.00");
         assertThat(session.getEcart()).isEqualByComparingTo("10.00");
-        assertThatThrownBy(() -> session.terminerComptage(BigDecimal.ZERO, VIDE))
+        assertThat(session.getEcartEspeces()).isEqualByComparingTo("-10.00");
+        assertThat(session.getEcartTpe()).isEqualByComparingTo("20.00");
+        assertThatThrownBy(() -> session.terminerComptage(BigDecimal.ZERO, BigDecimal.ZERO, VIDE))
                 .isInstanceOf(RegleMetierException.class);
     }
 
     @Test
     void cloture_normale_n_est_pas_forcee_et_ne_peut_plus_etre_forcee() {
         SessionCaisse session = new SessionCaisse(1, 2, BigDecimal.ZERO, T0);
-        session.cloturer(BigDecimal.ZERO, VIDE, T0.plusSeconds(60));
+        session.cloturer(BigDecimal.ZERO, BigDecimal.ZERO, VIDE, T0.plusSeconds(60));
 
         assertThat(session.isClotureForcee()).isFalse();
         assertThatThrownBy(() -> session.cloturerDOffice(T0)).isInstanceOf(RegleMetierException.class);
-        assertThatThrownBy(() -> session.terminerComptage(BigDecimal.ZERO, VIDE))
+        assertThatThrownBy(() -> session.terminerComptage(BigDecimal.ZERO, BigDecimal.ZERO, VIDE))
                 .isInstanceOf(RegleMetierException.class);
     }
 
@@ -81,7 +89,9 @@ class SessionCaisseTest {
         assertThatThrownBy(() -> new SessionCaisse(1, 2, new BigDecimal("-1"), T0))
                 .isInstanceOf(RegleMetierException.class);
         SessionCaisse session = new SessionCaisse(1, 2, BigDecimal.ZERO, T0);
-        assertThatThrownBy(() -> session.cloturer(new BigDecimal("-1"), VIDE, T0))
+        assertThatThrownBy(() -> session.cloturer(new BigDecimal("-1"), BigDecimal.ZERO, VIDE, T0))
+                .isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(() -> session.cloturer(BigDecimal.ZERO, new BigDecimal("-1"), VIDE, T0))
                 .isInstanceOf(RegleMetierException.class);
     }
 }

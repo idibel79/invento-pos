@@ -52,7 +52,11 @@ class SessionCaisseController {
     SessionCaisseDto cloturer(
             @PathVariable long id, @Valid @RequestBody ClotureCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return sessionService.cloturer(
-                id, commande.montantCompte(), commande.montantVerse(), UtilisateurConnecte.depuis(jwt));
+                id,
+                commande.montantCompteEspeces(),
+                commande.montantCompteTpe(),
+                commande.montantVerse(),
+                UtilisateurConnecte.depuis(jwt));
     }
 
     /** Sessions clôturées d'office dont le tiroir attend le comptage de l'admin. */
@@ -69,7 +73,8 @@ class SessionCaisseController {
             @PathVariable long id, @Valid @RequestBody ClotureCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return sessionService.terminerComptage(
                 id,
-                commande.montantCompte(),
+                commande.montantCompteEspeces(),
+                commande.montantCompteTpe(),
                 commande.montantVerse(),
                 UtilisateurConnecte.depuis(jwt).id());
     }
@@ -80,10 +85,16 @@ class SessionCaisseController {
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
             BigDecimal fondInitial) {}
 
-    /** Compté dans le tiroir (espèces et tickets TPE) et montant versé à la caisse principale (0 à tout). */
+    /**
+     * Compté dans le tiroir, espèces et tickets TPE séparément, et montant versé à la caisse principale
+     * (de 0 à tout le compté).
+     */
     record ClotureCommande(
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
-            BigDecimal montantCompte,
+            BigDecimal montantCompteEspeces,
+
+            @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantCompteTpe,
 
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
             BigDecimal montantVerse) {}

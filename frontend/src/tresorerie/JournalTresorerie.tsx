@@ -234,6 +234,11 @@ export function JournalTresorerie({ fuseau, monCompte = false, caissiers = [], u
                 className={`a-droite${o.ecartSession ? ` montant-signe ${o.ecartSession < 0 ? "negatif" : "positif"}` : " texte-gris"}`}
               >
                 {o.ecartSession == null ? "—" : signe(o.ecartSession)}
+                {o.ecartEspecesSession != null && o.ecartTpeSession != null && (
+                  <span className="journal-ecarts-modes texte-gris">
+                    esp. {signe(o.ecartEspecesSession)} · TPE {signe(o.ecartTpeSession)}
+                  </span>
+                )}
               </span>
               <span role="cell">
                 <StatutVersement

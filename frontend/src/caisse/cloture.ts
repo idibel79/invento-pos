@@ -1,3 +1,35 @@
+import { lireMontant } from "../ui/format";
+
+/** Tiroir compté à la clôture : espèces et tickets TPE séparément. */
+export interface Comptage {
+  especes: number;
+  tpe: number;
+  total: number;
+}
+
+/**
+ * Lit les deux saisies du comptage. Un champ vide vaut 0 ; null tant que les deux sont vides ou
+ * qu'une saisie est invalide.
+ */
+export function lireComptage(saisieEspeces: string, saisieTpe: string): Comptage | null {
+  const vide = (saisie: string) => saisie.trim() === "";
+  if (vide(saisieEspeces) && vide(saisieTpe)) return null;
+  const especes = vide(saisieEspeces) ? 0 : lireMontant(saisieEspeces);
+  const tpe = vide(saisieTpe) ? 0 : lireMontant(saisieTpe);
+  if (especes === null || tpe === null) return null;
+  return { especes, tpe, total: arrondi(especes + tpe) };
+}
+
+/** Écart par mode (compté − attendu) ; null tant que rien n'est compté. Le serveur recalcule et fait foi. */
+export function ecartsParMode(
+  attenduEspeces: number,
+  attenduTpe: number,
+  comptage: Comptage | null,
+): { especes: number; tpe: number } | null {
+  if (comptage === null) return null;
+  return { especes: arrondi(comptage.especes - attenduEspeces), tpe: arrondi(comptage.tpe - attenduTpe) };
+}
+
 /** Évite les « −0,00 » et les restes binaires des soustractions de décimaux. */
 export function arrondi(valeur: number): number {
   return Math.round(valeur * 100) / 100 || 0;

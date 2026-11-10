@@ -21,9 +21,19 @@ public record ComptageTiroir(BigDecimal ventesEspeces, BigDecimal ventesCarte, B
         return ventesEspeces.add(ventesCarte);
     }
 
-    /** Attendu dans le tiroir = fond + ventes espèces + ventes carte + reçu − versé. */
+    /** Attendu dans le tiroir = espèces attendues + tickets TPE attendus. */
     public BigDecimal attendu(BigDecimal fond) {
-        return fond.add(ventes()).add(recu).subtract(verse);
+        return attenduEspeces(fond).add(attenduTpe());
+    }
+
+    /** Espèces attendues = fond + ventes espèces + reçu − versé (les versements sont en espèces). */
+    public BigDecimal attenduEspeces(BigDecimal fond) {
+        return fond.add(ventesEspeces).add(recu).subtract(verse);
+    }
+
+    /** Tickets TPE attendus = ventes carte. */
+    public BigDecimal attenduTpe() {
+        return ventesCarte;
     }
 
     /**

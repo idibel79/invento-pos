@@ -72,6 +72,13 @@ public class JournalTresorerieJdbc {
             @Schema(nullable = true) String caisse,
             String auteur,
             @Schema(nullable = true) BigDecimal ecartSession,
+
+            @Schema(nullable = true, description = "Écart sur les espèces, sur un versement de clôture")
+            BigDecimal ecartEspecesSession,
+
+            @Schema(nullable = true, description = "Écart sur les tickets TPE, sur un versement de clôture")
+            BigDecimal ecartTpeSession,
+
             @Schema(nullable = true) Long versementId,
             @Schema(nullable = true) Boolean versLaPrincipale,
             @Schema(nullable = true) StatutVersement statut,
@@ -99,6 +106,7 @@ public class JournalTresorerieJdbc {
                 + " left join " + s + "caisse ca on ca.id = o.caisse_id"
                 + " left join " + s + "versement v on v.id = o.versement_id"
                 + " left join " + s + "compte_tresorerie rc on rc.id = v.recepteur_id"
+                + " left join " + s + "session_caisse sc on sc.id = o.session_caisse_id and v.cloture"
                 // Dernier mouvement du versement après l'envoi (réception, refus ou annulation).
                 + " left join lateral (select x.solde_principale_apres, x.solde_caissier_apres from " + s
                 + "operation_tresorerie x where x.versement_id = o.versement_id and x.type <> 'VERSEMENT_ENVOYE'"
@@ -148,7 +156,8 @@ public class JournalTresorerieJdbc {
                         + " case when v.id is null then o.montant when rc.type = 'PRINCIPALE' then v.montant"
                         + " else -v.montant end as montant, o.caissier_id,"
                         + " trim(uc.prenom || ' ' || uc.nom) as caissier, ca.nom as caisse,"
-                        + " trim(ua.prenom || ' ' || ua.nom) as auteur, o.ecart_session, o.versement_id,"
+                        + " trim(ua.prenom || ' ' || ua.nom) as auteur, o.ecart_session, sc.ecart_especes,"
+                        + " sc.ecart_tpe, o.versement_id,"
                         + " case when v.id is null then null else rc.type = 'PRINCIPALE' end as vers_principale,"
                         + " v.statut, coalesce(v.auto_valide, false) as auto_valide,"
                         + " coalesce(v.cloture, false) as cloture, coalesce(v.motif, o.motif) as motif,"
@@ -214,6 +223,8 @@ public class JournalTresorerieJdbc {
                 r.getString("caisse"),
                 r.getString("auteur"),
                 r.getBigDecimal("ecart_session"),
+                r.getBigDecimal("ecart_especes"),
+                r.getBigDecimal("ecart_tpe"),
                 r.getObject("versement_id", Long.class),
                 r.getObject("vers_principale", Boolean.class),
                 statut == null ? null : StatutVersement.valueOf(statut),

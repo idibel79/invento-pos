@@ -285,8 +285,13 @@ class TresorerieIT extends IntegrationTest {
         return mvc.perform(post("/api/v1/sessions/" + sessionId + "/cloture")
                 .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(
-                        Map.of("montantCompte", new BigDecimal(compte), "montantVerse", new BigDecimal(verse)))));
+                .content(json.writeValueAsString(Map.of(
+                        "montantCompteEspeces",
+                        new BigDecimal(compte),
+                        "montantCompteTpe",
+                        BigDecimal.ZERO,
+                        "montantVerse",
+                        new BigDecimal(verse)))));
     }
 
     private ResultActions vendre(long produit, String recu) throws Exception {

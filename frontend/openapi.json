@@ -3026,10 +3026,22 @@
           "montantCompte" : {
             "type" : [ "number", "null" ]
           },
+          "montantCompteEspeces" : {
+            "type" : [ "number", "null" ]
+          },
+          "montantCompteTpe" : {
+            "type" : [ "number", "null" ]
+          },
           "especesEncaissees" : {
             "type" : [ "number", "null" ]
           },
           "ecart" : {
+            "type" : [ "number", "null" ]
+          },
+          "ecartEspeces" : {
+            "type" : [ "number", "null" ]
+          },
+          "ecartTpe" : {
             "type" : [ "number", "null" ]
           },
           "clotureForcee" : {
@@ -3046,7 +3058,7 @@
             } ]
           }
         },
-        "required" : [ "caisseId", "caisseNom", "caissierId", "clotureForcee", "comptageEnAttente", "ecart", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "ouverture", "tiroir" ]
+        "required" : [ "caisseId", "caisseNom", "caissierId", "clotureForcee", "comptageEnAttente", "ecart", "ecartEspeces", "ecartTpe", "especesEncaissees", "fermeture", "fondInitial", "id", "montantCompte", "montantCompteEspeces", "montantCompteTpe", "ouverture", "tiroir" ]
       },
       "TiroirDto" : {
         "type" : "object",
@@ -3066,16 +3078,26 @@
           "attendu" : {
             "type" : "number"
           },
+          "attenduEspeces" : {
+            "type" : "number"
+          },
+          "attenduTpe" : {
+            "type" : "number"
+          },
           "soldeCompte" : {
             "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "attendu", "recu", "soldeCompte", "ventesCarte", "ventesEspeces", "verse" ]
+        "required" : [ "attendu", "attenduEspeces", "attenduTpe", "recu", "soldeCompte", "ventesCarte", "ventesEspeces", "verse" ]
       },
       "ClotureCommande" : {
         "type" : "object",
         "properties" : {
-          "montantCompte" : {
+          "montantCompteEspeces" : {
+            "type" : "number",
+            "minimum" : 0.0
+          },
+          "montantCompteTpe" : {
             "type" : "number",
             "minimum" : 0.0
           },
@@ -3084,7 +3106,7 @@
             "minimum" : 0.0
           }
         },
-        "required" : [ "montantCompte", "montantVerse" ]
+        "required" : [ "montantCompteEspeces", "montantCompteTpe", "montantVerse" ]
       },
       "InventaireDisponible" : {
         "type" : "object",
@@ -3493,6 +3515,14 @@
           "ecartSession" : {
             "type" : [ "number", "null" ]
           },
+          "ecartEspecesSession" : {
+            "type" : [ "number", "null" ],
+            "description" : "Écart sur les espèces, sur un versement de clôture"
+          },
+          "ecartTpeSession" : {
+            "type" : [ "number", "null" ],
+            "description" : "Écart sur les tickets TPE, sur un versement de clôture"
+          },
           "versementId" : {
             "type" : [ "integer", "null" ],
             "format" : "int64"
@@ -3524,7 +3554,7 @@
             "description" : "Ventes de la session, sur un versement de clôture"
           }
         },
-        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "ventesSession", "versLaPrincipale", "versementId" ]
+        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartEspecesSession", "ecartSession", "ecartTpeSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "ventesSession", "versLaPrincipale", "versementId" ]
       },
       "PageResponseOperation" : {
         "type" : "object",

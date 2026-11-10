@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { apercuCloture } from "./cloture";
+import { apercuCloture, ecartsParMode, lireComptage } from "./cloture";
+
+describe("lireComptage", () => {
+  it("additionne espèces et tickets TPE, un champ vide valant 0", () => {
+    expect(lireComptage("100,50", "")).toEqual({ especes: 100.5, tpe: 0, total: 100.5 });
+    expect(lireComptage("100,10", "50,20")).toEqual({ especes: 100.1, tpe: 50.2, total: 150.3 });
+  });
+
+  it("rien tant que les deux champs sont vides ou qu'une saisie est invalide", () => {
+    expect(lireComptage("", " ")).toBeNull();
+    expect(lireComptage("12", "abc")).toBeNull();
+  });
+});
+
+describe("ecartsParMode", () => {
+  it("compare chaque mode à son attendu", () => {
+    expect(ecartsParMode(660.6, 100, { especes: 657, tpe: 98, total: 755 })).toEqual({
+      especes: -3.6,
+      tpe: -2,
+    });
+    expect(ecartsParMode(660.6, 100, null)).toBeNull();
+  });
+});
 
 describe("apercuCloture", () => {
   it("un manque ne réduit pas le solde dû", () => {

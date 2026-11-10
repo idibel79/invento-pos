@@ -5,7 +5,7 @@ import { messageErreur } from "../api/erreurs";
 import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, heure, lireMontant } from "../ui/format";
 import { IconeCaisse } from "../ui/icones";
-import { apercuCloture, arrondi } from "./cloture";
+import { apercuCloture, arrondi, ecartsParMode, lireComptage } from "./cloture";
 import { cles, useCloturerSession, useParametres } from "./requetes";
 
 interface Props {
@@ -25,15 +25,22 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
   const queryClient = useQueryClient();
   const cloturer = useCloturerSession();
   const parametres = useParametres();
-  const [saisieCompte, setSaisieCompte] = useState("");
+  const [saisieEspeces, setSaisieEspeces] = useState("");
+  const [saisieTpe, setSaisieTpe] = useState("");
   const [saisieVerse, setSaisieVerse] = useState<string | null>(null);
   const tiroir = session.tiroir;
   const attendu = tiroir?.attendu ?? session.fondInitial;
   const soldeAvant = tiroir?.soldeCompte ?? 0;
-  const compte = lireMontant(saisieCompte);
+  const comptage = lireComptage(saisieEspeces, saisieTpe);
+  const compte = comptage?.total ?? null;
   // Par défaut, tout le compté est versé à la caisse principale.
   const verse = saisieVerse === null ? compte : lireMontant(saisieVerse);
   const apercu = apercuCloture(attendu, soldeAvant, compte, verse);
+  const ecarts = ecartsParMode(
+    tiroir?.attenduEspeces ?? session.fondInitial,
+    tiroir?.attenduTpe ?? 0,
+    comptage,
+  );
   const resultat = cloturer.data;
 
   function terminer() {
@@ -53,6 +60,18 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
           <div className="encadre-ligne">
             <span>Compté</span>
             <span>{dh(resultat.montantCompte ?? 0)}</span>
+          </div>
+          <div className="encadre-ligne encadre-ligne-legere">
+            <span>dont espèces · écart</span>
+            <span>
+              {dh(resultat.montantCompteEspeces ?? 0)} · {signe(resultat.ecartEspeces ?? 0)}
+            </span>
+          </div>
+          <div className="encadre-ligne encadre-ligne-legere">
+            <span>dont tickets TPE · écart</span>
+            <span>
+              {dh(resultat.montantCompteTpe ?? 0)} · {signe(resultat.ecartTpe ?? 0)}
+            </span>
           </div>
           <div className="encadre-ligne">
             <span>Versé à la caisse principale (en transit)</span>
@@ -98,38 +117,49 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
           </div>
           <h3 className="cloture-titre">Dettes</h3>
           <div className="encadre-gris">
-            <Ligne libelle="Solde dû avant la clôture" montant={soldeAvant} />
-            {ecart !== null && ecart > 0 && <Ligne libelle="Excédent ajouté" montant={ecart} plus />}
-            <Ligne libelle="Versé maintenant" montant={-(verse ?? 0)} plus />
-            <div className="encadre-ligne encadre-total">
+            <div className="encadre-ligne">
               <span>Reste dû</span>
-              <span>{dh(apercu.resteDu)}</span>
+              <span className="cloture-reste-du">{dh(apercu.resteDu)}</span>
             </div>
           </div>
         </div>
 
         <div className="cloture-colonne">
-          <label className="cloture-titre" htmlFor="montant-compte">
-            1. Compté dans le tiroir (espèces + tickets TPE)
+          <label className="cloture-titre" htmlFor="montant-compte-especes">
+            1. Compté dans le tiroir (espèces)
           </label>
           <div className="champ-montant">
             <input
-              id="montant-compte"
+              id="montant-compte-especes"
               inputMode="decimal"
               autoComplete="off"
               placeholder={decimal(0)}
-              value={saisieCompte}
-              onChange={(e) => setSaisieCompte(e.target.value)}
+              value={saisieEspeces}
+              onChange={(e) => setSaisieEspeces(e.target.value)}
               autoFocus
             />
             <span>DH</span>
           </div>
+          <label className="cloture-titre" htmlFor="montant-compte-tpe">
+            Compté dans le tiroir (tickets TPE)
+          </label>
+          <div className="champ-montant">
+            <input
+              id="montant-compte-tpe"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder={decimal(0)}
+              value={saisieTpe}
+              onChange={(e) => setSaisieTpe(e.target.value)}
+            />
+            <span>DH</span>
+          </div>
           <div
-            className={`cloture-ecart${ecart === null ? " vide" : ecart < 0 ? " manque" : ecart > 0 ? " excedent" : ""}`}
+            className={`cloture-ecart${ecart === null ? " vide" : ecart < 0 ? " manque" : " excedent"}`}
             role="status"
           >
             <span>Écart</span>
-            <strong>{ecart === null ? "—" : signe(ecart)}</strong>
+            {ecart !== null && <strong>{signe(ecart)}</strong>}
             {ecart !== null && ecart < 0 && (
               <span className="cloture-ecart-note">à compléter de votre poche</span>
             )}
@@ -137,6 +167,12 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
               <span className="cloture-ecart-note">ajouté à votre solde dû</span>
             )}
           </div>
+          {ecarts && (
+            <p className="cloture-ecarts-modes texte-secondaire">
+              Espèces <strong>{signe(ecarts.especes)}</strong> · Tickets TPE{" "}
+              <strong>{signe(ecarts.tpe)}</strong>
+            </p>
+          )}
 
           <label className="cloture-titre" htmlFor="montant-verse">
             2. Montant versé à la caisse principale
@@ -147,7 +183,7 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
               inputMode="decimal"
               autoComplete="off"
               placeholder={decimal(0)}
-              value={saisieVerse ?? saisieCompte}
+              value={saisieVerse ?? (compte === null ? "" : decimal(compte))}
               onChange={(e) => setSaisieVerse(e.target.value)}
             />
             <span>DH</span>
@@ -192,9 +228,14 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
           className="bouton bouton-plein danger"
           disabled={compte === null || verse === null || !apercu.verseValide || cloturer.isPending}
           onClick={() =>
-            compte !== null &&
+            comptage !== null &&
             verse !== null &&
-            cloturer.mutate({ id: session.id, montantCompte: compte, montantVerse: arrondi(verse) })
+            cloturer.mutate({
+              id: session.id,
+              montantCompteEspeces: comptage.especes,
+              montantCompteTpe: comptage.tpe,
+              montantVerse: arrondi(verse),
+            })
           }
         >
           Clôturer et verser {dh(verse ?? 0)}

@@ -30,7 +30,11 @@ public class SessionCaisse {
     private Instant fermeture;
     private BigDecimal fondInitial;
     private BigDecimal montantCompte;
+    private BigDecimal montantCompteEspeces;
+    private BigDecimal montantCompteTpe;
     private BigDecimal ecart;
+    private BigDecimal ecartEspeces;
+    private BigDecimal ecartTpe;
     private boolean clotureForcee;
     private boolean comptageEnAttente;
 
@@ -46,12 +50,15 @@ public class SessionCaisse {
         this.ouverture = ouverture;
     }
 
-    /** Écart = compté dans le tiroir − attendu (fond + ventes + reçu − versé pendant la session). */
-    public void cloturer(BigDecimal montantCompte, ComptageTiroir tiroir, Instant maintenant) {
+    /**
+     * Écart = compté dans le tiroir − attendu (fond + ventes + reçu − versé pendant la session), calculé
+     * séparément pour les espèces et pour les tickets TPE.
+     */
+    public void cloturer(BigDecimal especes, BigDecimal tpe, ComptageTiroir tiroir, Instant maintenant) {
         if (!estOuverte()) {
             throw new RegleMetierException("Cette session de caisse est déjà clôturée.");
         }
-        enregistrerComptage(montantCompte, tiroir);
+        enregistrerComptage(especes, tpe, tiroir);
         this.fermeture = maintenant;
     }
 
@@ -69,20 +76,24 @@ public class SessionCaisse {
     }
 
     /** Comptage du tiroir par l'admin après une clôture d'office. */
-    public void terminerComptage(BigDecimal montantCompte, ComptageTiroir tiroir) {
+    public void terminerComptage(BigDecimal especes, BigDecimal tpe, ComptageTiroir tiroir) {
         if (!comptageEnAttente) {
             throw new RegleMetierException("Le tiroir de cette session a déjà été compté.");
         }
-        enregistrerComptage(montantCompte, tiroir);
+        enregistrerComptage(especes, tpe, tiroir);
         this.comptageEnAttente = false;
     }
 
-    private void enregistrerComptage(BigDecimal montantCompte, ComptageTiroir tiroir) {
-        if (montantCompte.signum() < 0) {
+    private void enregistrerComptage(BigDecimal especes, BigDecimal tpe, ComptageTiroir tiroir) {
+        if (especes.signum() < 0 || tpe.signum() < 0) {
             throw new RegleMetierException("Le montant compté ne peut pas être négatif.");
         }
-        this.montantCompte = montantCompte;
-        this.ecart = montantCompte.subtract(tiroir.attendu(fondInitial));
+        this.montantCompteEspeces = especes;
+        this.montantCompteTpe = tpe;
+        this.montantCompte = especes.add(tpe);
+        this.ecartEspeces = especes.subtract(tiroir.attenduEspeces(fondInitial));
+        this.ecartTpe = tpe.subtract(tiroir.attenduTpe());
+        this.ecart = ecartEspeces.add(ecartTpe);
     }
 
     public boolean estOuverte() {
@@ -125,7 +136,23 @@ public class SessionCaisse {
         return montantCompte;
     }
 
+    public BigDecimal getMontantCompteEspeces() {
+        return montantCompteEspeces;
+    }
+
+    public BigDecimal getMontantCompteTpe() {
+        return montantCompteTpe;
+    }
+
     public BigDecimal getEcart() {
         return ecart;
+    }
+
+    public BigDecimal getEcartEspeces() {
+        return ecartEspeces;
+    }
+
+    public BigDecimal getEcartTpe() {
+        return ecartTpe;
     }
 }
