@@ -15,6 +15,7 @@ import ma.invento.pos.catalogue.infrastructure.ProduitRepository;
 import ma.invento.pos.catalogue.infrastructure.TvaRepository;
 import ma.invento.pos.client.api.ClientDtos.ClientCommande;
 import ma.invento.pos.client.application.ClientService;
+import ma.invento.pos.client.domain.TypeClient;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.SeuilsRemiseDto;
 import ma.invento.pos.identite.application.UtilisateurService;
@@ -137,6 +138,10 @@ public class DonneesDemo {
                         "12, avenue Mohammed V, Rabat",
                         "05 37 00 00 00",
                         "contact@boutique-demo.ma",
+                        "002345678000012",
+                        "40123456",
+                        "RC 98765",
+                        "25412345",
                         "Merci de votre visite, à bientôt !",
                         parametres.lire().fuseauHoraire()),
                 adminId);
@@ -155,20 +160,42 @@ public class DonneesDemo {
         log.info("Caisse principale de démo alimentée ; les comptes des caissiers partent de 0 DH.");
     }
 
-    /** Annuaire de démo (sans dette : elle vient des ventes à crédit), aussi sur une base conservée sans client. */
+    /**
+     * Annuaire de démo (sans dette : elle vient des ventes à crédit), aussi sur une base conservée sans
+     * client. Une entreprise de démo est ajoutée à un annuaire qui n'en a pas encore.
+     */
     private void creerClientsSiVide() {
-        if (!clients.lister(null, true).isEmpty()) return;
         long adminId = utilisateurs.findByRole(Role.ADMIN).orElseThrow().getId();
-        clients.creer(
-                new ClientCommande("Hassan Alami", "06 61 23 45 78", "Voisin, paie en fin de mois", null, null),
-                adminId);
-        clients.creer(new ClientCommande("Fatima Zahra Bennani", "06 70 11 02 33", null, null, null), adminId);
-        clients.creer(
-                new ClientCommande("Épicerie Atlas", "05 22 40 18 90", "Revendeur, facture mensuelle", null, null),
-                adminId);
-        clients.creer(new ClientCommande("Khadija Ouazzani", "07 01 55 66 77", null, null, null), adminId);
-        clients.creer(new ClientCommande("Rachid El Fassi", "06 44 32 10 09", "Chauffeur", null, null), adminId);
-        log.info("Annuaire de démo créé : 5 clients.");
+        if (clients.lister(null, true).isEmpty()) {
+            clients.creer(particulier("Hassan Alami", "06 61 23 45 78", "Voisin, paie en fin de mois"), adminId);
+            clients.creer(particulier("Fatima Zahra Bennani", "06 70 11 02 33", null), adminId);
+            clients.creer(particulier("Khadija Ouazzani", "07 01 55 66 77", null), adminId);
+            clients.creer(particulier("Rachid El Fassi", "06 44 32 10 09", "Chauffeur"), adminId);
+            log.info("Annuaire de démo créé.");
+        }
+        if (clients.lister(null, true).stream().noneMatch(c -> c.type() == TypeClient.ENTREPRISE)) {
+            clients.creer(
+                    new ClientCommande(
+                            TypeClient.ENTREPRISE,
+                            "Épicerie Atlas SARL",
+                            "05 22 40 18 90",
+                            "Revendeur, facture mensuelle",
+                            null,
+                            null,
+                            "001234567000089",
+                            "1234567",
+                            "RC 45678",
+                            "Rachid Amrani",
+                            "12, rue Ibn Sina, Casablanca",
+                            "contact@epicerie-atlas.ma"),
+                    adminId);
+            log.info("Entreprise de démo ajoutée à l'annuaire.");
+        }
+    }
+
+    private static ClientCommande particulier(String nom, String telephone, String note) {
+        return new ClientCommande(
+                TypeClient.PARTICULIER, nom, telephone, note, null, null, null, null, null, null, null, null);
     }
 
     private void creerCompte(

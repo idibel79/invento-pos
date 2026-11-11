@@ -1,6 +1,7 @@
 package ma.invento.pos.client.domain;
 
 import java.math.BigDecimal;
+import java.util.regex.Pattern;
 import ma.invento.pos.shared.domain.RegleMetierException;
 
 /** Règles de l'annuaire des clients et de leur dette, sans dépendance technique. */
@@ -10,15 +11,79 @@ public final class ReglesClient {
     public static final int TELEPHONE_MAX = 30;
     public static final int NOTE_MAX = 300;
     public static final int MOTIF_MAX = 300;
+    public static final int ICE_LONGUEUR = 15;
+    public static final int IDENTIFIANT_FISCAL_MAX = 20;
+    public static final int RC_MAX = 30;
+    public static final int CONTACT_MAX = 120;
+    public static final int ADRESSE_MAX = 300;
+    public static final int EMAIL_MAX = 120;
+
+    private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
 
     private ReglesClient() {}
 
+    /**
+     * Fiche nettoyée et validée. Le type est particulier s'il est absent ; pour un particulier, les
+     * champs propres à l'entreprise sont ignorés.
+     */
+    public static FicheClient fiche(
+            TypeClient type,
+            String nom,
+            String telephone,
+            String note,
+            BigDecimal plafond,
+            String ice,
+            String identifiantFiscal,
+            String rc,
+            String contact,
+            String adresse,
+            String email) {
+        TypeClient leType = type == null ? TypeClient.PARTICULIER : type;
+        boolean entreprise = leType == TypeClient.ENTREPRISE;
+        return new FicheClient(
+                leType,
+                nom(nom, entreprise),
+                facultatif(telephone, TELEPHONE_MAX, "Le téléphone"),
+                facultatif(note, NOTE_MAX, "La note"),
+                plafond(plafond),
+                entreprise ? ice(ice) : null,
+                entreprise ? facultatif(identifiantFiscal, IDENTIFIANT_FISCAL_MAX, "L'IF") : null,
+                entreprise ? facultatif(rc, RC_MAX, "Le RC") : null,
+                entreprise ? facultatif(contact, CONTACT_MAX, "Le contact") : null,
+                entreprise ? facultatif(adresse, ADRESSE_MAX, "L'adresse") : null,
+                entreprise ? email(email) : null);
+    }
+
     /** Nom nettoyé, obligatoire. */
     public static String nom(String nom) {
+        return nom(nom, false);
+    }
+
+    private static String nom(String nom, boolean entreprise) {
+        String libelle = entreprise ? "La raison sociale" : "Le nom du client";
         String propre = nom == null ? "" : nom.strip().replaceAll("\\s+", " ");
-        if (propre.isEmpty()) throw new RegleMetierException("Le nom du client est obligatoire.");
+        if (propre.isEmpty()) throw new RegleMetierException(libelle + " est obligatoire.");
         if (propre.length() > NOM_MAX) {
-            throw new RegleMetierException("Le nom ne doit pas dépasser " + NOM_MAX + " caractères.");
+            throw new RegleMetierException(libelle + " ne doit pas dépasser " + NOM_MAX + " caractères.");
+        }
+        return propre;
+    }
+
+    /** ICE facultatif : 15 chiffres, espaces ignorés. */
+    public static String ice(String ice) {
+        String propre = ice == null ? "" : ice.replaceAll("\\s+", "");
+        if (propre.isEmpty()) return null;
+        if (propre.length() != ICE_LONGUEUR || !propre.chars().allMatch(c -> c >= '0' && c <= '9')) {
+            throw new RegleMetierException("L'ICE compte " + ICE_LONGUEUR + " chiffres.");
+        }
+        return propre;
+    }
+
+    /** Email facultatif, de forme nom@domaine.ext. */
+    public static String email(String email) {
+        String propre = facultatif(email, EMAIL_MAX, "L'email");
+        if (propre != null && !EMAIL.matcher(propre).matches()) {
+            throw new RegleMetierException("Adresse email invalide.");
         }
         return propre;
     }

@@ -1,7 +1,9 @@
 import { useEffect, useReducer, useState } from "react";
 import type { Schemas } from "../api/client";
+import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
 import { ClotureDialogue } from "../caisse/ClotureDialogue";
+import { useImpressionFacture } from "../facture/FactureA4";
 import { useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, heure } from "../ui/format";
@@ -47,6 +49,7 @@ export function EcranVente({ session, onAdministration }: Props) {
   const fuseau = parametres.data?.fuseauHoraire;
   const utilisateur = useUtilisateur();
   const nomVendeur = `${utilisateur.prenom} ${utilisateur.nom}`.trim();
+  const facture = useImpressionFacture();
 
   useEffect(() => {
     if (!message) return;
@@ -198,6 +201,16 @@ export function EcranVente({ session, onAdministration }: Props) {
             <button type="button" className="bouton bouton-contour" onClick={() => window.print()}>
               Imprimer le ticket
             </button>
+            {fenetre.vente.client && (
+              <button
+                type="button"
+                className="bouton bouton-contour"
+                disabled={facture.enCours}
+                onClick={() => facture.imprimer(fenetre.vente.id)}
+              >
+                Facture A4
+              </button>
+            )}
             <button type="button" className="bouton bouton-plein" onClick={fermer} autoFocus>
               Nouvelle vente
             </button>
@@ -208,6 +221,12 @@ export function EcranVente({ session, onAdministration }: Props) {
             vendeur={nomVendeur}
             fuseau={fuseau}
           />
+          {facture.erreur && (
+            <p className="alerte alerte-danger" role="alert">
+              {messageErreur(facture.erreur)}
+            </p>
+          )}
+          {facture.rendu}
         </Dialogue>
       )}
       {message && (

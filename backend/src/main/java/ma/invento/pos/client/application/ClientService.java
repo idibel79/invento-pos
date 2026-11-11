@@ -8,6 +8,7 @@ import ma.invento.pos.client.api.ClientDtos.ClientCommande;
 import ma.invento.pos.client.api.ClientDtos.ClientDto;
 import ma.invento.pos.client.api.ClientDtos.MouvementClientDto;
 import ma.invento.pos.client.api.ClientDtos.RemboursementCommande;
+import ma.invento.pos.client.domain.FicheClient;
 import ma.invento.pos.client.domain.ReglesClient;
 import ma.invento.pos.client.domain.TypeMouvementClient;
 import ma.invento.pos.client.infrastructure.ClientsJdbc;
@@ -65,14 +66,10 @@ public class ClientService {
 
     @Transactional
     public ClientDto creer(ClientCommande commande, long adminId) {
-        String nom = ReglesClient.nom(commande.nom());
+        FicheClient fiche = commande.fiche();
+        String nom = fiche.nom();
         if (clients.nomActifPris(nom, null)) throw new ConflitException("Le client " + nom + " existe déjà.");
-        long id = clients.inserer(
-                nom,
-                ReglesClient.facultatif(commande.telephone(), ReglesClient.TELEPHONE_MAX, "Le téléphone"),
-                ReglesClient.facultatif(commande.note(), ReglesClient.NOTE_MAX, "La note"),
-                ReglesClient.plafond(commande.plafond()),
-                Instant.now(clock));
+        long id = clients.inserer(fiche, Instant.now(clock));
         journal.enregistrer(adminId, ActionJournal.CLIENT_CREE, nom);
         return ClientDto.depuis(charger(id));
     }
@@ -80,16 +77,11 @@ public class ClientService {
     @Transactional
     public ClientDto modifier(long id, ClientCommande commande, long adminId) {
         charger(id);
-        String nom = ReglesClient.nom(commande.nom());
+        FicheClient fiche = commande.fiche();
+        String nom = fiche.nom();
         boolean actif = commande.actif() == null || commande.actif();
         if (actif && clients.nomActifPris(nom, id)) throw new ConflitException("Le client " + nom + " existe déjà.");
-        clients.modifier(
-                id,
-                nom,
-                ReglesClient.facultatif(commande.telephone(), ReglesClient.TELEPHONE_MAX, "Le téléphone"),
-                ReglesClient.facultatif(commande.note(), ReglesClient.NOTE_MAX, "La note"),
-                ReglesClient.plafond(commande.plafond()),
-                actif);
+        clients.modifier(id, fiche, actif);
         journal.enregistrer(adminId, ActionJournal.CLIENT_MODIFIE, nom + (actif ? "" : " (désactivé)"));
         return ClientDto.depuis(charger(id));
     }
@@ -104,7 +96,7 @@ public class ClientService {
     public boolean supprimer(long id, long adminId) {
         Client client = charger(id);
         if (clients.aUnHistorique(id)) {
-            clients.modifier(id, client.nom(), client.telephone(), client.note(), client.plafond(), false);
+            clients.desactiver(id);
             journal.enregistrer(adminId, ActionJournal.CLIENT_MODIFIE, client.nom() + " (désactivé)");
             return false;
         }
@@ -114,6 +106,12 @@ public class ClientService {
     }
 
     // ---------------------------------------------------------------- Ventes
+
+    /** Fiche d'un client, actif ou non, à figer sur une facture. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ClientDto fiche(long clientId) {
+        return ClientDto.depuis(charger(clientId));
+    }
 
     /** Nom d'un client actif, pour l'imprimer sur le ticket d'une vente payée comptant. */
     @Transactional(propagation = Propagation.MANDATORY)

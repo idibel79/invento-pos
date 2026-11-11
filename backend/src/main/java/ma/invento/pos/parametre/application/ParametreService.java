@@ -37,6 +37,10 @@ public class ParametreService {
                 valeurs.get(CleParametre.BOUTIQUE_ADRESSE.cle()),
                 valeurs.getOrDefault(CleParametre.BOUTIQUE_TELEPHONE.cle(), ""),
                 valeurs.getOrDefault(CleParametre.BOUTIQUE_EMAIL.cle(), ""),
+                valeurs.getOrDefault(CleParametre.BOUTIQUE_ICE.cle(), ""),
+                valeurs.getOrDefault(CleParametre.BOUTIQUE_IF.cle(), ""),
+                valeurs.getOrDefault(CleParametre.BOUTIQUE_RC.cle(), ""),
+                valeurs.getOrDefault(CleParametre.BOUTIQUE_PATENTE.cle(), ""),
                 valeurs.getOrDefault(CleParametre.TICKET_MESSAGE.cle(), ""),
                 valeurs.get(CleParametre.FUSEAU_HORAIRE.cle()));
     }
@@ -50,6 +54,10 @@ public class ParametreService {
         voulus.put(CleParametre.BOUTIQUE_ADRESSE, nouveaux.boutiqueAdresse().trim());
         voulus.put(CleParametre.BOUTIQUE_TELEPHONE, sansNull(nouveaux.boutiqueTelephone()));
         voulus.put(CleParametre.BOUTIQUE_EMAIL, sansNull(nouveaux.boutiqueEmail()));
+        voulus.put(CleParametre.BOUTIQUE_ICE, sansNull(nouveaux.boutiqueIce()));
+        voulus.put(CleParametre.BOUTIQUE_IF, sansNull(nouveaux.boutiqueIf()));
+        voulus.put(CleParametre.BOUTIQUE_RC, sansNull(nouveaux.boutiqueRc()));
+        voulus.put(CleParametre.BOUTIQUE_PATENTE, sansNull(nouveaux.boutiquePatente()));
         voulus.put(CleParametre.TICKET_MESSAGE, sansNull(nouveaux.ticketMessage()));
         voulus.put(CleParametre.FUSEAU_HORAIRE, nouveaux.fuseauHoraire());
 
@@ -84,12 +92,19 @@ public class ParametreService {
         }
     }
 
-    /** En-tête et pied du ticket de caisse, et fuseau horaire de la boutique. */
+    /**
+     * En-tête et pied du ticket de caisse, identifiants légaux imprimés sur la facture A4 (ICE, IF, RC,
+     * patente, facultatifs) et fuseau horaire de la boutique.
+     */
     public record Parametres(
             String boutiqueNom,
             String boutiqueAdresse,
             String boutiqueTelephone,
             String boutiqueEmail,
+            String boutiqueIce,
+            String boutiqueIf,
+            String boutiqueRc,
+            String boutiquePatente,
             String ticketMessage,
             String fuseauHoraire) {}
 }

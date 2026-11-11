@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import ma.invento.pos.client.domain.FicheClient;
+import ma.invento.pos.client.domain.TypeClient;
 import ma.invento.pos.client.domain.TypeMouvementClient;
 import ma.invento.pos.tresorerie.application.RemboursementsDettes;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,9 +27,16 @@ public class ClientsJdbc implements RemboursementsDettes {
 
     public record Client(
             long id,
+            TypeClient type,
             String nom,
             String telephone,
             String note,
+            String ice,
+            String identifiantFiscal,
+            String rc,
+            String contact,
+            String adresse,
+            String email,
             boolean actif,
             BigDecimal dette,
             BigDecimal plafond,
@@ -86,7 +95,7 @@ public class ClientsJdbc implements RemboursementsDettes {
 
     // ---------------------------------------------------------------- Annuaire
 
-    /** Clients par nom ; {@code recherche} filtre sur le nom ou le téléphone. */
+    /** Clients par nom ; {@code recherche} filtre sur le nom, le téléphone ou l'ICE. */
     public List<Client> lister(String recherche, boolean inactifs) {
         String motif = recherche == null || recherche.isBlank()
                 ? null
@@ -102,6 +111,7 @@ public class ClientsJdbc implements RemboursementsDettes {
                         + (motif == null
                                 ? ""
                                 : " and (lower(c.nom) like :motif or replace(coalesce(c.telephone, ''), ' ', '')"
+                                        + " like replace(:motif, ' ', '') or coalesce(c.ice, '')"
                                         + " like replace(:motif, ' ', ''))")
                         + " order by lower(c.nom), c.id limit " + LISTE_MAX,
                 new MapSqlParameterSource("inactifs", inactifs).addValue("motif", motif),
@@ -113,29 +123,41 @@ public class ClientsJdbc implements RemboursementsDettes {
                 .findFirst();
     }
 
-    public long inserer(String nom, String telephone, String note, BigDecimal plafond, Instant creeLe) {
+    public long inserer(FicheClient f, Instant creeLe) {
         return jdbc.queryForObject(
-                "insert into " + s + "client (nom, telephone, note, plafond, cree_le)"
-                        + " values (:nom, :tel, :note, :plafond, :le) returning id",
-                new MapSqlParameterSource("nom", nom)
-                        .addValue("tel", telephone)
-                        .addValue("note", note)
-                        .addValue("plafond", plafond, java.sql.Types.NUMERIC)
-                        .addValue("le", Timestamp.from(creeLe)),
+                "insert into " + s + "client (type, nom, telephone, note, plafond, ice, identifiant_fiscal, rc,"
+                        + " contact, adresse, email, cree_le) values (:type, :nom, :tel, :note, :plafond, :ice,"
+                        + " :if, :rc, :contact, :adresse, :email, :le) returning id",
+                fiche(f).addValue("le", Timestamp.from(creeLe)),
                 Long.class);
     }
 
-    public boolean modifier(long id, String nom, String telephone, String note, BigDecimal plafond, boolean actif) {
+    public boolean modifier(long id, FicheClient f, boolean actif) {
         return jdbc.update(
-                        "update " + s + "client set nom = :nom, telephone = :tel, note = :note,"
-                                + " plafond = :plafond, actif = :actif where id = :id",
-                        new MapSqlParameterSource("id", id)
-                                .addValue("nom", nom)
-                                .addValue("tel", telephone)
-                                .addValue("note", note)
-                                .addValue("plafond", plafond, java.sql.Types.NUMERIC)
-                                .addValue("actif", actif))
+                        "update " + s + "client set type = :type, nom = :nom, telephone = :tel, note = :note,"
+                                + " plafond = :plafond, ice = :ice, identifiant_fiscal = :if, rc = :rc,"
+                                + " contact = :contact, adresse = :adresse, email = :email, actif = :actif"
+                                + " where id = :id",
+                        fiche(f).addValue("id", id).addValue("actif", actif))
                 == 1;
+    }
+
+    public boolean desactiver(long id) {
+        return jdbc.update("update " + s + "client set actif = false where id = :id", Map.of("id", id)) == 1;
+    }
+
+    private static MapSqlParameterSource fiche(FicheClient f) {
+        return new MapSqlParameterSource("type", f.type().name())
+                .addValue("nom", f.nom())
+                .addValue("tel", f.telephone())
+                .addValue("note", f.note())
+                .addValue("plafond", f.plafond(), java.sql.Types.NUMERIC)
+                .addValue("ice", f.ice())
+                .addValue("if", f.identifiantFiscal())
+                .addValue("rc", f.rc())
+                .addValue("contact", f.contact())
+                .addValue("adresse", f.adresse())
+                .addValue("email", f.email());
     }
 
     /** Un client actif porte déjà ce nom (casse ignorée), hors {@code saufId}. */
@@ -265,7 +287,8 @@ public class ClientsJdbc implements RemboursementsDettes {
     // ---------------------------------------------------------------- Lecture
 
     private String selectClient() {
-        return "select c.id, c.nom, c.telephone, c.note, c.actif, c.dette, c.plafond,"
+        return "select c.id, c.type, c.nom, c.telephone, c.note, c.ice, c.identifiant_fiscal, c.rc, c.contact,"
+                + " c.adresse, c.email, c.actif, c.dette, c.plafond,"
                 + " (select max(m.cree_le) from " + s + "mouvement_client m where m.client_id = c.id) as dernier"
                 + " from " + s + "client c";
     }
@@ -283,9 +306,16 @@ public class ClientsJdbc implements RemboursementsDettes {
         Timestamp dernier = r.getTimestamp("dernier");
         return new Client(
                 r.getLong("id"),
+                TypeClient.valueOf(r.getString("type")),
                 r.getString("nom"),
                 r.getString("telephone"),
                 r.getString("note"),
+                r.getString("ice"),
+                r.getString("identifiant_fiscal"),
+                r.getString("rc"),
+                r.getString("contact"),
+                r.getString("adresse"),
+                r.getString("email"),
                 r.getBoolean("actif"),
                 r.getBigDecimal("dette"),
                 r.getBigDecimal("plafond"),

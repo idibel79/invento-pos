@@ -43,6 +43,10 @@ class ParametreController {
                         commande.boutiqueAdresse(),
                         commande.boutiqueTelephone(),
                         commande.boutiqueEmail(),
+                        commande.boutiqueIce(),
+                        commande.boutiqueIf(),
+                        commande.boutiqueRc(),
+                        commande.boutiquePatente(),
                         commande.ticketMessage(),
                         commande.fuseauHoraire()),
                 UtilisateurConnecte.depuis(jwt).id());
@@ -58,6 +62,12 @@ class ParametreController {
             @Size(max = 120) @Email(message = "Adresse email invalide")
             String boutiqueEmail,
 
+            @Size(max = 20) @Pattern(regexp = "[0-9 ]*", message = "L'ICE ne contient que des chiffres")
+            String boutiqueIce,
+
+            @Size(max = 20) String boutiqueIf,
+            @Size(max = 30) String boutiqueRc,
+            @Size(max = 20) String boutiquePatente,
             @Size(max = 300) String ticketMessage,
             @NotBlank @Size(max = 60) String fuseauHoraire) {}
 }
