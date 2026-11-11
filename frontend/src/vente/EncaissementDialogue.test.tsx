@@ -74,6 +74,7 @@ describe("EncaissementDialogue", () => {
       panier: { lignes: [{ produitId: 7, quantite: 2 }] },
       mode: "ESPECES",
       especesRecues: 260.6,
+      clientId: null,
     });
   });
 
@@ -110,7 +111,9 @@ describe("EncaissementDialogue", () => {
     await userEvent.click(screen.getByRole("button", { name: "Valider le paiement par carte" }));
     await userEvent.click(screen.getByRole("button", { name: "Oui, valider la vente" }));
     await waitFor(() => expect(onValidee).toHaveBeenCalled());
-    expect(corps).toEqual([{ panier: { lignes: [{ produitId: 7, quantite: 2 }] }, mode: "CARTE" }]);
+    expect(corps).toEqual([
+      { panier: { lignes: [{ produitId: 7, quantite: 2 }] }, mode: "CARTE", clientId: null },
+    ]);
   });
 
   it("paie une part en espèces et le reste par carte", async () => {
@@ -133,7 +136,12 @@ describe("EncaissementDialogue", () => {
     await userEvent.click(screen.getByRole("button", { name: "Oui, valider la vente" }));
     await waitFor(() => expect(onValidee).toHaveBeenCalled());
     expect(corps).toEqual([
-      { panier: { lignes: [{ produitId: 7, quantite: 2 }] }, mode: "CARTE", especesRecues: 100 },
+      {
+        panier: { lignes: [{ produitId: 7, quantite: 2 }] },
+        mode: "CARTE",
+        especesRecues: 100,
+        clientId: null,
+      },
     ]);
   });
 });
