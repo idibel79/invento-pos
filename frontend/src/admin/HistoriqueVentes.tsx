@@ -15,6 +15,12 @@ import {
 } from "./requetes";
 
 const MODES = { ESPECES: "Espèces", CARTE: "Carte" } as const;
+
+/** Paiement mixte : une part en espèces et le reste par carte. */
+function libellePaiement(v: { mode?: keyof typeof MODES | null; montantCarte: number }): string {
+  if (v.mode === "ESPECES" && v.montantCarte > 0) return "Espèces + carte";
+  return v.mode ? MODES[v.mode] : "—";
+}
 const COLONNES = [
   "Heure",
   "Ticket",
@@ -246,7 +252,7 @@ function LigneVente({
       <span role="cell" className={v.autorisePar ? undefined : "remise-discret"}>
         {v.autorisePar ?? "—"}
       </span>
-      <span role="cell">{v.mode ? MODES[v.mode] : "—"}</span>
+      <span role="cell">{libellePaiement(v)}</span>
       <span role="cell" className={v.montantRecu != null ? "a-droite" : "a-droite remise-discret"}>
         {v.montantRecu != null ? dh(v.montantRecu) : "—"}
       </span>
@@ -364,8 +370,14 @@ function DetailVente({
             <dl className="detail-vente-infos">
               <dt>Paiement</dt>
               <dd>
-                {v.mode ? MODES[v.mode] : "Aucun (vente à 0 DH)"}
-                {v.mode === "ESPECES" && v.montantRecu != null && (
+                {v.mode ? libellePaiement(v) : "Aucun (vente à 0 DH)"}
+                {v.mode === "ESPECES" && v.montantCarte > 0 && (
+                  <>
+                    {" "}
+                    · espèces {dh(v.montantRecu ?? 0)} · carte {dh(v.montantCarte)}
+                  </>
+                )}
+                {v.mode === "ESPECES" && v.montantCarte === 0 && v.montantRecu != null && (
                   <>
                     {" "}
                     · reçu {dh(v.montantRecu)} · rendu {dh(v.rendu ?? 0)}

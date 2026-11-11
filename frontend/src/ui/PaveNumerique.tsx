@@ -17,12 +17,14 @@ interface Props {
   onTouche: (touche: Touche) => void;
   onEffacer: () => void;
   onExact: () => void;
+  /** Libellé du bouton qui remplit le montant d'un coup. */
+  libelleExact?: string;
 }
 
 const CHIFFRES: Touche[] = ["7", "8", "9", "4", "5", "6", "1", "2", "3"];
 
 /** Pavé numérique tactile pour un montant (le clavier physique reste utilisable). */
-export function PaveNumerique({ onTouche, onEffacer, onExact }: Props) {
+export function PaveNumerique({ onTouche, onEffacer, onExact, libelleExact = "Montant exact" }: Props) {
   return (
     <div className="pave-numerique" role="group" aria-label="Pavé numérique">
       {CHIFFRES.map((c) => (
@@ -61,7 +63,7 @@ export function PaveNumerique({ onTouche, onEffacer, onExact }: Props) {
         Effacer
       </button>
       <button type="button" className="pave-action pave-exact" onClick={onExact}>
-        Montant exact
+        {libelleExact}
       </button>
     </div>
   );
