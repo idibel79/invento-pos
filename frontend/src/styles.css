@@ -628,6 +628,67 @@ button:disabled {
   color: var(--danger);
 }
 
+.menu-element-riche {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-element-riche > svg {
+  flex-shrink: 0;
+}
+
+.menu-element-riche:not(.danger) > svg {
+  color: var(--primaire);
+}
+
+.menu-element-texte {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.menu-element-detail {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--gris);
+}
+
+.menu-separateur {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--bordure);
+}
+
+.barre-utilisateur .menu-deroulant {
+  min-width: 280px;
+}
+
+.barre-utilisateur .avatar {
+  position: relative;
+}
+
+.avatar-pastille {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border: 2px solid var(--barre-fond);
+  border-radius: 999px;
+  background: var(--barre-attente-texte);
+  color: var(--barre-fond);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
 .barre-utilisateur .avatar {
   width: 36px;
   height: 36px;
