@@ -32,15 +32,11 @@ interface Props {
   onFermer: () => void;
 }
 
-type Mode = NonNullable<Schemas["ValidationCommande"]["mode"]>;
+/** MIXTE : une part en espèces, le reste par carte (envoyé au serveur en mode CARTE avec les espèces). */
+type Mode = NonNullable<Schemas["ValidationCommande"]["mode"]> | "MIXTE";
 
-/** Billets en circulation : chaque clic ajoute le billet au montant reçu. */
+/** Billets en circulation : un clic remplace le montant reçu par la valeur du billet (sans cumul). */
 export const BILLETS = [20, 50, 100, 200] as const;
-
-/** Montant reçu après l'ajout d'un billet (un montant vide compte pour zéro). */
-export function ajouterBillet(recu: number | null, billet: number): number {
-  return Math.round(((recu ?? 0) + billet) * 100) / 100;
-}
 
 /** Montant écrit dans le champ, sans zéros inutiles, pour que le pavé puisse le compléter. */
 function enSaisie(montant: number): string {
@@ -48,7 +44,7 @@ function enSaisie(montant: number): string {
 }
 
 /**
- * Encaissement en espèces ou par carte (paiement mixte : étape 3), design B « ticket à gauche ».
+ * Encaissement en espèces, par carte ou les deux (une part en espèces, le reste par carte), design B « ticket à gauche ».
  * Le rendu affiché aide le caissier ; celui du ticket est calculé par le serveur.
  */
 export function EncaissementDialogue({ commande, total, apercu, onValidee, onFermer }: Props) {
@@ -56,25 +52,52 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
   const [cle] = useState(() => crypto.randomUUID());
   const [mode, setMode] = useState<Mode>("ESPECES");
   const [saisie, setSaisie] = useState("");
+  // Carte : la vente n'est validée qu'une fois le paiement accepté sur le terminal.
+  const [confirmerCarte, setConfirmerCarte] = useState(false);
   const valider = useValiderVente();
   const recu = saisie === "" ? null : lireMontant(saisie);
   const rendu = recu === null ? null : recu - total;
   const suffisant = recu !== null && rendu !== null && rendu >= -0.005;
   const carte = mode === "CARTE";
+  const mixte = mode === "MIXTE";
+  // Paiement mixte : la part en espèces est réglée sans monnaie, le terminal débite le reste.
+  const resteCarte = total - (recu ?? 0);
+  const mixteValide = recu !== null && !Number.isNaN(recu) && recu > 0.005 && resteCarte > 0.005;
   // Monnaie rendue prise sur les espèces déjà dans le tiroir ; le serveur refait le contrôle.
   const disponibles = especesDisponibles(useSessionCourante().data);
   const monnaieInsuffisante =
-    !carte && disponibles !== null && rendu !== null && rendu > 0.005 && rendu > disponibles + 0.005;
+    mode === "ESPECES" &&
+    disponibles !== null &&
+    rendu !== null &&
+    rendu > 0.005 &&
+    rendu > disponibles + 0.005;
   const libelleValider = carte
     ? "Valider le paiement par carte"
-    : suffisant && rendu > 0.005
-      ? `Valider · rendre ${dh(rendu)}`
-      : "Valider la vente";
+    : mixte
+      ? mixteValide
+        ? `Valider · ${dh(resteCarte)} par carte`
+        : "Valider le paiement mixte"
+      : suffisant && rendu > 0.005
+        ? `Valider · rendre ${dh(rendu)}`
+        : "Valider la vente";
+  const validable = carte || (mixte ? mixteValide : suffisant && !monnaieInsuffisante);
+
+  function choisirBillet(billet: number) {
+    setSaisie(enSaisie(billet));
+  }
+
+  function choisirMode(nouveau: Mode) {
+    setMode(nouveau);
+    if (nouveau !== mode) setSaisie("");
+  }
 
   function envoyer() {
+    // Le mode CARTE avec une part en espèces est un paiement mixte pour le serveur.
     const corps: Schemas["ValidationCommande"] = carte
       ? { panier: commande, mode: "CARTE" }
-      : { panier: commande, mode: "ESPECES", especesRecues: recu };
+      : mixte
+        ? { panier: commande, mode: "CARTE", especesRecues: recu }
+        : { panier: commande, mode: "ESPECES", especesRecues: recu };
     valider.mutate({ cle, corps }, { onSuccess: onValidee });
   }
 
@@ -125,18 +148,71 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
             <strong>{dh(total)}</strong>
           </div>
           <div className="modes-paiement" role="group" aria-label="Mode de paiement">
-            <button type="button" aria-pressed={!carte} onClick={() => setMode("ESPECES")}>
+            <button type="button" aria-pressed={mode === "ESPECES"} onClick={() => choisirMode("ESPECES")}>
               <IconeEspeces />
               Espèces
             </button>
-            <button type="button" aria-pressed={carte} onClick={() => setMode("CARTE")}>
+            <button type="button" aria-pressed={carte} onClick={() => choisirMode("CARTE")}>
               <IconeCarte />
               Carte bancaire
+            </button>
+            <button type="button" aria-pressed={mixte} onClick={() => choisirMode("MIXTE")}>
+              <IconeMixte />
+              Espèces + carte
             </button>
           </div>
         </aside>
         <div className="encaissement-saisie">
-          {carte ? (
+          {mixte ? (
+            <>
+              <div className="recu-rendu">
+                <div className="champ">
+                  <label className="libelle" htmlFor="montant-especes">
+                    Payé en espèces
+                  </label>
+                  <div className="champ-montant">
+                    <input
+                      id="montant-especes"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={saisie}
+                      onChange={(e) => setSaisie(e.target.value)}
+                      placeholder="0"
+                      autoFocus
+                    />
+                    <span>DH</span>
+                  </div>
+                </div>
+                <div className="champ">
+                  <span className="libelle">Reste par carte</span>
+                  <div
+                    className={`rendu${recu === null ? " vide" : mixteValide ? "" : " manque"}`}
+                    aria-live="polite"
+                  >
+                    <strong>{recu === null ? "–" : dh(Math.max(resteCarte, 0))}</strong>
+                  </div>
+                </div>
+              </div>
+              {recu !== null && !mixteValide && (
+                <p className="alerte alerte-danger" role="alert">
+                  La part en espèces doit être entre 0 et {dh(total)} : le reste est payé par carte.
+                </p>
+              )}
+              {mixteValide && (
+                <p className="encaissement-aide">
+                  Encaissez {dh(recu ?? 0)} en espèces, puis saisissez {dh(resteCarte)} sur le terminal de
+                  paiement et validez une fois le paiement accepté.
+                </p>
+              )}
+              <Billets onBillet={choisirBillet} />
+              <PaveNumerique
+                onTouche={(t) => setSaisie((s) => saisirTouche(s, t))}
+                onEffacer={() => setSaisie("")}
+                onExact={() => choisirMode("CARTE")}
+                libelleExact="Tout par carte"
+              />
+            </>
+          ) : carte ? (
             <div className="encaissement-carte">
               <span className="libelle">Montant à débiter sur le terminal</span>
               <strong>{dh(total)}</strong>
@@ -184,20 +260,7 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
                   Demandez l'appoint ou encaissez par carte.
                 </p>
               )}
-              <div className="billets" role="group" aria-label="Billets reçus">
-                {BILLETS.map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    aria-label={`Ajouter un billet de ${b} DH`}
-                    onClick={() =>
-                      setSaisie((s) => enSaisie(ajouterBillet(s === "" ? null : lireMontant(s), b)))
-                    }
-                  >
-                    <BilletDirham valeur={b} />+{b}
-                  </button>
-                ))}
-              </div>
+              <Billets onBillet={choisirBillet} />
               <PaveNumerique
                 onTouche={(t) => setSaisie((s) => saisirTouche(s, t))}
                 onEffacer={() => setSaisie("")}
@@ -222,15 +285,52 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
             <button
               type="button"
               className="bouton bouton-plein"
-              disabled={(!carte && (!suffisant || monnaieInsuffisante)) || valider.isPending}
-              onClick={envoyer}
+              disabled={!validable || valider.isPending}
+              onClick={() => (carte || mixte ? setConfirmerCarte(true) : envoyer())}
             >
               {valider.isPending ? "Validation…" : libelleValider}
             </button>
           </div>
         </div>
       </div>
+      {confirmerCarte && (
+        <Dialogue titre="Paiement par carte" onFermer={() => setConfirmerCarte(false)}>
+          <p>
+            Le terminal a-t-il accepté le paiement de <strong>{dh(carte ? total : resteCarte)}</strong> ?
+          </p>
+          <div className="rangee-boutons">
+            <button type="button" className="bouton bouton-contour" onClick={() => setConfirmerCarte(false)}>
+              Non, revenir
+            </button>
+            <button
+              type="button"
+              className="bouton bouton-plein"
+              autoFocus
+              onClick={() => {
+                setConfirmerCarte(false);
+                envoyer();
+              }}
+            >
+              Oui, valider la vente
+            </button>
+          </div>
+        </Dialogue>
+      )}
     </Dialogue>
+  );
+}
+
+/** Billets en circulation : un clic met le montant en espèces à la valeur du billet. */
+function Billets({ onBillet }: { onBillet: (billet: number) => void }) {
+  return (
+    <div className="billets" role="group" aria-label="Billets reçus">
+      {BILLETS.map((b) => (
+        <button key={b} type="button" aria-label={`Billet de ${b} DH`} onClick={() => onBillet(b)}>
+          <BilletDirham valeur={b} />
+          {b}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -247,6 +347,26 @@ function IconeEspeces() {
     >
       <rect x="2" y="6" width="20" height="12" rx="2" />
       <circle cx="12" cy="12" r="2.5" />
+    </svg>
+  );
+}
+
+function IconeMixte() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <rect x="2" y="4" width="13" height="9" rx="1.5" />
+      <circle cx="8.5" cy="8.5" r="1.8" />
+      <rect x="9" y="11" width="13" height="9" rx="1.5" />
+      <path d="M9 14h13" />
     </svg>
   );
 }

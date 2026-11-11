@@ -1147,6 +1147,8 @@ export interface components {
             /** Format: date-time */
             finaliseeLe: string | null;
             paiement: components["schemas"]["PaiementDto"] | null;
+            /** @description Tous les paiements : espèces puis carte pour un paiement mixte */
+            paiements: components["schemas"]["PaiementDto"][];
         };
         VentilationTvaDto: {
             taux: number;
@@ -1576,6 +1578,7 @@ export interface components {
             mode: "ESPECES" | "CARTE" | null;
             montantRecu: number | null;
             rendu: number | null;
+            montantCarte: number;
         };
         DetailVente: {
             /** Format: int64 */
@@ -1601,6 +1604,7 @@ export interface components {
             mode: "ESPECES" | "CARTE" | null;
             montantRecu: number | null;
             rendu: number | null;
+            montantCarte: number;
         };
         LigneHistorique: {
             designation: string;

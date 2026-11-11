@@ -150,6 +150,21 @@ public class Vente {
         finaliser(cleIdempotence, maintenant);
     }
 
+    /**
+     * Paiement mixte : le client donne {@code especes} (strictement entre zéro et le total, sans monnaie à
+     * rendre) et le terminal débite le reste par carte.
+     */
+    public void validerEspecesEtCarte(BigDecimal especes, String cleIdempotence, Instant maintenant) {
+        verifierModifiable();
+        if (especes.signum() <= 0 || especes.compareTo(totalTtc) >= 0) {
+            throw new RegleMetierException(
+                    "La part en espèces doit être entre zéro et le total : le reste est payé par carte.");
+        }
+        paiements.add(new Paiement(this, ModePaiement.ESPECES, especes, especes));
+        paiements.add(new Paiement(this, ModePaiement.CARTE, totalTtc.subtract(especes), null));
+        finaliser(cleIdempotence, maintenant);
+    }
+
     private void finaliser(String cleIdempotence, Instant maintenant) {
         this.statut = StatutVente.VALIDEE;
         this.cleIdempotence = cleIdempotence;

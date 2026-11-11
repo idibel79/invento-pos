@@ -1630,7 +1630,7 @@ button:disabled {
 
 .modes-paiement {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: auto;
 }
@@ -1682,6 +1682,12 @@ button:disabled {
 .encaissement-carte p {
   margin: 0;
   color: var(--gris);
+}
+
+.encaissement-aide {
+  margin: 0;
+  color: var(--gris);
+  font-size: 13px;
 }
 
 .recu-rendu {

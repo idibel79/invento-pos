@@ -45,6 +45,30 @@ class VenteTest {
     }
 
     @Test
+    void paiement_mixte_especes_puis_carte_pour_le_reste() {
+        Vente vente = venteDe("26.20");
+        vente.validerEspecesEtCarte(new BigDecimal("10.00"), "cle-mixte", T0);
+
+        assertThat(vente.getStatut()).isEqualTo(StatutVente.VALIDEE);
+        assertThat(vente.getCleIdempotence()).isEqualTo("cle-mixte");
+        assertThat(vente.getPaiements()).hasSize(2);
+        assertThat(vente.getPaiements().get(0).getMode()).isEqualTo(ModePaiement.ESPECES);
+        assertThat(vente.getPaiements().get(0).getMontant()).isEqualByComparingTo("10.00");
+        assertThat(vente.getPaiements().get(0).getRendu()).isEqualByComparingTo("0");
+        assertThat(vente.getPaiements().get(1).getMode()).isEqualTo(ModePaiement.CARTE);
+        assertThat(vente.getPaiements().get(1).getMontant()).isEqualByComparingTo("16.20");
+    }
+
+    @Test
+    void paiement_mixte_refuse_une_part_especes_nulle_ou_qui_couvre_le_total() {
+        Vente vente = venteDe("26.20");
+        assertThatThrownBy(() -> vente.validerEspecesEtCarte(BigDecimal.ZERO, "cle", T0))
+                .isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(() -> vente.validerEspecesEtCarte(new BigDecimal("26.20"), "cle", T0))
+                .isInstanceOf(RegleMetierException.class);
+    }
+
+    @Test
     void refuse_un_montant_recu_insuffisant() {
         Vente vente = venteDe("26.20");
         assertThatThrownBy(() -> vente.validerEnEspeces(new BigDecimal("26.19"), "cle", T0))

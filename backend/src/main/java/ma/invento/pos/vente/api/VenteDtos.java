@@ -57,7 +57,8 @@ public final class VenteDtos {
      * Demande de validation.
      *
      * @param mode espèces si absent
-     * @param especesRecues montant remis par le client, obligatoire en espèces
+     * @param especesRecues montant remis par le client, obligatoire en espèces ; avec le mode {@code CARTE},
+     *     s'il est donné, paiement mixte : la part payée en espèces (sans monnaie), le reste par carte
      */
     public record ValidationCommande(
             @NotNull @Valid PanierCommande panier,
@@ -139,5 +140,8 @@ public final class VenteDtos {
             @Schema(nullable = true) Instant attenteExpireLe,
             Instant creeLe,
             @Schema(nullable = true) Instant finaliseeLe,
-            @Schema(nullable = true) PaiementDto paiement) {}
+            @Schema(nullable = true) PaiementDto paiement,
+
+            @Schema(description = "Tous les paiements : espèces puis carte pour un paiement mixte")
+            List<PaiementDto> paiements) {}
 }

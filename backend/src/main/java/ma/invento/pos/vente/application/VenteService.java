@@ -186,7 +186,9 @@ public class VenteService {
                 motif(commande.panier()),
                 accords.principal(),
                 accords.parArticle());
-        if (commande.mode() == ModePaiement.CARTE) {
+        if (commande.mode() == ModePaiement.CARTE && commande.especesRecues() != null) {
+            vente.validerEspecesEtCarte(commande.especesRecues(), cle, maintenant);
+        } else if (commande.mode() == ModePaiement.CARTE) {
             vente.validerParCarte(cle, maintenant);
         } else if (commande.especesRecues() == null) {
             throw new RegleMetierException("Indiquez le montant reçu en espèces.");
@@ -446,10 +448,9 @@ public class VenteService {
                         l.getProduitId(), l.getQuantite(), l.getPrixUnitaire(), l.getTauxTva(), l.getRemise()))
                 .toList();
         PanierCalcule calcul = CalculateurVente.calculer(lignes, vente.getRemiseTicket());
-        var paiement = vente.getPaiements().stream()
-                .findFirst()
+        List<PaiementDto> paiements = vente.getPaiements().stream()
                 .map(p -> new PaiementDto(p.getMode(), p.getMontant(), p.getMontantRecu(), p.getRendu()))
-                .orElse(null);
+                .toList();
         return new VenteDto(
                 vente.getId(),
                 vente.getNumero(),
@@ -468,7 +469,8 @@ public class VenteService {
                 vente.getAttenteExpireLe(),
                 vente.getCreeLe(),
                 vente.getFinaliseeLe(),
-                paiement);
+                paiements.isEmpty() ? null : paiements.getFirst(),
+                paiements);
     }
 
     private static LigneDto ligneDto(LigneCalculee l, String designation, boolean stockSuffisant) {

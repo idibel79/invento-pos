@@ -177,12 +177,20 @@ export function EcranVente({ session, onAdministration }: Props) {
             <span className="libelle">Total encaissé</span>
             <span className="encadre-montant">{dh(fenetre.vente.totaux.totalTtc)}</span>
           </div>
-          {fenetre.vente.paiement?.mode === "CARTE" && (
+          {fenetre.vente.paiements.length > 1 && (
+            <div className="rendu">
+              <span className="libelle">
+                Espèces {dh(fenetre.vente.paiements[0]?.montant ?? 0)} · carte bancaire
+              </span>
+              <strong data-testid="part-carte">{dh(fenetre.vente.paiements[1]?.montant ?? 0)}</strong>
+            </div>
+          )}
+          {fenetre.vente.paiements.length === 1 && fenetre.vente.paiement?.mode === "CARTE" && (
             <div className="rendu">
               <span className="libelle">Payé par carte bancaire</span>
             </div>
           )}
-          {fenetre.vente.paiement?.mode === "ESPECES" && (
+          {fenetre.vente.paiements.length === 1 && fenetre.vente.paiement?.mode === "ESPECES" && (
             <div className="rendu">
               <span className="libelle">Rendu monnaie</span>
               <strong data-testid="rendu">{dh(fenetre.vente.paiement.rendu ?? 0)}</strong>

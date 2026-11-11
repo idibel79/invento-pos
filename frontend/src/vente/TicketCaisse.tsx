@@ -87,7 +87,21 @@ export function TicketCaisse({ vente, boutique, vendeur, fuseau }: Props) {
           </div>
         ))}
       </dl>
-      {paiement && (
+      {vente.paiements.length > 1 && (
+        <dl className="ticket-paiement">
+          <div>
+            <dt>Mode de paiement</dt>
+            <dd>Espèces + carte</dd>
+          </div>
+          {vente.paiements.map((p) => (
+            <div key={p.mode}>
+              <dt>{p.mode === "CARTE" ? "Carte bancaire" : "Espèces"}</dt>
+              <dd>{dh(p.montant)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {paiement && vente.paiements.length === 1 && (
         <dl className="ticket-paiement">
           <div>
             <dt>Mode de paiement</dt>

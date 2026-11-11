@@ -2732,9 +2732,16 @@
             }, {
               "type" : "null"
             } ]
+          },
+          "paiements" : {
+            "type" : "array",
+            "description" : "Tous les paiements : espèces puis carte pour un paiement mixte",
+            "items" : {
+              "$ref" : "#/components/schemas/PaiementDto"
+            }
           }
         },
-        "required" : [ "attenteExpireLe", "caisseId", "caissierId", "creeLe", "finaliseeLe", "id", "lignes", "motifRemise", "noteAttente", "numero", "paiement", "remiseTicket", "statut", "totaux", "valideePar" ]
+        "required" : [ "attenteExpireLe", "caisseId", "caissierId", "creeLe", "finaliseeLe", "id", "lignes", "motifRemise", "noteAttente", "numero", "paiement", "paiements", "remiseTicket", "statut", "totaux", "valideePar" ]
       },
       "VentilationTvaDto" : {
         "type" : "object",
@@ -3936,9 +3943,12 @@
           },
           "rendu" : {
             "type" : [ "number", "null" ]
+          },
+          "montantCarte" : {
+            "type" : "number"
           }
         },
-        "required" : [ "articles", "autorisePar", "caisse", "id", "le", "mode", "montantRecu", "numero", "remiseTicket", "remises", "remisesLignes", "rendu", "totalTtc", "vendeur" ]
+        "required" : [ "articles", "autorisePar", "caisse", "id", "le", "mode", "montantCarte", "montantRecu", "numero", "remiseTicket", "remises", "remisesLignes", "rendu", "totalTtc", "vendeur" ]
       },
       "DetailVente" : {
         "type" : "object",
@@ -4006,9 +4016,12 @@
           },
           "rendu" : {
             "type" : [ "number", "null" ]
+          },
+          "montantCarte" : {
+            "type" : "number"
           }
         },
-        "required" : [ "autorisePar", "caisse", "id", "le", "lignes", "mode", "montantRecu", "motifRemise", "numero", "remiseTicketMontant", "remiseTicketType", "remiseTicketValeur", "remisesLignes", "rendu", "sousTotal", "totalHt", "totalTtc", "totalTva", "vendeur" ]
+        "required" : [ "autorisePar", "caisse", "id", "le", "lignes", "mode", "montantCarte", "montantRecu", "motifRemise", "numero", "remiseTicketMontant", "remiseTicketType", "remiseTicketValeur", "remisesLignes", "rendu", "sousTotal", "totalHt", "totalTtc", "totalTva", "vendeur" ]
       },
       "LigneHistorique" : {
         "type" : "object",

@@ -64,6 +64,7 @@ const VENTE_EXEMPLE: Schemas["VenteDto"] = {
   creeLe: new Date().toISOString(),
   finaliseeLe: null,
   paiement: { mode: "ESPECES", montant: 50, montantRecu: 100, rendu: 50 },
+  paiements: [{ mode: "ESPECES", montant: 50, montantRecu: 100, rendu: 50 }],
 };
 
 /** Paramètres > Boutique : informations imprimées en tête et en pied du ticket de caisse. */

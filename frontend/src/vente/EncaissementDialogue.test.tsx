@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ajouterBillet, EncaissementDialogue } from "./EncaissementDialogue";
+import { EncaissementDialogue } from "./EncaissementDialogue";
 
 const espaces = (texte: string | null) => (texte ?? "").replace(/[\u202f\u00a0]/g, " ");
 
@@ -24,10 +24,13 @@ function afficher(onValidee = vi.fn()) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("EncaissementDialogue", () => {
-  it("ajoute chaque billet au montant reçu", () => {
-    expect(ajouterBillet(null, 200)).toBe(200);
-    expect(ajouterBillet(200, 50)).toBe(250);
-    expect(ajouterBillet(0.1, 20)).toBe(20.1);
+  it("un billet remplace le montant reçu, sans cumul", async () => {
+    afficher();
+    await userEvent.click(screen.getByRole("button", { name: "Billet de 200 DH" }));
+    await userEvent.click(screen.getByRole("button", { name: "Billet de 200 DH" }));
+    expect(screen.getByLabelText("Montant reçu")).toHaveValue("200");
+    await userEvent.click(screen.getByRole("button", { name: "Billet de 50 DH" }));
+    expect(screen.getByLabelText("Montant reçu")).toHaveValue("50");
   });
 
   it("affiche le rendu ou le manque", async () => {
@@ -37,7 +40,8 @@ describe("EncaissementDialogue", () => {
     expect(espaces(screen.getByText(/Il manque/).nextSibling?.textContent ?? null)).toBe("10,60 DH");
     expect(screen.getByRole("button", { name: "Valider la vente" })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole("button", { name: "Ajouter un billet de 50 DH" }));
+    await userEvent.clear(champ);
+    await userEvent.type(champ, "300");
     expect(espaces(screen.getByText("Rendu monnaie").nextSibling?.textContent ?? null)).toBe("39,40 DH");
   });
 
@@ -100,7 +104,36 @@ describe("EncaissementDialogue", () => {
     await userEvent.click(screen.getByRole("button", { name: "Carte bancaire" }));
     expect(screen.queryByLabelText("Montant reçu")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Valider le paiement par carte" }));
+    // Rien n'est envoyé tant que le terminal n'a pas accepté ; « Non » revient à l'encaissement.
+    await userEvent.click(screen.getByRole("button", { name: "Non, revenir" }));
+    expect(corps).toEqual([]);
+    await userEvent.click(screen.getByRole("button", { name: "Valider le paiement par carte" }));
+    await userEvent.click(screen.getByRole("button", { name: "Oui, valider la vente" }));
     await waitFor(() => expect(onValidee).toHaveBeenCalled());
     expect(corps).toEqual([{ panier: { lignes: [{ produitId: 7, quantite: 2 }] }, mode: "CARTE" }]);
+  });
+
+  it("paie une part en espèces et le reste par carte", async () => {
+    const corps: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (requete: Request) => {
+        corps.push(await requete.json());
+        return new Response(JSON.stringify({ id: 1, numero: "C1-000001" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+    const onValidee = afficher();
+
+    await userEvent.click(screen.getByRole("button", { name: "Espèces + carte" }));
+    await userEvent.type(screen.getByLabelText("Payé en espèces"), "100");
+    await userEvent.click(screen.getByRole("button", { name: /Valider · 160,60/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Oui, valider la vente" }));
+    await waitFor(() => expect(onValidee).toHaveBeenCalled());
+    expect(corps).toEqual([
+      { panier: { lignes: [{ produitId: 7, quantite: 2 }] }, mode: "CARTE", especesRecues: 100 },
+    ]);
   });
 });
