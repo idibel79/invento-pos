@@ -13,7 +13,10 @@ public interface ComptesCaissiers {
     /** Solde du compte : ce que le caissier doit à la caisse principale (ventes de la session ouverte comprises). */
     BigDecimal solde(long utilisateurId);
 
-    /** Versements reçus et faits pendant la session (argent entré dans le tiroir ou sorti), hors clôture. */
+    /**
+     * Versements reçus et faits pendant la session (argent entré dans le tiroir ou sorti), hors clôture,
+     * et dettes de clients remboursées pendant la session ({@code recu} en espèces, {@code recuTpe} par TPE).
+     */
     MouvementsSession mouvementsSession(long sessionId);
 
     /**
@@ -28,7 +31,8 @@ public interface ComptesCaissiers {
     /** Comptage par l'admin : l'excédent est crédité, {@code montantVerse} entre dans la caisse principale. */
     void terminerComptage(SessionCaisse session, BigDecimal montantVerse, long adminId);
 
-    record MouvementsSession(BigDecimal recu, BigDecimal verse) {
-        public static final MouvementsSession AUCUN = new MouvementsSession(BigDecimal.ZERO, BigDecimal.ZERO);
+    record MouvementsSession(BigDecimal recu, BigDecimal recuTpe, BigDecimal verse) {
+        public static final MouvementsSession AUCUN =
+                new MouvementsSession(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }

@@ -44,11 +44,20 @@ public class HistoriqueVentesRequete {
             @Schema(nullable = true) ModePaiement mode,
             @Schema(nullable = true) BigDecimal montantRecu,
             @Schema(nullable = true) BigDecimal rendu,
-            BigDecimal montantCarte) {}
+            BigDecimal montantCarte,
+            @Schema(nullable = true) String client) {}
 
-    /** Totaux de la sélection : nombre de ventes, chiffre d'affaires TTC, remises et répartition des paiements. */
+    /**
+     * Totaux de la sélection : nombre de ventes, chiffre d'affaires TTC, remises et répartition des paiements
+     * ({@code credit} : ventes à crédit, sur la dette des clients).
+     */
     public record ResumeVentes(
-            long nombre, BigDecimal totalTtc, BigDecimal remises, BigDecimal especes, BigDecimal carte) {}
+            long nombre,
+            BigDecimal totalTtc,
+            BigDecimal remises,
+            BigDecimal especes,
+            BigDecimal carte,
+            BigDecimal credit) {}
 
     /** Sélection : ventes validées dans [debut, fin[, d'une caisse et d'un vendeur ; un critère null ne filtre pas. */
     public record Filtre(Instant debut, Instant fin, Long caisseId, Long vendeurId) {}
@@ -85,7 +94,8 @@ public class HistoriqueVentesRequete {
             @Schema(nullable = true) ModePaiement mode,
             @Schema(nullable = true) BigDecimal montantRecu,
             @Schema(nullable = true) BigDecimal rendu,
-            BigDecimal montantCarte) {}
+            BigDecimal montantCarte,
+            @Schema(nullable = true) String client) {}
 
     private final NamedParameterJdbcTemplate jdbc;
     private final String ventes;
@@ -107,9 +117,10 @@ public class HistoriqueVentesRequete {
         // Une vente validée a au plus un paiement en espèces et un par carte (les deux : paiement mixte ; aucun à 0
         // DH).
         String paiement = " left join " + s + "paiement p on p.vente_id = v.id and p.mode = 'ESPECES'" + " left join "
-                + s + "paiement pk on pk.vente_id = v.id and pk.mode = 'CARTE'";
-        this.colonnesPaiement = ", coalesce(p.mode, pk.mode) as mode, p.montant_recu, p.rendu,"
-                + " coalesce(pk.montant, 0) as montant_carte";
+                + s + "paiement pk on pk.vente_id = v.id and pk.mode = 'CARTE'" + " left join " + s
+                + "paiement pc on pc.vente_id = v.id and pc.mode = 'CREDIT'";
+        this.colonnesPaiement = ", coalesce(p.mode, pk.mode, pc.mode) as mode, p.montant_recu, p.rendu,"
+                + " coalesce(pk.montant, 0) as montant_carte, v.client_nom";
         this.ventes = " from " + s + "vente v"
                 + " join " + s + "caisse c on c.id = v.caisse_id"
                 + " join " + s + "utilisateur uv on uv.id = v.caissier_id"
@@ -153,9 +164,10 @@ public class HistoriqueVentesRequete {
                 "select count(*) as nombre, coalesce(sum(r.total_ttc), 0) as total,"
                         + " coalesce(sum(r.remises), 0) as remises,"
                         + " coalesce(sum(r.especes), 0) as especes,"
-                        + " coalesce(sum(r.carte), 0) as carte"
+                        + " coalesce(sum(r.carte), 0) as carte,"
+                        + " coalesce(sum(r.credit), 0) as credit"
                         + " from (select v.total_ttc, " + remises
-                        + " as remises, p.montant as especes, pk.montant as carte"
+                        + " as remises, p.montant as especes, pk.montant as carte, pc.montant as credit"
                         + ventes + conditions(filtre) + ") r",
                 parametres(filtre),
                 (r, i) -> new ResumeVentes(
@@ -163,7 +175,8 @@ public class HistoriqueVentesRequete {
                         r.getBigDecimal("total"),
                         r.getBigDecimal("remises"),
                         r.getBigDecimal("especes"),
-                        r.getBigDecimal("carte")));
+                        r.getBigDecimal("carte"),
+                        r.getBigDecimal("credit")));
     }
 
     /**
@@ -215,7 +228,8 @@ public class HistoriqueVentesRequete {
                 mode(r),
                 r.getBigDecimal("montant_recu"),
                 r.getBigDecimal("rendu"),
-                r.getBigDecimal("montant_carte"));
+                r.getBigDecimal("montant_carte"),
+                r.getString("client_nom"));
     }
 
     private static LigneHistorique versLigne(ResultSet r, int ligne) throws SQLException {
@@ -253,6 +267,7 @@ public class HistoriqueVentesRequete {
         BigDecimal montantRecu = r.getBigDecimal("montant_recu");
         BigDecimal rendu = r.getBigDecimal("rendu");
         BigDecimal montantCarte = r.getBigDecimal("montant_carte");
+        String client = r.getString("client_nom");
         return lignes -> new DetailVente(
                 id,
                 numero,
@@ -273,7 +288,8 @@ public class HistoriqueVentesRequete {
                 mode,
                 montantRecu,
                 rendu,
-                montantCarte);
+                montantCarte,
+                client);
     }
 
     private static ModePaiement mode(ResultSet r) throws SQLException {

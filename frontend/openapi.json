@@ -155,10 +155,72 @@
         }
       }
     },
+    "/api/v1/clients/{id}" : {
+      "put" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "modifier_3",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClientDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "supprimer",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SuppressionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/caisses/{id}" : {
       "put" : {
         "tags" : [ "caisse-controller" ],
-        "operationId" : "modifier_3",
+        "operationId" : "modifier_4",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -193,7 +255,7 @@
       },
       "delete" : {
         "tags" : [ "caisse-controller" ],
-        "operationId" : "supprimer",
+        "operationId" : "supprimer_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1033,6 +1095,145 @@
         }
       }
     },
+    "/api/v1/clients" : {
+      "get" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "lister_1",
+        "parameters" : [ {
+          "name" : "recherche",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "inactifs",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClientDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "creer_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClientCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClientDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clients/{id}/remboursements" : {
+      "post" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "rembourser",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RemboursementCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MouvementClientDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clients/remboursements/{id}/annulation" : {
+      "post" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "annuler_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AnnulationCommande"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MouvementClientDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/categories" : {
       "get" : {
         "tags" : [ "catalogue-controller" ],
@@ -1083,7 +1284,7 @@
     "/api/v1/caisses" : {
       "get" : {
         "tags" : [ "caisse-controller" ],
-        "operationId" : "lister_1",
+        "operationId" : "lister_2",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1102,7 +1303,7 @@
       },
       "post" : {
         "tags" : [ "caisse-controller" ],
-        "operationId" : "creer_2",
+        "operationId" : "creer_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1650,7 +1851,7 @@
     "/api/v1/remises" : {
       "get" : {
         "tags" : [ "journal-remises-controller" ],
-        "operationId" : "lister_2",
+        "operationId" : "lister_3",
         "parameters" : [ {
           "name" : "jours",
           "in" : "query",
@@ -1821,7 +2022,7 @@
     "/api/v1/journal" : {
       "get" : {
         "tags" : [ "journal-controller" ],
-        "operationId" : "lister_3",
+        "operationId" : "lister_4",
         "parameters" : [ {
           "name" : "page",
           "in" : "query",
@@ -1871,7 +2072,7 @@
     "/api/v1/historique-ventes" : {
       "get" : {
         "tags" : [ "historique-ventes-controller" ],
-        "operationId" : "lister_4",
+        "operationId" : "lister_5",
         "parameters" : [ {
           "name" : "jour",
           "in" : "query",
@@ -2022,6 +2223,36 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResumeVentes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clients/{id}/releve" : {
+      "get" : {
+        "tags" : [ "client-controller" ],
+        "operationId" : "releve",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MouvementClientDto"
+                  }
                 }
               }
             }
@@ -2445,6 +2676,69 @@
         },
         "required" : [ "boutiqueAdresse", "boutiqueEmail", "boutiqueNom", "boutiqueTelephone", "fuseauHoraire", "ticketMessage" ]
       },
+      "ClientCommande" : {
+        "type" : "object",
+        "properties" : {
+          "nom" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "telephone" : {
+            "type" : "string",
+            "maxLength" : 30,
+            "minLength" : 0
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "plafond" : {
+            "type" : [ "number", "null" ],
+            "description" : "Plafond de crédit, sans limite si absent",
+            "minimum" : 0.01
+          },
+          "actif" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "Actif si absent"
+          }
+        },
+        "required" : [ "nom" ]
+      },
+      "ClientDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "telephone" : {
+            "type" : [ "string", "null" ]
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "actif" : {
+            "type" : "boolean"
+          },
+          "dette" : {
+            "type" : "number"
+          },
+          "plafond" : {
+            "type" : [ "number", "null" ],
+            "description" : "Plafond de crédit, sans limite si absent"
+          },
+          "dernierMouvement" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "actif", "dernierMouvement", "dette", "id", "nom", "note", "plafond", "telephone" ]
+      },
       "CaisseCommande" : {
         "type" : "object",
         "properties" : {
@@ -2563,14 +2857,34 @@
           },
           "mode" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "ESPECES", "CARTE" ]
+            "enum" : [ "ESPECES", "CARTE", "CREDIT" ]
           },
           "especesRecues" : {
             "type" : [ "number", "null" ],
             "minimum" : 0.0
+          },
+          "clientId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           }
         },
         "required" : [ "panier" ]
+      },
+      "ClientVenteDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "detteApres" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "detteApres", "id", "nom" ]
       },
       "LigneDto" : {
         "type" : "object",
@@ -2619,7 +2933,7 @@
         "properties" : {
           "mode" : {
             "type" : "string",
-            "enum" : [ "ESPECES", "CARTE" ]
+            "enum" : [ "ESPECES", "CARTE", "CREDIT" ]
           },
           "montant" : {
             "type" : "number"
@@ -2739,9 +3053,16 @@
             "items" : {
               "$ref" : "#/components/schemas/PaiementDto"
             }
+          },
+          "client" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ClientVenteDto"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required" : [ "attenteExpireLe", "caisseId", "caissierId", "creeLe", "finaliseeLe", "id", "lignes", "motifRemise", "noteAttente", "numero", "paiement", "paiements", "remiseTicket", "statut", "totaux", "valideePar" ]
+        "required" : [ "attenteExpireLe", "caisseId", "caissierId", "client", "creeLe", "finaliseeLe", "id", "lignes", "motifRemise", "noteAttente", "numero", "paiement", "paiements", "remiseTicket", "statut", "totaux", "valideePar" ]
       },
       "VentilationTvaDto" : {
         "type" : "object",
@@ -3213,6 +3534,94 @@
         },
         "required" : [ "avertissements", "erreurs", "format", "inventaireRetenu", "inventaires", "lignesLues", "mouvementsStock", "nombreAvertissements", "nombreErreurs", "produitsCrees", "produitsEnStockNegatif", "produitsMisAJour", "produitsSansCodeBarre" ]
       },
+      "RemboursementCommande" : {
+        "type" : "object",
+        "properties" : {
+          "especes" : {
+            "type" : [ "number", "null" ],
+            "minimum" : 0.0
+          },
+          "tpe" : {
+            "type" : [ "number", "null" ],
+            "minimum" : 0.0
+          },
+          "cle" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        }
+      },
+      "MouvementClientDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "clientId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "client" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "VENTE_CREDIT", "REMBOURSEMENT", "ANNULATION_REMBOURSEMENT" ]
+          },
+          "montant" : {
+            "type" : "number"
+          },
+          "especes" : {
+            "type" : [ "number", "null" ]
+          },
+          "tpe" : {
+            "type" : [ "number", "null" ]
+          },
+          "venteId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "venteNumero" : {
+            "type" : [ "string", "null" ]
+          },
+          "remboursementId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "annule" : {
+            "type" : "boolean"
+          },
+          "utilisateur" : {
+            "type" : "string"
+          },
+          "caissePrincipale" : {
+            "type" : "boolean"
+          },
+          "motif" : {
+            "type" : [ "string", "null" ]
+          },
+          "detteApres" : {
+            "type" : "number"
+          },
+          "le" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "annule", "caissePrincipale", "client", "clientId", "detteApres", "especes", "id", "le", "montant", "motif", "remboursementId", "tpe", "type", "utilisateur", "venteId", "venteNumero" ]
+      },
+      "AnnulationCommande" : {
+        "type" : "object",
+        "properties" : {
+          "motif" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "motif" ]
+      },
       "DemandeAutorisation" : {
         "type" : "object",
         "properties" : {
@@ -3511,7 +3920,7 @@
           },
           "type" : {
             "type" : "string",
-            "enum" : [ "ALIMENTATION", "RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_RECU", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "AJUSTEMENT", "CLOTURE_SESSION" ]
+            "enum" : [ "ALIMENTATION", "RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_RECU", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "AJUSTEMENT", "CLOTURE_SESSION", "REMBOURSEMENT_DETTE", "ANNULATION_DETTE" ]
           },
           "compte" : {
             "type" : "string",
@@ -3827,7 +4236,7 @@
           },
           "action" : {
             "type" : "string",
-            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "SESSION_COMPTEE", "CAISSE_PRINCIPALE_ALIMENTEE", "CAISSE_PRINCIPALE_RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_VALIDE", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "COMPTE_AJUSTE", "REMISE_AUTORISEE" ]
+            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "SESSION_COMPTEE", "CAISSE_PRINCIPALE_ALIMENTEE", "CAISSE_PRINCIPALE_RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_VALIDE", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "COMPTE_AJUSTE", "REMISE_AUTORISEE", "CLIENT_CREE", "CLIENT_MODIFIE", "CLIENT_SUPPRIME", "DETTE_ENCAISSEE", "DETTE_REMBOURSEMENT_ANNULE" ]
           },
           "detail" : {
             "type" : [ "string", "null" ]
@@ -3936,7 +4345,7 @@
           },
           "mode" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "ESPECES", "CARTE" ]
+            "enum" : [ "ESPECES", "CARTE", "CREDIT" ]
           },
           "montantRecu" : {
             "type" : [ "number", "null" ]
@@ -3946,9 +4355,12 @@
           },
           "montantCarte" : {
             "type" : "number"
+          },
+          "client" : {
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "articles", "autorisePar", "caisse", "id", "le", "mode", "montantCarte", "montantRecu", "numero", "remiseTicket", "remises", "remisesLignes", "rendu", "totalTtc", "vendeur" ]
+        "required" : [ "articles", "autorisePar", "caisse", "client", "id", "le", "mode", "montantCarte", "montantRecu", "numero", "remiseTicket", "remises", "remisesLignes", "rendu", "totalTtc", "vendeur" ]
       },
       "DetailVente" : {
         "type" : "object",
@@ -4009,7 +4421,7 @@
           },
           "mode" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "ESPECES", "CARTE" ]
+            "enum" : [ "ESPECES", "CARTE", "CREDIT" ]
           },
           "montantRecu" : {
             "type" : [ "number", "null" ]
@@ -4019,9 +4431,12 @@
           },
           "montantCarte" : {
             "type" : "number"
+          },
+          "client" : {
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "autorisePar", "caisse", "id", "le", "lignes", "mode", "montantCarte", "montantRecu", "motifRemise", "numero", "remiseTicketMontant", "remiseTicketType", "remiseTicketValeur", "remisesLignes", "rendu", "sousTotal", "totalHt", "totalTtc", "totalTva", "vendeur" ]
+        "required" : [ "autorisePar", "caisse", "client", "id", "le", "lignes", "mode", "montantCarte", "montantRecu", "motifRemise", "numero", "remiseTicketMontant", "remiseTicketType", "remiseTicketValeur", "remisesLignes", "rendu", "sousTotal", "totalHt", "totalTtc", "totalTva", "vendeur" ]
       },
       "LigneHistorique" : {
         "type" : "object",
@@ -4076,9 +4491,12 @@
           },
           "carte" : {
             "type" : "number"
+          },
+          "credit" : {
+            "type" : "number"
           }
         },
-        "required" : [ "carte", "especes", "nombre", "remises", "totalTtc" ]
+        "required" : [ "carte", "credit", "especes", "nombre", "remises", "totalTtc" ]
       },
       "SessionEnCours" : {
         "type" : "object",
@@ -4148,6 +4566,15 @@
           }
         },
         "required" : [ "id", "nom", "prenom", "role", "seuilsRemise" ]
+      },
+      "SuppressionDto" : {
+        "type" : "object",
+        "properties" : {
+          "supprime" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "supprime" ]
       }
     },
     "securitySchemes" : {

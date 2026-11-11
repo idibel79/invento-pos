@@ -14,11 +14,16 @@ import {
   useUtilisateurs,
 } from "./requetes";
 
-const MODES = { ESPECES: "Espèces", CARTE: "Carte" } as const;
+const MODES = { ESPECES: "Espèces", CARTE: "Carte", CREDIT: "Crédit" } as const;
 
 /** Paiement mixte : une part en espèces et le reste par carte. */
-function libellePaiement(v: { mode?: keyof typeof MODES | null; montantCarte: number }): string {
+function libellePaiement(v: {
+  mode?: keyof typeof MODES | null;
+  montantCarte: number;
+  client?: string | null;
+}): string {
   if (v.mode === "ESPECES" && v.montantCarte > 0) return "Espèces + carte";
+  if (v.mode === "CREDIT") return `Crédit · ${v.client ?? ""}`;
   return v.mode ? MODES[v.mode] : "—";
 }
 const COLONNES = [
@@ -149,7 +154,11 @@ export function HistoriqueVentes() {
         <Indicateur
           libelle="Espèces"
           valeur={resume.data ? dh(resume.data.especes) : "…"}
-          detail={resume.data ? `Carte : ${dh(resume.data.carte)}` : undefined}
+          detail={
+            resume.data
+              ? `Carte : ${dh(resume.data.carte)}${resume.data.credit > 0 ? ` · Crédit : ${dh(resume.data.credit)}` : ""}`
+              : undefined
+          }
         />
       </div>
 

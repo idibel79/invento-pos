@@ -13,6 +13,8 @@ import ma.invento.pos.catalogue.domain.Produit;
 import ma.invento.pos.catalogue.domain.Tva;
 import ma.invento.pos.catalogue.infrastructure.ProduitRepository;
 import ma.invento.pos.catalogue.infrastructure.TvaRepository;
+import ma.invento.pos.client.api.ClientDtos.ClientCommande;
+import ma.invento.pos.client.application.ClientService;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.SeuilsRemiseDto;
 import ma.invento.pos.identite.application.UtilisateurService;
@@ -60,6 +62,7 @@ public class DonneesDemo {
     private final ProduitRepository produits;
     private final MouvementStockRepository mouvements;
     private final TresorerieService tresorerie;
+    private final ClientService clients;
     private final ParametreService parametres;
     private final PasswordEncoder encoder;
     private final Clock clock;
@@ -74,6 +77,7 @@ public class DonneesDemo {
             ProduitRepository produits,
             MouvementStockRepository mouvements,
             TresorerieService tresorerie,
+            ClientService clients,
             ParametreService parametres,
             PasswordEncoder encoder,
             Clock clock) {
@@ -86,6 +90,7 @@ public class DonneesDemo {
         this.produits = produits;
         this.mouvements = mouvements;
         this.tresorerie = tresorerie;
+        this.clients = clients;
         this.parametres = parametres;
         this.encoder = encoder;
         this.clock = clock;
@@ -97,6 +102,7 @@ public class DonneesDemo {
     public void creerSiBaseVide() {
         if (caisses.count() == 0) creerBase();
         creerTresorerieSiVide();
+        creerClientsSiVide();
     }
 
     private void creerBase() {
@@ -147,6 +153,22 @@ public class DonneesDemo {
         long adminId = utilisateurs.findByRole(Role.ADMIN).orElseThrow().getId();
         tresorerie.alimenter(new BigDecimal("20000.00"), "Fonds de démo", null, adminId);
         log.info("Caisse principale de démo alimentée ; les comptes des caissiers partent de 0 DH.");
+    }
+
+    /** Annuaire de démo (sans dette : elle vient des ventes à crédit), aussi sur une base conservée sans client. */
+    private void creerClientsSiVide() {
+        if (!clients.lister(null, true).isEmpty()) return;
+        long adminId = utilisateurs.findByRole(Role.ADMIN).orElseThrow().getId();
+        clients.creer(
+                new ClientCommande("Hassan Alami", "06 61 23 45 78", "Voisin, paie en fin de mois", null, null),
+                adminId);
+        clients.creer(new ClientCommande("Fatima Zahra Bennani", "06 70 11 02 33", null, null, null), adminId);
+        clients.creer(
+                new ClientCommande("Épicerie Atlas", "05 22 40 18 90", "Revendeur, facture mensuelle", null, null),
+                adminId);
+        clients.creer(new ClientCommande("Khadija Ouazzani", "07 01 55 66 77", null, null, null), adminId);
+        clients.creer(new ClientCommande("Rachid El Fassi", "06 44 32 10 09", "Chauffeur", null, null), adminId);
+        log.info("Annuaire de démo créé : 5 clients.");
     }
 
     private void creerCompte(

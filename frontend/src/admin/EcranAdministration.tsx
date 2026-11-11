@@ -15,6 +15,7 @@ import { HistoriqueVentes } from "./HistoriqueVentes";
 import { ImportCatalogue } from "./ImportCatalogue";
 import { JournalRemises } from "./JournalRemises";
 import { type EntreeMenu, RubriqueAvecMenu } from "./RubriqueAvecMenu";
+import { Clients } from "../client/Clients";
 import { Utilisateurs } from "./Utilisateurs";
 
 const ONGLETS = {
@@ -39,6 +40,7 @@ const PARAMETRES: EntreeMenu[] = [
   { nom: "Boutique", detail: "Nom, adresse, contact du ticket", ecran: () => <Boutique /> },
   { nom: "Caisses", detail: "Créer, renommer, espèces", ecran: () => <Caisses /> },
   { nom: "Utilisateurs", detail: "Comptes, rôles, seuils de remise", ecran: () => <Utilisateurs /> },
+  { nom: "Clients", detail: "Annuaire, dettes, relevés", ecran: () => <Clients /> },
 ];
 
 const JOURNAUX: EntreeMenu[] = [

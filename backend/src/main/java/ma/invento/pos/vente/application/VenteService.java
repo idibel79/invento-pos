@@ -19,6 +19,7 @@ import ma.invento.pos.caisse.application.SessionCaisseService;
 import ma.invento.pos.caisse.application.SessionCaisseService.SessionOuverte;
 import ma.invento.pos.catalogue.domain.Produit;
 import ma.invento.pos.catalogue.infrastructure.ProduitRepository;
+import ma.invento.pos.client.application.ClientService;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
@@ -29,6 +30,7 @@ import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.shared.domain.RessourceIntrouvableException;
 import ma.invento.pos.stock.application.StockService;
 import ma.invento.pos.stock.application.StockService.Quantite;
+import ma.invento.pos.vente.api.VenteDtos.ClientVenteDto;
 import ma.invento.pos.vente.api.VenteDtos.LigneCommande;
 import ma.invento.pos.vente.api.VenteDtos.LigneDto;
 import ma.invento.pos.vente.api.VenteDtos.MiseEnAttenteCommande;
@@ -75,6 +77,7 @@ public class VenteService {
     private final AccordsRemise accordsRemise;
     private final NumeroteurVente numeroteur;
     private final JournalService journal;
+    private final ClientService clients;
     private final Clock clock;
 
     public VenteService(
@@ -86,6 +89,7 @@ public class VenteService {
             AccordsRemise accordsRemise,
             NumeroteurVente numeroteur,
             JournalService journal,
+            ClientService clients,
             Clock clock) {
         this.ventes = ventes;
         this.produits = produits;
@@ -95,6 +99,7 @@ public class VenteService {
         this.accordsRemise = accordsRemise;
         this.numeroteur = numeroteur;
         this.journal = journal;
+        this.clients = clients;
         this.clock = clock;
     }
 
@@ -160,7 +165,10 @@ public class VenteService {
         return versDto(vente);
     }
 
-    /** Validation et encaissement (espèces ou carte) ; la monnaie à rendre est calculée ici. */
+    /**
+     * Validation et encaissement (espèces, carte, les deux, ou crédit d'un client de l’annuaire) ; la monnaie
+     * à rendre est calculée ici.
+     */
     @Transactional
     public VenteDto valider(ValidationCommande commande, String cle, UtilisateurConnecte vendeur) {
         Optional<Vente> deja = rejouer(cle, vendeur);
@@ -186,7 +194,17 @@ public class VenteService {
                 motif(commande.panier()),
                 accords.principal(),
                 accords.parArticle());
-        if (commande.mode() == ModePaiement.CARTE && commande.especesRecues() != null) {
+        ClientService.Dette dette = null;
+        if (commande.mode() == ModePaiement.CREDIT) {
+            if (commande.clientId() == null) throw new RegleMetierException("Choisissez le client qui paie à crédit.");
+            dette = clients.vendreACredit(commande.clientId(), vente.getTotalTtc());
+            vente.associerClient(commande.clientId(), dette.nom(), dette.apres());
+        } else if (commande.clientId() != null) {
+            vente.associerClient(commande.clientId(), clients.nomPourVente(commande.clientId()), null);
+        }
+        if (commande.mode() == ModePaiement.CREDIT) {
+            vente.validerACredit(cle, maintenant);
+        } else if (commande.mode() == ModePaiement.CARTE && commande.especesRecues() != null) {
             vente.validerEspecesEtCarte(commande.especesRecues(), cle, maintenant);
         } else if (commande.mode() == ModePaiement.CARTE) {
             vente.validerParCarte(cle, maintenant);
@@ -197,7 +215,14 @@ public class VenteService {
             verifierMonnaie(commande.especesRecues().subtract(vente.getTotalTtc()), session);
             vente.validerEnEspeces(commande.especesRecues(), cle, maintenant);
         }
-        ventes.save(vente);
+        if (dette != null) {
+            // Le relevé du client référence la vente : elle doit être en base avant.
+            ventes.saveAndFlush(vente);
+            clients.inscrireVenteACredit(
+                    commande.clientId(), vente.getId(), vente.getTotalTtc(), dette.apres(), vendeur.id(), session.id());
+        } else {
+            ventes.save(vente);
+        }
         stock.sortirPourVente(quantites(panier), vente.getNumero(), vendeur.id(), maintenant);
         journaliserAccords(accords, vente, vendeur);
         return versDto(vente);
@@ -470,7 +495,10 @@ public class VenteService {
                 vente.getCreeLe(),
                 vente.getFinaliseeLe(),
                 paiements.isEmpty() ? null : paiements.getFirst(),
-                paiements);
+                paiements,
+                vente.getClientId() == null
+                        ? null
+                        : new ClientVenteDto(vente.getClientId(), vente.getClientNom(), vente.getDetteClientApres()));
     }
 
     private static LigneDto ligneDto(LigneCalculee l, String designation, boolean stockSuffisant) {
