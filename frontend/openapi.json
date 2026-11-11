@@ -763,7 +763,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ClotureCommande"
+                "$ref" : "#/components/schemas/ComptageCommande"
               }
             }
           },
@@ -3090,7 +3090,7 @@
         },
         "required" : [ "attendu", "attenduEspeces", "attenduTpe", "recu", "soldeCompte", "ventesCarte", "ventesEspeces", "verse" ]
       },
-      "ClotureCommande" : {
+      "ComptageCommande" : {
         "type" : "object",
         "properties" : {
           "montantCompteEspeces" : {
@@ -3107,6 +3107,20 @@
           }
         },
         "required" : [ "montantCompteEspeces", "montantCompteTpe", "montantVerse" ]
+      },
+      "ClotureCommande" : {
+        "type" : "object",
+        "properties" : {
+          "montantCompteEspeces" : {
+            "type" : "number",
+            "minimum" : 0.0
+          },
+          "montantCompteTpe" : {
+            "type" : "number",
+            "minimum" : 0.0
+          }
+        },
+        "required" : [ "montantCompteEspeces", "montantCompteTpe" ]
       },
       "InventaireDisponible" : {
         "type" : "object",

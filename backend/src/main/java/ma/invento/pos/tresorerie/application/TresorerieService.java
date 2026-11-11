@@ -113,7 +113,7 @@ public class TresorerieService implements ComptesCaissiers {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void cloturer(SessionCaisse session, BigDecimal ventes, BigDecimal montantVerse, long auteurId) {
+    public void cloturer(SessionCaisse session, BigDecimal ventes, long auteurId) {
         Compte compte = comptes.caissierOuCree(session.getCaissierId());
         BigDecimal credit = ComptageTiroir.creditCloture(ventes, session.getEcart());
         if (credit.signum() > 0) comptes.crediter(compte.id(), credit);
@@ -128,11 +128,6 @@ public class TresorerieService implements ComptesCaissiers {
                 null,
                 auteurId,
                 null);
-        if (montantVerse.signum() > 0) {
-            Versement versement = envoyer(
-                    compte, comptes.principale(), montantVerse, null, session, true, BigDecimal.ZERO, null, auteurId);
-            if (estAdmin(session.getCaissierId())) valider(versement, auteurId, true);
-        }
     }
 
     @Override

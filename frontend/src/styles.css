@@ -3230,6 +3230,32 @@ button:disabled {
   gap: 8px;
 }
 
+/* Le récapitulatif occupe toute la hauteur de la colonne de comptage. */
+.cloture-recap {
+  flex-grow: 1;
+}
+
+/* Clôture caissier : écart espèces, écart TPE et écart total sur trois lignes fixes. */
+.cloture-ecart.cloture-ecart-lignes {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.cloture-ecart-ligne {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.cloture-ecart-total {
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--bordure);
+  font-weight: 700;
+}
+
 .cloture-titre {
   margin: 4px 0 0;
   font-size: 11.5px;
