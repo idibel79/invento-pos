@@ -17,5 +17,9 @@ public enum TypeOperation {
     /** Passage en perte par l'admin : le solde du caissier baisse, sans effet sur la caisse principale. */
     AJUSTEMENT,
     /** Clôture d'une session : les ventes et l'excédent du tiroir s'ajoutent au solde du caissier. */
-    CLOTURE_SESSION
+    CLOTURE_SESSION,
+    /** Remboursement de la dette d'un client : crédite le compte de qui l'encaisse (la caisse principale pour l'admin). */
+    REMBOURSEMENT_DETTE,
+    /** Annulation par l'admin d'un remboursement de dette : le compte qui l'avait reçu est débité. */
+    ANNULATION_DETTE
 }

@@ -59,13 +59,17 @@ public final class VenteDtos {
      * @param mode espèces si absent
      * @param especesRecues montant remis par le client, obligatoire en espèces ; avec le mode {@code CARTE},
      *     s'il est donné, paiement mixte : la part payée en espèces (sans monnaie), le reste par carte
+     * @param clientId client de l'annuaire, imprimé sur le ticket ; obligatoire avec le mode {@code CREDIT}
+     *     (la totalité du ticket va sur sa dette)
      */
     public record ValidationCommande(
             @NotNull @Valid PanierCommande panier,
             @Schema(nullable = true) ModePaiement mode,
 
             @Schema(nullable = true) @DecimalMin("0.00") @Digits(integer = 10, fraction = 2)
-            BigDecimal especesRecues) {}
+            BigDecimal especesRecues,
+
+            @Schema(nullable = true) Long clientId) {}
 
     public record LigneDto(
             Long produitId,
@@ -143,5 +147,11 @@ public final class VenteDtos {
             @Schema(nullable = true) PaiementDto paiement,
 
             @Schema(description = "Tous les paiements : espèces puis carte pour un paiement mixte")
-            List<PaiementDto> paiements) {}
+            List<PaiementDto> paiements,
+
+            @Schema(nullable = true) ClientVenteDto client) {}
+
+    /** @param detteApres dette du client juste après la vente, pour une vente à crédit */
+    public record ClientVenteDto(
+            Long id, String nom, @Schema(nullable = true) BigDecimal detteApres) {}
 }

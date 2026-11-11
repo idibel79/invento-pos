@@ -68,6 +68,7 @@ public class TresorerieService implements ComptesCaissiers {
     private final SessionCaisseRepository sessions;
     private final CaisseRepository caisses;
     private final EncaissementsSession encaissements;
+    private final RemboursementsDettes remboursements;
     private final UtilisateurRepository utilisateurs;
     private final ParametreService parametres;
     private final JournalService journal;
@@ -80,6 +81,7 @@ public class TresorerieService implements ComptesCaissiers {
             SessionCaisseRepository sessions,
             CaisseRepository caisses,
             EncaissementsSession encaissements,
+            RemboursementsDettes remboursements,
             UtilisateurRepository utilisateurs,
             ParametreService parametres,
             JournalService journal,
@@ -90,6 +92,7 @@ public class TresorerieService implements ComptesCaissiers {
         this.sessions = sessions;
         this.caisses = caisses;
         this.encaissements = encaissements;
+        this.remboursements = remboursements;
         this.utilisateurs = utilisateurs;
         this.parametres = parametres;
         this.journal = journal;
@@ -108,7 +111,8 @@ public class TresorerieService implements ComptesCaissiers {
     @Transactional(readOnly = true)
     public MouvementsSession mouvementsSession(long sessionId) {
         BigDecimal[] recuEtVerse = versements.recuEtVerse(sessionId);
-        return new MouvementsSession(recuEtVerse[0], recuEtVerse[1]);
+        RemboursementsDettes.Montants dettes = remboursements.pendantLaSession(sessionId);
+        return new MouvementsSession(recuEtVerse[0].add(dettes.especes()), dettes.tpe(), recuEtVerse[1]);
     }
 
     @Override
@@ -415,7 +419,12 @@ public class TresorerieService implements ComptesCaissiers {
                 null,
                 utilisateurId,
                 statut,
-                Set.of(TypeOperation.ALIMENTATION, TypeOperation.VERSEMENT_ENVOYE, TypeOperation.CLOTURE_SESSION),
+                Set.of(
+                        TypeOperation.ALIMENTATION,
+                        TypeOperation.VERSEMENT_ENVOYE,
+                        TypeOperation.CLOTURE_SESSION,
+                        TypeOperation.REMBOURSEMENT_DETTE,
+                        TypeOperation.ANNULATION_DETTE),
                 croissant,
                 page,
                 taille);
@@ -457,6 +466,90 @@ public class TresorerieService implements ComptesCaissiers {
             throw new RegleMetierException(
                     "Cet utilisateur a un versement en transit : validez-le, refusez-le ou annulez-le avant de le désactiver.");
         }
+    }
+
+    // ---------------------------------------------------------------- Dettes des clients
+
+    /**
+     * Remboursement de la dette d'un client, dans la transaction du domaine clients : le compte de qui
+     * encaisse est crédité (l'argent est à lui de le verser) ; l'admin l'encaisse directement dans la
+     * caisse principale.
+     *
+     * @return la session ouverte du caissier, où l'argent entre dans le tiroir, ou null
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Long encaisserDette(UtilisateurConnecte utilisateur, BigDecimal montant, String libelle) {
+        if (utilisateur.estAdmin()) {
+            Compte principale = comptes.principale();
+            comptes.crediter(principale.id(), montant);
+            journaliser(
+                    TypeOperation.REMBOURSEMENT_DETTE,
+                    principale.id(),
+                    montant,
+                    null,
+                    null,
+                    null,
+                    null,
+                    libelle,
+                    utilisateur.id(),
+                    null);
+            return null;
+        }
+        Compte compte = comptes.caissierOuCree(utilisateur.id());
+        SessionCaisse session =
+                sessions.findOuverteDuCaissierForUpdate(utilisateur.id()).orElse(null);
+        comptes.crediter(compte.id(), montant);
+        journaliser(
+                TypeOperation.REMBOURSEMENT_DETTE,
+                compte.id(),
+                montant,
+                utilisateur.id(),
+                session,
+                null,
+                null,
+                libelle,
+                utilisateur.id(),
+                null);
+        return session == null ? null : session.getId();
+    }
+
+    /**
+     * Annulation par l'admin d'un remboursement : le compte qui l'avait reçu est débité. Le compte d'un
+     * caissier peut devenir négatif (il a déjà versé l'argent) ; la caisse principale, jamais.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void annulerDette(
+            long encaisseParId, boolean caissePrincipale, BigDecimal montant, String libelle, long adminId) {
+        if (caissePrincipale) {
+            Compte principale = comptes.principale();
+            comptes.debiter(principale.id(), montant, BigDecimal.ZERO)
+                    .orElseThrow(() -> soldeInsuffisant("de la caisse principale", principale.solde()));
+            journaliser(
+                    TypeOperation.ANNULATION_DETTE,
+                    principale.id(),
+                    montant.negate(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    libelle,
+                    adminId,
+                    null);
+            return;
+        }
+        Compte compte = comptes.caissierOuCree(encaisseParId);
+        comptes.crediter(compte.id(), montant.negate());
+        journaliser(
+                TypeOperation.ANNULATION_DETTE,
+                compte.id(),
+                montant.negate(),
+                encaisseParId,
+                null,
+                null,
+                null,
+                libelle,
+                adminId,
+                null);
     }
 
     // ---------------------------------------------------------------- Mouvements
@@ -627,7 +720,8 @@ public class TresorerieService implements ComptesCaissiers {
     private ComptageTiroir tiroir(SessionCaisse session) {
         VentesSession ventes = encaissements.ventes(session.getId());
         MouvementsSession mouvements = mouvementsSession(session.getId());
-        return new ComptageTiroir(ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.verse());
+        return new ComptageTiroir(
+                ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.recuTpe(), mouvements.verse());
     }
 
     private Optional<VersementDto> dejaEnvoye(UUID cle, long auteurId) {

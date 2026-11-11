@@ -57,6 +57,9 @@ public class Vente {
     private Instant attenteExpireLe;
     private Instant creeLe;
     private Instant finaliseeLe;
+    private Long clientId;
+    private String clientNom;
+    private BigDecimal detteClientApres;
 
     @Version
     private long version;
@@ -163,6 +166,32 @@ public class Vente {
         paiements.add(new Paiement(this, ModePaiement.ESPECES, especes, especes));
         paiements.add(new Paiement(this, ModePaiement.CARTE, totalTtc.subtract(especes), null));
         finaliser(cleIdempotence, maintenant);
+    }
+
+    /** Vente à crédit : la totalité du ticket va sur la dette du client (jamais pour une vente à 0 DH). */
+    public void validerACredit(String cleIdempotence, Instant maintenant) {
+        verifierModifiable();
+        if (clientId == null) throw new RegleMetierException("Choisissez le client qui paie à crédit.");
+        if (totalTtc.signum() <= 0) {
+            throw new RegleMetierException("Une vente à 0 DH ne peut pas être payée à crédit.");
+        }
+        paiements.add(new Paiement(this, ModePaiement.CREDIT, totalTtc, null));
+        finaliser(cleIdempotence, maintenant);
+    }
+
+    /**
+     * Client de la vente, figé sur le ticket ; {@code detteApres} seulement pour une vente à crédit (sa
+     * dette juste après).
+     */
+    public void associerClient(long clientId, String nom, BigDecimal detteApres) {
+        verifierModifiable();
+        this.clientId = clientId;
+        this.clientNom = nom;
+        this.detteClientApres = detteApres;
+    }
+
+    public boolean estACredit() {
+        return paiements.stream().anyMatch(p -> p.getMode() == ModePaiement.CREDIT);
     }
 
     private void finaliser(String cleIdempotence, Instant maintenant) {
@@ -285,6 +314,18 @@ public class Vente {
 
     public Instant getFinaliseeLe() {
         return finaliseeLe;
+    }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public String getClientNom() {
+        return clientNom;
+    }
+
+    public BigDecimal getDetteClientApres() {
+        return detteClientApres;
     }
 
     public List<LigneVente> getLignes() {

@@ -49,6 +49,8 @@ export function useValiderVente() {
       // Contenu du tiroir affiché dans la barre de caisse, et solde du compte (ventes comprises).
       void queryClient.invalidateQueries({ queryKey: cles.sessionCourante });
       void queryClient.invalidateQueries({ queryKey: ["tresorerie"] });
+      // Dette des clients (vente à crédit).
+      void queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
   });
 }

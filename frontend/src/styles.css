@@ -1630,7 +1630,7 @@ button:disabled {
 
 .modes-paiement {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: auto;
 }
@@ -3817,4 +3817,555 @@ button.filtre-compact {
   .zone-impression .ticket-caisse {
     width: 100%;
   }
+}
+
+/* ------------------------------------------------------------------ Clients et crédit */
+
+.texte-dette {
+  color: var(--danger);
+}
+
+.texte-succes {
+  color: var(--succes);
+}
+
+.chiffres {
+  font-variant-numeric: tabular-nums;
+}
+
+.lien-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--primaire);
+  cursor: pointer;
+  text-align: left;
+}
+
+.lien-action:hover,
+.lien-action:focus-visible {
+  color: var(--primaire-survol);
+  text-decoration: underline;
+}
+
+/* Paramètres › Clients (design B) : tableau pleine largeur, relevé et actions en popups. */
+.clients-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.clients-tete .admin-titre {
+  flex-grow: 1;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Maquette B : contrôles de l'en-tête alignés sur 36 px, petits rayons. */
+.clients-tete .bouton {
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.clients-tete .clients-recherche {
+  height: 36px;
+  font-size: 14px;
+}
+
+.clients-resume {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.clients-filtres {
+  display: flex;
+  gap: 6px;
+}
+
+.pastille-filtre {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pastille-filtre[aria-pressed="true"] {
+  border-color: var(--texte-fort);
+  background: var(--texte-fort);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.clients-recherche,
+.choix-client-recherche {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--champ);
+  color: var(--texte);
+  font: inherit;
+}
+
+.clients-recherche {
+  width: 220px;
+}
+
+.clients-tableau {
+  border: 1px solid var(--bordure-carte);
+  border-radius: 6px;
+  background: var(--carte);
+}
+
+.clients-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) 130px minmax(0, 1.4fr) 120px 190px;
+  gap: 12px;
+  align-items: center;
+  min-height: 46px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clients-ligne:last-child {
+  border-bottom: 0;
+}
+
+.clients-ligne.cliquable {
+  cursor: pointer;
+}
+
+.clients-ligne.cliquable:hover {
+  background: var(--accent-doux);
+}
+
+.clients-nom .lien-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--designation);
+  font-weight: 500;
+}
+
+.rangee-gauche {
+  margin-right: auto;
+}
+
+.clients-ligne.inactive > span:not(.clients-actions) {
+  opacity: 0.65;
+}
+
+.clients-entete {
+  min-height: 36px;
+  border-radius: 6px 6px 0 0;
+  background: var(--fond);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+.clients-nom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 500;
+  color: var(--designation);
+}
+
+.clients-note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.clients-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+@media (max-width: 1200px) {
+  .clients-ligne {
+    grid-template-columns: minmax(0, 1.3fr) 120px 110px 190px;
+  }
+
+  .clients-ligne > :nth-child(3) {
+    display: none;
+  }
+}
+
+.menu-client {
+  position: relative;
+}
+
+.menu-client-bouton {
+  min-width: 36px;
+  padding: 0 8px;
+}
+
+/* Relevé d'un client en popup : tableau, impression et fermeture. */
+.releve-popup {
+  gap: 12px;
+}
+
+.releve-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.releve-entete > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.releve-entete .a-droite {
+  align-items: flex-end;
+}
+
+.releve-client {
+  font-size: 16px;
+  color: var(--designation);
+}
+
+.releve-dette {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.releve-defilement {
+  max-height: 55vh;
+  overflow-y: auto;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+}
+
+.releve-tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.releve-tableau th {
+  position: sticky;
+  top: 0;
+  padding: 8px 10px;
+  background: var(--fond);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gris);
+  text-align: left;
+}
+
+.releve-tableau th.a-droite,
+.releve-tableau td.a-droite {
+  text-align: right;
+}
+
+.releve-tableau td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--bordure);
+}
+
+.releve-tableau tr.annule td:nth-child(2),
+.releve-tableau tr.annule td:nth-child(5) {
+  text-decoration: line-through;
+  color: var(--gris-clair);
+}
+
+.releve-aide {
+  flex-grow: 1;
+  font-size: 12.5px;
+}
+
+.releve-impression {
+  display: none;
+}
+
+@page releve {
+  size: A4;
+  margin: 15mm;
+}
+
+@media print {
+  .zone-impression .releve-impression {
+    display: block;
+    page: releve;
+    color: #000000;
+    font-size: 11pt;
+  }
+
+  .releve-impression h1 {
+    margin: 0 0 8pt;
+    font-size: 15pt;
+  }
+
+  .releve-impression .releve-entete {
+    margin-bottom: 8pt;
+  }
+
+  .releve-impression .releve-tableau th {
+    position: static;
+    background: #eeeeee;
+    color: #000000;
+  }
+
+  .releve-impression .texte-dette,
+  .releve-impression .texte-succes,
+  .releve-impression .texte-secondaire {
+    color: #000000;
+  }
+}
+
+/* Relevé d'un client : une ligne par mouvement, montant signé et dette après. */
+.releve {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.releve-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.releve-ligne:last-child {
+  border-bottom: 0;
+}
+
+.releve-ligne > .texte-secondaire {
+  font-size: 12px;
+}
+
+.releve-ligne .lien-action {
+  grid-column: 1 / -1;
+  font-size: 12px;
+}
+
+.releve-ligne.annule .releve-libelle,
+.releve-ligne.annule .releve-montant {
+  text-decoration: line-through;
+  color: var(--gris-clair);
+}
+
+.releve-libelle {
+  font-weight: 500;
+  color: var(--texte-fort);
+}
+
+.releve-montant {
+  text-align: right;
+}
+
+/* Choix d'un client (encaissement, dette) : recherche puis liste avec la dette. */
+.choix-client {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.choix-client-recherche {
+  height: 48px;
+  border: 2px solid var(--primaire);
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.choix-client-liste {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+}
+
+.choix-client-liste .vide {
+  padding: 12px 14px;
+}
+
+.choix-client-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 6px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.choix-client-option:last-child {
+  border-bottom: 0;
+}
+
+.choix-client-option:hover,
+.choix-client-option:focus-visible {
+  background: var(--accent-doux);
+}
+
+.choix-client-option[aria-selected="true"] {
+  background: var(--accent-doux);
+  box-shadow: inset 3px 0 0 var(--primaire);
+}
+
+.choix-client-texte,
+.choix-client-dette {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.choix-client-dette {
+  align-items: flex-end;
+}
+
+.choix-client-nom {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--designation);
+}
+
+.choix-client-dette strong {
+  font-size: 14px;
+}
+
+/* Encaissement : client facultatif sous les modes, et volet Crédit. */
+.encaissement-client {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.encaissement-client .bouton-icone {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+}
+
+.encaissement-credit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.encaissement-credit h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dette-apres {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--alerte-fond);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dette-apres > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dette-apres dt,
+.dette-apres dd {
+  margin: 0;
+}
+
+.dette-apres dd {
+  font-weight: 600;
+}
+
+.dette-apres-total {
+  color: var(--alerte-texte);
+  font-weight: 600;
+}
+
+.dette-apres-total dd {
+  font-size: 17px;
+}
+
+/* Mon compte › Encaisser une dette. */
+.dette-client-choisi {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+}
+
+.dette-client-choisi > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dette-client-choisi strong {
+  font-size: 16px;
+  color: var(--designation);
+}
+
+.dette-client-choisi .a-droite {
+  align-items: flex-end;
+}
+
+.dette-client-choisi .a-droite strong {
+  font-size: 18px;
+}
+
+.dette-client-choisi .a-droite strong.texte-dette {
+  color: var(--danger);
+}
+
+.dette-montants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dette-derniers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }

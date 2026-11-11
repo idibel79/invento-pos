@@ -133,7 +133,8 @@ public class SessionCaisseService {
     private ComptageTiroir tiroir(long sessionId) {
         VentesSession ventes = encaissements.ventes(sessionId);
         MouvementsSession mouvements = comptes.mouvementsSession(sessionId);
-        return new ComptageTiroir(ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.verse());
+        return new ComptageTiroir(
+                ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.recuTpe(), mouvements.verse());
     }
 
     /** Toutes les caisses avec, pour celles qui sont ouvertes, le fond et les espèces (écran admin). */

@@ -105,8 +105,20 @@ export function TicketCaisse({ vente, boutique, vendeur, fuseau }: Props) {
         <dl className="ticket-paiement">
           <div>
             <dt>Mode de paiement</dt>
-            <dd>{paiement.mode === "CARTE" ? "Carte bancaire" : "Espèces"}</dd>
+            <dd>
+              {paiement.mode === "CREDIT"
+                ? "Payé à crédit"
+                : paiement.mode === "CARTE"
+                  ? "Carte bancaire"
+                  : "Espèces"}
+            </dd>
           </div>
+          {paiement.mode === "CREDIT" && vente.client?.detteApres != null && (
+            <div>
+              <dt>Nouveau solde du client</dt>
+              <dd>{dh(vente.client.detteApres)}</dd>
+            </div>
+          )}
           {paiement.mode === "ESPECES" && paiement.montantRecu != null && (
             <>
               <div>
@@ -121,6 +133,7 @@ export function TicketCaisse({ vente, boutique, vendeur, fuseau }: Props) {
           )}
         </dl>
       )}
+      {vente.client && <p className="ticket-vendeur">Client : {vente.client.nom}</p>}
       <p className="ticket-vendeur">Vendeur : {vendeur}</p>
       {boutique?.ticketMessage && <p className="ticket-pied">{boutique.ticketMessage}</p>}
     </article>

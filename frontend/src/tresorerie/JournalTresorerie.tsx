@@ -57,6 +57,7 @@ const COLONNES_MON_COMPTE: [string, boolean][] = [
  */
 function typeLigne(o: Operation, montant: number): string {
   if (o.type === "CLOTURE_SESSION") return "Ventes";
+  if (o.type === "REMBOURSEMENT_DETTE" || o.type === "ANNULATION_DETTE") return "Dette";
   return montant < 0 ? "Versement" : "Crédit";
 }
 
@@ -93,6 +94,10 @@ function libelle(o: Operation, monCompte: boolean): [string, string] {
       return ["Ajustement (perte)", complement];
     case "CLOTURE_SESSION":
       return ["Clôture", complement];
+    case "REMBOURSEMENT_DETTE":
+      return ["Remboursement de dette", complement];
+    case "ANNULATION_DETTE":
+      return ["Remboursement de dette annulé", complement];
   }
 }
 

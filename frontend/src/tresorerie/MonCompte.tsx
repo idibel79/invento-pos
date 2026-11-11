@@ -2,6 +2,7 @@ import { useState } from "react";
 import { messageErreur } from "../api/erreurs";
 import { useParametres } from "../caisse/requetes";
 import { decimal } from "../ui/format";
+import { EncaisserDetteDialogue } from "../client/EncaisserDetteDialogue";
 import { AValiderDialogue, VerserDialogue } from "./ComptePopups";
 import { JournalTresorerie } from "./JournalTresorerie";
 import { useMonCompte } from "./requetes";
@@ -12,7 +13,7 @@ import { useMonCompte } from "./requetes";
  */
 export function MonCompte() {
   const fuseau = useParametres().data?.fuseauHoraire;
-  const [popup, setPopup] = useState<"verser" | "valider" | null>(null);
+  const [popup, setPopup] = useState<"verser" | "valider" | "dette" | null>(null);
   const compte = useMonCompte();
   const aValider = compte.data?.aValider.length ?? 0;
 
@@ -28,6 +29,9 @@ export function MonCompte() {
         <button type="button" className="bouton-compact" onClick={() => setPopup("valider")}>
           À valider ({aValider})
         </button>
+        <button type="button" className="bouton-compact" onClick={() => setPopup("dette")}>
+          Encaisser une dette
+        </button>
         <button type="button" className="bouton-compact plein" onClick={() => setPopup("verser")}>
           Verser
         </button>
@@ -40,6 +44,7 @@ export function MonCompte() {
       <JournalTresorerie monCompte fuseau={fuseau} />
       {popup === "verser" && <VerserDialogue onFermer={() => setPopup(null)} />}
       {popup === "valider" && <AValiderDialogue onFermer={() => setPopup(null)} />}
+      {popup === "dette" && <EncaisserDetteDialogue onFermer={() => setPopup(null)} />}
     </div>
   );
 }

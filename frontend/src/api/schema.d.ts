@@ -52,7 +52,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/caisses/{id}": {
+    "/api/v1/clients/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -63,6 +63,22 @@ export interface paths {
         put: operations["modifier_3"];
         post?: never;
         delete: operations["supprimer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/caisses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["modifier_4"];
+        post?: never;
+        delete: operations["supprimer_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -420,6 +436,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["lister_1"];
+        put?: never;
+        post: operations["creer_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/{id}/remboursements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rembourser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/remboursements/{id}/annulation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["annuler_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/categories": {
         parameters: {
             query?: never;
@@ -443,9 +507,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_1"];
+        get: operations["lister_2"];
         put?: never;
-        post: operations["creer_2"];
+        post: operations["creer_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -747,7 +811,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_2"];
+        get: operations["lister_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -811,7 +875,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_3"];
+        get: operations["lister_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -827,7 +891,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_4"];
+        get: operations["lister_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -876,6 +940,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["resumer_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/{id}/releve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["releve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1052,6 +1132,28 @@ export interface components {
             ticketMessage: string;
             fuseauHoraire: string;
         };
+        ClientCommande: {
+            nom: string;
+            telephone?: string;
+            note?: string;
+            /** @description Plafond de crédit, sans limite si absent */
+            plafond?: number | null;
+            /** @description Actif si absent */
+            actif?: boolean | null;
+        };
+        ClientDto: {
+            /** Format: int64 */
+            id: number;
+            nom: string;
+            telephone: string | null;
+            note: string | null;
+            actif: boolean;
+            dette: number;
+            /** @description Plafond de crédit, sans limite si absent */
+            plafond: number | null;
+            /** Format: date-time */
+            dernierMouvement: string | null;
+        };
         CaisseCommande: {
             nom: string;
             active?: boolean;
@@ -1089,8 +1191,16 @@ export interface components {
         ValidationCommande: {
             panier: components["schemas"]["PanierCommande"];
             /** @enum {string|null} */
-            mode?: "ESPECES" | "CARTE" | null;
+            mode?: "ESPECES" | "CARTE" | "CREDIT" | null;
             especesRecues?: number | null;
+            /** Format: int64 */
+            clientId?: number | null;
+        };
+        ClientVenteDto: {
+            /** Format: int64 */
+            id: number;
+            nom: string;
+            detteApres: number | null;
         };
         LigneDto: {
             /** Format: int64 */
@@ -1108,7 +1218,7 @@ export interface components {
         };
         PaiementDto: {
             /** @enum {string} */
-            mode: "ESPECES" | "CARTE";
+            mode: "ESPECES" | "CARTE" | "CREDIT";
             montant: number;
             montantRecu: number | null;
             rendu: number | null;
@@ -1149,6 +1259,7 @@ export interface components {
             paiement: components["schemas"]["PaiementDto"] | null;
             /** @description Tous les paiements : espèces puis carte pour un paiement mixte */
             paiements: components["schemas"]["PaiementDto"][];
+            client: components["schemas"]["ClientVenteDto"] | null;
         };
         VentilationTvaDto: {
             taux: number;
@@ -1309,6 +1420,39 @@ export interface components {
             nombreAvertissements: number;
             avertissements: string[];
         };
+        RemboursementCommande: {
+            especes?: number | null;
+            tpe?: number | null;
+            /** Format: uuid */
+            cle?: string | null;
+        };
+        MouvementClientDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            clientId: number;
+            client: string;
+            /** @enum {string} */
+            type: "VENTE_CREDIT" | "REMBOURSEMENT" | "ANNULATION_REMBOURSEMENT";
+            montant: number;
+            especes: number | null;
+            tpe: number | null;
+            /** Format: int64 */
+            venteId: number | null;
+            venteNumero: string | null;
+            /** Format: int64 */
+            remboursementId: number | null;
+            annule: boolean;
+            utilisateur: string;
+            caissePrincipale: boolean;
+            motif: string | null;
+            detteApres: number;
+            /** Format: date-time */
+            le: string;
+        };
+        AnnulationCommande: {
+            motif: string;
+        };
         DemandeAutorisation: {
             /** Format: int64 */
             autorisateurId: number;
@@ -1410,7 +1554,7 @@ export interface components {
             /** Format: date-time */
             le: string;
             /** @enum {string} */
-            type: "ALIMENTATION" | "RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_RECU" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "AJUSTEMENT" | "CLOTURE_SESSION";
+            type: "ALIMENTATION" | "RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_RECU" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "AJUSTEMENT" | "CLOTURE_SESSION" | "REMBOURSEMENT_DETTE" | "ANNULATION_DETTE";
             /** @enum {string} */
             compte: "PRINCIPALE" | "CAISSIER";
             montant: number;
@@ -1532,7 +1676,7 @@ export interface components {
             /** Format: int64 */
             utilisateurId: number | null;
             /** @enum {string} */
-            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "SESSION_COMPTEE" | "CAISSE_PRINCIPALE_ALIMENTEE" | "CAISSE_PRINCIPALE_RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_VALIDE" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "COMPTE_AJUSTE" | "REMISE_AUTORISEE";
+            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "SESSION_COMPTEE" | "CAISSE_PRINCIPALE_ALIMENTEE" | "CAISSE_PRINCIPALE_RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_VALIDE" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "COMPTE_AJUSTE" | "REMISE_AUTORISEE" | "CLIENT_CREE" | "CLIENT_MODIFIE" | "CLIENT_SUPPRIME" | "DETTE_ENCAISSEE" | "DETTE_REMBOURSEMENT_ANNULE";
             detail: string | null;
             /** Format: date-time */
             creeLe: string;
@@ -1575,10 +1719,11 @@ export interface components {
             autorisePar: string | null;
             totalTtc: number;
             /** @enum {string|null} */
-            mode: "ESPECES" | "CARTE" | null;
+            mode: "ESPECES" | "CARTE" | "CREDIT" | null;
             montantRecu: number | null;
             rendu: number | null;
             montantCarte: number;
+            client: string | null;
         };
         DetailVente: {
             /** Format: int64 */
@@ -1601,10 +1746,11 @@ export interface components {
             totalTva: number;
             totalTtc: number;
             /** @enum {string|null} */
-            mode: "ESPECES" | "CARTE" | null;
+            mode: "ESPECES" | "CARTE" | "CREDIT" | null;
             montantRecu: number | null;
             rendu: number | null;
             montantCarte: number;
+            client: string | null;
         };
         LigneHistorique: {
             designation: string;
@@ -1626,6 +1772,7 @@ export interface components {
             remises: number;
             especes: number;
             carte: number;
+            credit: number;
         };
         SessionEnCours: {
             /** Format: int64 */
@@ -1651,6 +1798,9 @@ export interface components {
             /** @enum {string} */
             role: "CAISSIER" | "RESPONSABLE" | "ADMIN";
             seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
+        };
+        SuppressionDto: {
+            supprime: boolean;
         };
     };
     responses: never;
@@ -1790,6 +1940,54 @@ export interface operations {
         };
         requestBody: {
             content: {
+                "application/json": components["schemas"]["ClientCommande"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDto"];
+                };
+            };
+        };
+    };
+    supprimer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuppressionDto"];
+                };
+            };
+        };
+    };
+    modifier_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
                 "application/json": components["schemas"]["CaisseCommande"];
             };
         };
@@ -1805,7 +2003,7 @@ export interface operations {
             };
         };
     };
-    supprimer: {
+    supprimer_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2451,6 +2649,105 @@ export interface operations {
             };
         };
     };
+    lister_1: {
+        parameters: {
+            query?: {
+                recherche?: string;
+                inactifs?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDto"][];
+                };
+            };
+        };
+    };
+    creer_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientCommande"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDto"];
+                };
+            };
+        };
+    };
+    rembourser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemboursementCommande"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MouvementClientDto"];
+                };
+            };
+        };
+    };
+    annuler_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnulationCommande"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MouvementClientDto"];
+                };
+            };
+        };
+    };
     categories: {
         parameters: {
             query?: never;
@@ -2495,7 +2792,7 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    lister_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2515,7 +2812,7 @@ export interface operations {
             };
         };
     };
-    creer_2: {
+    creer_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2937,7 +3234,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
+    lister_3: {
         parameters: {
             query?: {
                 jours?: number;
@@ -3031,7 +3328,7 @@ export interface operations {
             };
         };
     };
-    lister_3: {
+    lister_4: {
         parameters: {
             query?: {
                 /** @description Zero-based page index (0..N) */
@@ -3058,7 +3355,7 @@ export interface operations {
             };
         };
     };
-    lister_4: {
+    lister_5: {
         parameters: {
             query?: {
                 jour?: string;
@@ -3148,6 +3445,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResumeVentes"];
+                };
+            };
+        };
+    };
+    releve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MouvementClientDto"][];
                 };
             };
         };

@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { useSessionCourante } from "../caisse/requetes";
+import { ChoixClient } from "../client/ChoixClient";
+import type { Client } from "../client/requetes";
 import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, lireMontant, pourcent } from "../ui/format";
 import { PaveNumerique, saisirTouche } from "../ui/PaveNumerique";
@@ -32,7 +34,10 @@ interface Props {
   onFermer: () => void;
 }
 
-/** MIXTE : une part en espèces, le reste par carte (envoyé au serveur en mode CARTE avec les espèces). */
+/**
+ * MIXTE : une part en espèces, le reste par carte (envoyé au serveur en mode CARTE avec les espèces).
+ * CREDIT : la totalité du ticket va sur la dette d'un client de l'annuaire.
+ */
 type Mode = NonNullable<Schemas["ValidationCommande"]["mode"]> | "MIXTE";
 
 /** Billets en circulation : un clic remplace le montant reçu par la valeur du billet (sans cumul). */
@@ -44,8 +49,9 @@ function enSaisie(montant: number): string {
 }
 
 /**
- * Encaissement en espèces, par carte ou les deux (une part en espèces, le reste par carte), design B « ticket à gauche ».
- * Le rendu affiché aide le caissier ; celui du ticket est calculé par le serveur.
+ * Encaissement en espèces, par carte, les deux (une part en espèces, le reste par carte) ou à crédit (client de
+ * l'annuaire), design B « ticket à gauche ». Un client peut aussi être choisi pour une vente payée comptant : son
+ * nom est imprimé sur le ticket. Le rendu affiché aide le caissier ; celui du ticket est calculé par le serveur.
  */
 export function EncaissementDialogue({ commande, total, apercu, onValidee, onFermer }: Props) {
   // Une clé par encaissement : un nouvel essai après une coupure ne crée pas une seconde vente.
@@ -54,12 +60,15 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
   const [saisie, setSaisie] = useState("");
   // Carte : la vente n'est validée qu'une fois le paiement accepté sur le terminal.
   const [confirmerCarte, setConfirmerCarte] = useState(false);
+  const [client, setClient] = useState<Client | null>(null);
+  const [choisirClient, setChoisirClient] = useState(false);
   const valider = useValiderVente();
   const recu = saisie === "" ? null : lireMontant(saisie);
   const rendu = recu === null ? null : recu - total;
   const suffisant = recu !== null && rendu !== null && rendu >= -0.005;
   const carte = mode === "CARTE";
   const mixte = mode === "MIXTE";
+  const credit = mode === "CREDIT";
   // Paiement mixte : la part en espèces est réglée sans monnaie, le terminal débite le reste.
   const resteCarte = total - (recu ?? 0);
   const mixteValide = recu !== null && !Number.isNaN(recu) && recu > 0.005 && resteCarte > 0.005;
@@ -71,16 +80,24 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
     rendu !== null &&
     rendu > 0.005 &&
     rendu > disponibles + 0.005;
-  const libelleValider = carte
-    ? "Valider le paiement par carte"
-    : mixte
-      ? mixteValide
-        ? `Valider · ${dh(resteCarte)} par carte`
-        : "Valider le paiement mixte"
-      : suffisant && rendu > 0.005
-        ? `Valider · rendre ${dh(rendu)}`
-        : "Valider la vente";
-  const validable = carte || (mixte ? mixteValide : suffisant && !monnaieInsuffisante);
+  const libelleValider = credit
+    ? client
+      ? `Valider à crédit · ${client.nom}`
+      : "Choisissez le client"
+    : carte
+      ? "Valider le paiement par carte"
+      : mixte
+        ? mixteValide
+          ? `Valider · ${dh(resteCarte)} par carte`
+          : "Valider le paiement mixte"
+        : suffisant && rendu > 0.005
+          ? `Valider · rendre ${dh(rendu)}`
+          : "Valider la vente";
+  // Plafond de crédit du client : le serveur refait le contrôle.
+  const plafondDepasse = credit && client?.plafond != null && client.dette + total > client.plafond + 0.005;
+  const validable = credit
+    ? client !== null && !plafondDepasse
+    : carte || (mixte ? mixteValide : suffisant && !monnaieInsuffisante);
 
   function choisirBillet(billet: number) {
     setSaisie(enSaisie(billet));
@@ -93,11 +110,14 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
 
   function envoyer() {
     // Le mode CARTE avec une part en espèces est un paiement mixte pour le serveur.
-    const corps: Schemas["ValidationCommande"] = carte
-      ? { panier: commande, mode: "CARTE" }
-      : mixte
-        ? { panier: commande, mode: "CARTE", especesRecues: recu }
-        : { panier: commande, mode: "ESPECES", especesRecues: recu };
+    const clientId = client?.id ?? null;
+    const corps: Schemas["ValidationCommande"] = credit
+      ? { panier: commande, mode: "CREDIT", clientId }
+      : carte
+        ? { panier: commande, mode: "CARTE", clientId }
+        : mixte
+          ? { panier: commande, mode: "CARTE", especesRecues: recu, clientId }
+          : { panier: commande, mode: "ESPECES", especesRecues: recu, clientId };
     valider.mutate({ cle, corps }, { onSuccess: onValidee });
   }
 
@@ -160,10 +180,72 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
               <IconeMixte />
               Espèces + carte
             </button>
+            <button type="button" aria-pressed={credit} onClick={() => choisirMode("CREDIT")}>
+              <IconeCredit />
+              Crédit
+            </button>
           </div>
+          {!credit && (
+            <div className="encaissement-client">
+              <span className="texte-secondaire">Client</span>
+              {client ? (
+                <>
+                  <strong>{client.nom}</strong>
+                  <button
+                    type="button"
+                    className="bouton-icone"
+                    aria-label="Retirer le client"
+                    title="Retirer le client"
+                    onClick={() => setClient(null)}
+                  >
+                    ×
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="lien-action" onClick={() => setChoisirClient(true)}>
+                  Ajouter un client (facultatif)
+                </button>
+              )}
+            </div>
+          )}
         </aside>
         <div className="encaissement-saisie">
-          {mixte ? (
+          {credit ? (
+            <div className="encaissement-credit">
+              <h3>Client qui paie à crédit</h3>
+              <ChoixClient choisi={client} onChoisir={setClient} autoFocus />
+              {client && (
+                <dl className="dette-apres">
+                  <div>
+                    <dt>{client.dette < -0.005 ? "Avance actuelle" : "Dette actuelle"}</dt>
+                    <dd>{dh(Math.abs(client.dette))}</dd>
+                  </div>
+                  <div>
+                    <dt>Cette vente</dt>
+                    <dd>+ {dh(total)}</dd>
+                  </div>
+                  <div className="dette-apres-total">
+                    <dt>
+                      {client.dette + total < -0.005 ? "Avance après la vente" : "Dette après la vente"}
+                    </dt>
+                    <dd>{dh(Math.abs(client.dette + total))}</dd>
+                  </div>
+                  {client.plafond != null && (
+                    <div>
+                      <dt>Plafond de crédit</dt>
+                      <dd>{dh(client.plafond)}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+              {plafondDepasse && client?.plafond != null && (
+                <p className="alerte alerte-danger" role="alert">
+                  Plafond de crédit dépassé : {client.nom} ne peut pas devoir plus de {dh(client.plafond)}.
+                  Encaissez autrement ou une partie de la dette d'abord.
+                </p>
+              )}
+            </div>
+          ) : mixte ? (
             <>
               <div className="recu-rendu">
                 <div className="champ">
@@ -293,6 +375,28 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
           </div>
         </div>
       </div>
+      {choisirClient && (
+        <Dialogue
+          titre="Client de la vente"
+          sousTitre="Son nom sera imprimé sur le ticket"
+          onFermer={() => setChoisirClient(false)}
+          largeur={560}
+        >
+          <ChoixClient
+            choisi={client}
+            autoFocus
+            onChoisir={(c) => {
+              setClient(c);
+              setChoisirClient(false);
+            }}
+          />
+          <div className="rangee-boutons">
+            <button type="button" className="bouton bouton-contour" onClick={() => setChoisirClient(false)}>
+              Annuler
+            </button>
+          </div>
+        </Dialogue>
+      )}
       {confirmerCarte && (
         <Dialogue titre="Paiement par carte" onFermer={() => setConfirmerCarte(false)}>
           <p>
@@ -367,6 +471,26 @@ function IconeMixte() {
       <circle cx="8.5" cy="8.5" r="1.8" />
       <rect x="9" y="11" width="13" height="9" rx="1.5" />
       <path d="M9 14h13" />
+    </svg>
+  );
+}
+
+function IconeCredit() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 4h16v16H4z" />
+      <path d="M8 9h8M8 13h5" />
+      <circle cx="16" cy="16" r="0.5" />
     </svg>
   );
 }
