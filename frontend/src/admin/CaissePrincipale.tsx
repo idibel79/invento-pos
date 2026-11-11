@@ -9,8 +9,9 @@ import {
   useComptagesEnAttente,
   useComptes,
   useMonCompte,
+  useRefuserVersement,
+  useValiderVersement,
 } from "../tresorerie/requetes";
-import { VersementAValider } from "../tresorerie/VersementAValider";
 import { decimal, heure } from "../ui/format";
 import { ComptageDialogue } from "./ComptageDialogue";
 import { OperationTresorerieDialogue, type TypeOperation } from "./OperationTresorerieDialogue";
@@ -192,7 +193,6 @@ function EntetePrincipale({
   fuseau: string | undefined;
   onOperation: (type: TypeOperation) => void;
 }) {
-  const [voir, setVoir] = useState(false);
   const aValider = useAValiderPrincipale();
   const liste = aValider.data ?? [];
   return (
@@ -212,29 +212,99 @@ function EntetePrincipale({
           Alimenter
         </button>
       </div>
-      {aValiderNombre > 0 && (
-        <div className="bandeau-info">
-          <span className="bandeau-info-texte">
-            <strong>
-              {aValiderNombre} versement{aValiderNombre > 1 ? "s" : ""} à valider
-            </strong>{" "}
-            <span className="texte-gris">
-              {liste.map((v) => ` · ${v.caissier} + ${decimal(v.montant)}`).join("")}
-            </span>
-          </span>
-          <button type="button" className="bouton-compact plein" onClick={() => setVoir(!voir)}>
-            {voir ? "Masquer" : "Voir et valider"}
-          </button>
-        </div>
-      )}
-      {voir && aValiderNombre > 0 && (
-        <ul className="liste-a-valider">
-          {liste.map((v) => (
-            <VersementAValider key={v.id} versement={v} emetteur={v.caissier} fuseau={fuseau} />
-          ))}
-        </ul>
-      )}
+      {aValiderNombre > 0 &&
+        liste.map((v, i) => (
+          <BandeauVersement
+            key={v.id}
+            versement={v}
+            titre={
+              i === 0 ? `${aValiderNombre} versement${aValiderNombre > 1 ? "s" : ""} à valider` : undefined
+            }
+            fuseau={fuseau}
+          />
+        ))}
     </>
+  );
+}
+
+/** Bandeau d'un versement reçu par la caisse principale, validé ou refusé (avec motif) sur place. */
+function BandeauVersement({
+  versement: v,
+  titre,
+  fuseau,
+}: {
+  versement: Schemas["VersementDto"];
+  titre: string | undefined;
+  fuseau: string | undefined;
+}) {
+  const valider = useValiderVersement();
+  const refuser = useRefuserVersement();
+  const [refus, setRefus] = useState<string | null>(null);
+  const occupe = valider.isPending || refuser.isPending;
+  const erreur = valider.error ?? refuser.error;
+  const envoyerRefus = () => {
+    if (refus === null) setRefus("");
+    else if (refus.trim()) refuser.mutate({ id: v.id, motif: refus.trim() });
+  };
+  return (
+    <div className="bandeau-info" style={{ flexWrap: "wrap" }}>
+      <span className="bandeau-info-texte">
+        {titre && <strong>{titre}</strong>}
+        <span className={titre ? "texte-gris" : undefined}>
+          {titre ? " · " : ""}
+          <strong style={{ color: "var(--primaire)" }}>{v.caissier}</strong>{" "}
+          <strong style={{ color: "var(--succes)" }}>+ {decimal(v.montant)}</strong>
+          {` · ${heure(v.creeLe, fuseau)}`}
+          {v.cloture && " · clôture"}
+          {v.motif && ` · ${v.motif}`}
+        </span>
+        {erreur && (
+          <span className="erreur-champ" role="alert">
+            {" "}
+            {messageErreur(erreur)}
+          </span>
+        )}
+      </span>
+      {/* Premier clic sur Refuser : ouvre le motif ; second clic, motif saisi : envoie le refus. */}
+      <button
+        type="button"
+        className="bouton-compact"
+        disabled={occupe || (refus !== null && !refus.trim())}
+        onClick={envoyerRefus}
+      >
+        Refuser
+      </button>
+      <button
+        type="button"
+        className="bouton-compact plein"
+        disabled={occupe}
+        onClick={() => valider.mutate(v.id)}
+      >
+        Valider
+      </button>
+      {refus !== null && (
+        <form
+          className="a-valider-refus"
+          style={{ flexBasis: "100%" }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            envoyerRefus();
+          }}
+        >
+          <input
+            aria-label="Motif du refus"
+            placeholder="Motif du refus (obligatoire), Échap pour annuler"
+            maxLength={300}
+            value={refus}
+            onChange={(e) => setRefus(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setRefus(null);
+            }}
+            autoFocus
+          />
+        </form>
+      )}
+    </div>
   );
 }
 
