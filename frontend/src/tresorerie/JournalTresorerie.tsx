@@ -30,10 +30,10 @@ const STATUTS: Record<StatutJournal, string> = {
 
 const COLONNES_PRINCIPALE: [string, boolean][] = [
   ["Date", false],
+  ["Type", false],
   ["Opération", false],
   ["Utilisateur", false],
   ["Montant", true],
-  ["Écart", true],
   ["Statut", false],
   ["Solde CP après", true],
   ["Solde caissier après", true],
@@ -41,14 +41,24 @@ const COLONNES_PRINCIPALE: [string, boolean][] = [
 
 const COLONNES_MON_COMPTE: [string, boolean][] = [
   ["Date", false],
+  ["Type", false],
   ["Opération", false],
   ["Par", false],
   ["Montant", true],
-  ["Ventes", true],
-  ["Écart", true],
+  ["Écart espèces", true],
+  ["Écart TPE", true],
   ["Statut", false],
   ["Mon solde après", true],
 ];
+
+/**
+ * Type de la ligne : Ventes pour une clôture de session (ventes + excédent), sinon Crédit quand le compte reçoit
+ * de l'argent et Versement quand il en verse ({@code montant} est signé du point de vue du journal affiché).
+ */
+function typeLigne(o: Operation, montant: number): string {
+  if (o.type === "CLOTURE_SESSION") return "Ventes";
+  return montant < 0 ? "Versement" : "Crédit";
+}
 
 /** Libellé court de l'opération, et son complément en gris (caisse, motif). */
 function libelle(o: Operation, monCompte: boolean): [string, string] {
@@ -82,7 +92,7 @@ function libelle(o: Operation, monCompte: boolean): [string, string] {
     case "AJUSTEMENT":
       return ["Ajustement (perte)", complement];
     case "CLOTURE_SESSION":
-      return ["Clôture : ventes + excédent", complement];
+      return ["Clôture", complement];
   }
 }
 
@@ -211,11 +221,14 @@ export function JournalTresorerie({ fuseau, monCompte = false, caissiers = [], u
           const [texte, complement] = libelle(o, monCompte);
           // Le serveur signe un versement du point de vue de la caisse principale ; Mon compte le voit de l'autre côté.
           const montant = monCompte && o.versementId != null ? -o.montant : o.montant;
+          // Une clôture n'est pas un versement : pas de statut.
+          const cloture = o.type === "CLOTURE_SESSION";
           return (
             <div key={o.id} className="journal-ligne" role="row">
               <span role="cell" className="texte-gris">
                 {date(o.le)}
               </span>
+              <span role="cell">{typeLigne(o, montant)}</span>
               <span role="cell">
                 <span className="journal-operation">{texte}</span>
                 {complement && <span className="texte-gris"> · {complement}</span>}
@@ -224,28 +237,23 @@ export function JournalTresorerie({ fuseau, monCompte = false, caissiers = [], u
               <span role="cell" className={`a-droite montant-signe ${montant < 0 ? "negatif" : "positif"}`}>
                 {signe(montant)}
               </span>
-              {monCompte && (
-                <span role="cell" className={`a-droite${o.ventesSession == null ? " texte-gris" : ""}`}>
-                  {o.ventesSession == null ? "—" : decimal(o.ventesSession)}
-                </span>
-              )}
-              <span
-                role="cell"
-                className={`a-droite${o.ecartSession ? ` montant-signe ${o.ecartSession < 0 ? "negatif" : "positif"}` : " texte-gris"}`}
-              >
-                {o.ecartSession == null ? "—" : signe(o.ecartSession)}
-                {o.ecartEspecesSession != null && o.ecartTpeSession != null && (
-                  <span className="journal-ecarts-modes texte-gris">
-                    esp. {signe(o.ecartEspecesSession)} · TPE {signe(o.ecartTpeSession)}
+              {/* Écarts du comptage de clôture, pour information : ils ne changent pas le solde dû. */}
+              {monCompte &&
+                [o.ecartEspecesSession, o.ecartTpeSession].map((ecart, i) => (
+                  <span key={i} role="cell" className="a-droite texte-gris">
+                    {ecart == null ? "—" : signe(ecart)}
                   </span>
+                ))}
+              <span role="cell" className={cloture ? "texte-gris" : undefined}>
+                {cloture ? (
+                  "—"
+                ) : (
+                  <StatutVersement
+                    statut={o.statut}
+                    autoValide={o.autoValide}
+                    versLaPrincipale={o.versLaPrincipale}
+                  />
                 )}
-              </span>
-              <span role="cell">
-                <StatutVersement
-                  statut={o.statut}
-                  autoValide={o.autoValide}
-                  versLaPrincipale={o.versLaPrincipale}
-                />
               </span>
               {!monCompte && (
                 <span role="cell" className="a-droite">

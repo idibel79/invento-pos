@@ -73,10 +73,10 @@ public class JournalTresorerieJdbc {
             String auteur,
             @Schema(nullable = true) BigDecimal ecartSession,
 
-            @Schema(nullable = true, description = "Écart sur les espèces, sur un versement de clôture")
+            @Schema(nullable = true, description = "Écart sur les espèces, sur une clôture de session")
             BigDecimal ecartEspecesSession,
 
-            @Schema(nullable = true, description = "Écart sur les tickets TPE, sur un versement de clôture")
+            @Schema(nullable = true, description = "Écart sur les tickets TPE, sur une clôture de session")
             BigDecimal ecartTpeSession,
 
             @Schema(nullable = true) Long versementId,
@@ -88,7 +88,7 @@ public class JournalTresorerieJdbc {
             BigDecimal soldePrincipaleApres,
             @Schema(nullable = true) BigDecimal soldeCaissierApres,
 
-            @Schema(nullable = true, description = "Ventes de la session, sur un versement de clôture")
+            @Schema(nullable = true, description = "Ventes de la session, sur une clôture de session")
             BigDecimal ventesSession) {}
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -106,14 +106,16 @@ public class JournalTresorerieJdbc {
                 + " left join " + s + "caisse ca on ca.id = o.caisse_id"
                 + " left join " + s + "versement v on v.id = o.versement_id"
                 + " left join " + s + "compte_tresorerie rc on rc.id = v.recepteur_id"
-                + " left join " + s + "session_caisse sc on sc.id = o.session_caisse_id and v.cloture"
+                + " left join " + s + "session_caisse sc on sc.id = o.session_caisse_id"
+                + " and o.type = 'CLOTURE_SESSION'"
                 // Dernier mouvement du versement après l'envoi (réception, refus ou annulation).
                 + " left join lateral (select x.solde_principale_apres, x.solde_caissier_apres from " + s
                 + "operation_tresorerie x where x.versement_id = o.versement_id and x.type <> 'VERSEMENT_ENVOYE'"
                 + " order by x.id desc limit 1) f on true"
                 // Une ligne par versement (son envoi) : réception, refus et annulation n'en changent que le
-                // statut et les soldes. La clôture de session n'est ni un versement ni une entrée d'argent.
-                + " where o.type in ('ALIMENTATION', 'RETRAIT', 'VERSEMENT_ENVOYE', 'AJUSTEMENT')";
+                // statut et les soldes. La clôture de session porte ses ventes, son écart de comptage
+                // et le crédit (ventes + excédent) qui en résulte sur le solde du caissier.
+                + " where o.type in ('ALIMENTATION', 'RETRAIT', 'VERSEMENT_ENVOYE', 'AJUSTEMENT', 'CLOTURE_SESSION')";
     }
 
     public void inserer(NouvelleOperation o) {
@@ -156,17 +158,20 @@ public class JournalTresorerieJdbc {
                         + " case when v.id is null then o.montant when rc.type = 'PRINCIPALE' then v.montant"
                         + " else -v.montant end as montant, o.caissier_id,"
                         + " trim(uc.prenom || ' ' || uc.nom) as caissier, ca.nom as caisse,"
-                        + " trim(ua.prenom || ' ' || ua.nom) as auteur, o.ecart_session, sc.ecart_especes,"
+                        // L'écart et les ventes sont sur la ligne de clôture : le versement de clôture ne les répète
+                        // pas.
+                        + " trim(ua.prenom || ' ' || ua.nom) as auteur,"
+                        + " case when o.type = 'CLOTURE_SESSION' then o.ecart_session end as ecart_session,"
+                        + " sc.ecart_especes,"
                         + " sc.ecart_tpe, o.versement_id,"
                         + " case when v.id is null then null else rc.type = 'PRINCIPALE' end as vers_principale,"
                         + " v.statut, coalesce(v.auto_valide, false) as auto_valide,"
                         + " coalesce(v.cloture, false) as cloture, coalesce(v.motif, o.motif) as motif,"
                         + " coalesce(f.solde_principale_apres, o.solde_principale_apres) as solde_principale_apres,"
                         + " coalesce(f.solde_caissier_apres, o.solde_caissier_apres) as solde_caissier_apres,"
-                        // Ventes de la session : crédits de clôture, hors excédent du tiroir.
-                        + " case when v.cloture then (select sum(x.montant - greatest(coalesce(x.ecart_session, 0), 0))"
-                        + " from " + s + "operation_tresorerie x where x.session_caisse_id = o.session_caisse_id"
-                        + " and x.type = 'CLOTURE_SESSION') end as ventes_session"
+                        // Ventes de la session : crédit de clôture, hors excédent du tiroir.
+                        + " case when o.type = 'CLOTURE_SESSION'"
+                        + " then o.montant - greatest(coalesce(o.ecart_session, 0), 0) end as ventes_session"
                         + depuis + conditions(filtre)
                         + " order by o.cree_le " + ordre + ", o.id " + ordre + " limit :taille offset :decalage",
                 parametres(filtre).addValue("taille", taille).addValue("decalage", (long) page * taille),

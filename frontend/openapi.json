@@ -3531,11 +3531,11 @@
           },
           "ecartEspecesSession" : {
             "type" : [ "number", "null" ],
-            "description" : "Écart sur les espèces, sur un versement de clôture"
+            "description" : "Écart sur les espèces, sur une clôture de session"
           },
           "ecartTpeSession" : {
             "type" : [ "number", "null" ],
-            "description" : "Écart sur les tickets TPE, sur un versement de clôture"
+            "description" : "Écart sur les tickets TPE, sur une clôture de session"
           },
           "versementId" : {
             "type" : [ "integer", "null" ],
@@ -3565,7 +3565,7 @@
           },
           "ventesSession" : {
             "type" : [ "number", "null" ],
-            "description" : "Ventes de la session, sur un versement de clôture"
+            "description" : "Ventes de la session, sur une clôture de session"
           }
         },
         "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartEspecesSession", "ecartSession", "ecartTpeSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "ventesSession", "versLaPrincipale", "versementId" ]

@@ -1418,9 +1418,9 @@ export interface components {
             caisse: string | null;
             auteur: string;
             ecartSession: number | null;
-            /** @description Écart sur les espèces, sur un versement de clôture */
+            /** @description Écart sur les espèces, sur une clôture de session */
             ecartEspecesSession: number | null;
-            /** @description Écart sur les tickets TPE, sur un versement de clôture */
+            /** @description Écart sur les tickets TPE, sur une clôture de session */
             ecartTpeSession: number | null;
             /** Format: int64 */
             versementId: number | null;
@@ -1432,7 +1432,7 @@ export interface components {
             motif: string | null;
             soldePrincipaleApres: number;
             soldeCaissierApres: number | null;
-            /** @description Ventes de la session, sur un versement de clôture */
+            /** @description Ventes de la session, sur une clôture de session */
             ventesSession: number | null;
         };
         PageResponseOperation: {
