@@ -170,6 +170,8 @@ export interface FiltreVentes {
   vendeurId?: number;
   /** Partie du nom du client. */
   client?: string;
+  /** Client précis de l'annuaire. */
+  clientId?: number;
 }
 
 export function useHistoriqueVentes(filtre: FiltreVentes) {

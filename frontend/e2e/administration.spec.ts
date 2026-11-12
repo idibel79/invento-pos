@@ -16,7 +16,8 @@ test("l'admin crée une caisse et un responsable avec son PIN, puis régénère 
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.getByRole("button", { name: "Administration" }).click();
 
-  // Caisses (les Paramètres s'ouvrent sur Boutique).
+  // Caisses (onglet Paramètres, qui s'ouvre sur Boutique).
+  await page.getByRole("button", { name: "Paramètres" }).click();
   await page.getByRole("button", { name: "Caisses" }).click();
   await page.getByRole("button", { name: "Nouvelle caisse" }).click();
   const fiche = page.getByRole("dialog", { name: "Nouvelle caisse" });
@@ -46,8 +47,8 @@ test("l'admin crée une caisse et un responsable avec son PIN, puis régénère 
   await expect(ligne).toContainText("Responsable");
   await expect(ligne).toContainText("Mot de passe temporaire");
 
-  // Code de secours : montré une seule fois.
-  await page.getByRole("button", { name: "Code de secours" }).click();
+  // Code de secours (Paramètres › Sécurité) : montré une seule fois.
+  await page.getByRole("button", { name: "Sécurité" }).click();
   await page.getByRole("button", { name: "Générer un nouveau code" }).click();
   const secours = page.getByRole("dialog", { name: "Remplacer le code de secours ?" });
   await secours.getByRole("button", { name: "Générer" }).click();

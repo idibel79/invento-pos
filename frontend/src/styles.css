@@ -4013,7 +4013,7 @@ button.filtre-compact {
 
 .clients-ligne {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) 130px minmax(0, 1.4fr) 120px 190px;
+  grid-template-columns: minmax(0, 1.3fr) 130px minmax(0, 1.4fr) 120px 110px;
   gap: 12px;
   align-items: center;
   min-height: 46px;
@@ -4082,9 +4082,54 @@ button.filtre-compact {
   gap: 6px;
 }
 
+/* Fiche d'un client : libellé à gauche, valeur à droite, une ligne par information. */
+.fiche-client {
+  display: grid;
+  margin: 0;
+  font-size: 14px;
+}
+
+.fiche-client-ligne {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.fiche-client-ligne:last-child {
+  border-bottom: 0;
+}
+
+.fiche-client dt {
+  color: var(--gris);
+}
+
+.fiche-client dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Annuaire et Ventes et factures : colonne Type, sans la colonne Dette (vue Crédits et dettes). */
+.clients-annuaire .clients-ligne {
+  grid-template-columns: minmax(0, 1.3fr) 110px 130px minmax(0, 1.4fr) 110px;
+}
+
 @media (max-width: 1200px) {
   .clients-ligne {
-    grid-template-columns: minmax(0, 1.3fr) 120px 110px 190px;
+    grid-template-columns: minmax(0, 1.3fr) 120px 110px 110px;
+  }
+
+  .clients-annuaire .clients-ligne {
+    grid-template-columns: minmax(0, 1.3fr) 100px 120px 110px;
+  }
+
+  .clients-annuaire .clients-ligne > :nth-child(3) {
+    display: revert;
+  }
+
+  .clients-annuaire .clients-ligne > :nth-child(4) {
+    display: none;
   }
 
   .clients-ligne > :nth-child(3) {

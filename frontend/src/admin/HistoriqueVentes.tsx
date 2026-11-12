@@ -3,6 +3,7 @@ import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
 import { useCaisses, useParametres } from "../caisse/requetes";
+import { useImpressionFacture } from "../facture/FactureA4";
 import { Dialogue } from "../ui/Dialogue";
 import { dateHeure, decimal, dh, heure, pourcent } from "../ui/format";
 import { TicketAImprimer } from "../vente/TicketCaisse";
@@ -18,7 +19,7 @@ import {
 const MODES = { ESPECES: "Espèces", CARTE: "Carte", CREDIT: "Crédit" } as const;
 
 /** Paiement mixte : une part en espèces et le reste par carte. */
-function libellePaiement(v: {
+export function libellePaiement(v: {
   mode?: keyof typeof MODES | null;
   montantCarte: number;
   client?: string | null;
@@ -282,15 +283,22 @@ function LigneVente({
   );
 }
 
-function DetailVente({
+/**
+ * Détail d'une vente validée, avec réimpression du ticket ; `factureA4` (vente d'un client entreprise)
+ * ajoute l'impression de sa facture.
+ */
+export function DetailVente({
   id,
   fuseau,
   onFermer,
+  factureA4 = false,
 }: {
   id: number;
   fuseau: string | undefined;
   onFermer: () => void;
+  factureA4?: boolean;
 }) {
+  const facture = useImpressionFacture();
   const { data: v, isError, error } = useDetailVente(id);
   const ticket = useTicketVente(id).data;
   const boutique = useParametres().data;
@@ -415,6 +423,11 @@ function DetailVente({
             </dl>
           </>
         )}
+        {facture.erreur && (
+          <p className="alerte alerte-danger" role="alert">
+            {messageErreur(facture.erreur)}
+          </p>
+        )}
         <div className="rangee-boutons">
           <button
             type="button"
@@ -424,6 +437,16 @@ function DetailVente({
           >
             Imprimer le ticket
           </button>
+          {factureA4 && (
+            <button
+              type="button"
+              className="bouton bouton-contour"
+              disabled={facture.enCours}
+              onClick={() => facture.imprimer(id)}
+            >
+              Facture A4
+            </button>
+          )}
           <button type="button" className="bouton bouton-contour" onClick={onFermer}>
             Fermer
           </button>
@@ -432,6 +455,7 @@ function DetailVente({
       {ticket && v && (
         <TicketAImprimer vente={ticket} boutique={boutique} vendeur={v.vendeur} fuseau={fuseau} />
       )}
+      {facture.rendu}
     </Dialogue>
   );
 }

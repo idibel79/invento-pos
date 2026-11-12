@@ -3,73 +3,88 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { messageErreur } from "../api/erreurs";
+import { useUtilisateur } from "../auth/AuthContext";
 import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, lireMontant } from "../ui/format";
 import { EncaisserDetteDialogue } from "./EncaisserDetteDialogue";
 import { ReleveDialogue } from "./Releve";
+import { VentesClientDialogue } from "./VentesClient";
 import { type Client, texteSolde, useClients, useEnregistrerClient, useSupprimerClient } from "./requetes";
 
 type Popup =
   | { type: "nouveau" }
   | { type: "modifier"; client: Client }
   | { type: "releve"; client: Client }
+  | { type: "fiche"; client: Client }
+  | { type: "ventes"; client: Client }
   | { type: "dette"; client: Client }
   | { type: "supprimer"; client: Client };
 
+const FILTRES = [
+  ["tous", "Tous"],
+  ["entreprises", "Entreprises"],
+  ["desactives", "Désactivés"],
+] as const;
+type Filtre = (typeof FILTRES)[number][0];
+
 /**
- * Paramètres › Clients (admin), design B : tableau pleine largeur ; un clic sur un client ouvre son relevé
- * en popup, chaque ligne a Encaisser (une dette) et Modifier (d'où l'on supprime). Seuls les clients de
- * l'annuaire peuvent payer à crédit.
+ * Administration › Clients, design B, en trois vues de la même liste :
+ * - « annuaire » : un clic ouvre la fiche du client ; l'admin crée, modifie et supprime ;
+ * - « ventes » : un clic ou le bouton Ventes ouvre ses ventes, pour réimprimer un ticket ou une facture ;
+ * - « dettes » : seuls les clients qui doivent de l'argent ou ont une avance, du plus endetté au moins
+ *   endetté, avec leur dette et Encaisser ; un clic ouvre le relevé.
+ * Seuls les clients de l'annuaire peuvent payer à crédit.
  */
-export function Clients() {
+export function Clients({ vue = "annuaire" }: { vue?: "annuaire" | "ventes" | "dettes" }) {
+  const admin = useUtilisateur().role === "ADMIN";
+  const dettes = vue === "dettes";
+  const ouvrir = (client: Client) =>
+    setPopup({ type: vue === "dettes" ? "releve" : vue === "ventes" ? "ventes" : "fiche", client });
   const [recherche, setRecherche] = useState("");
-  const [filtre, setFiltre] = useState<"tous" | "entreprises" | "dette" | "desactives">("tous");
-  const clients = useClients(recherche, true);
+  const [filtre, setFiltre] = useState<Filtre>("tous");
+  const clients = useClients(recherche, admin);
   const [popup, setPopup] = useState<Popup | null>(null);
 
   const tous = clients.data ?? [];
   const actifs = tous.filter((c) => c.actif);
   const totalDettes = tous.filter((c) => c.dette > 0).reduce((somme, c) => somme + c.dette, 0);
-  const liste = tous.filter((c) =>
-    filtre === "dette"
-      ? c.dette > 0
-      : filtre === "desactives"
-        ? !c.actif
-        : filtre === "entreprises"
-          ? c.actif && c.type === "ENTREPRISE"
-          : c.actif,
-  );
+  const liste = dettes
+    ? tous.filter((c) => Math.abs(c.dette) > 0.005).sort((a, b) => b.dette - a.dette)
+    : tous.filter((c) =>
+        filtre === "desactives"
+          ? !c.actif
+          : filtre === "entreprises"
+            ? c.actif && c.type === "ENTREPRISE"
+            : c.actif,
+      );
   const fermer = () => setPopup(null);
 
   return (
     <section className="admin-section clients-ecran">
       <div className="clients-tete">
         <h1 className="admin-titre">
-          Clients{" "}
+          {dettes ? "Crédits et dettes" : vue === "ventes" ? "Ventes et factures" : "Clients"}{" "}
           <span className="texte-secondaire clients-resume">
-            · {actifs.length} actifs · dettes {dh(totalDettes)}
+            {dettes
+              ? `· ${liste.filter((c) => c.dette > 0).length} clients doivent ${dh(totalDettes)}`
+              : `· ${actifs.length} actifs`}
           </span>
         </h1>
-        <div className="clients-filtres" role="group" aria-label="Filtre">
-          {(
-            [
-              ["tous", "Tous"],
-              ["entreprises", "Entreprises"],
-              ["dette", "Avec dette"],
-              ["desactives", "Désactivés"],
-            ] as const
-          ).map(([valeur, libelle]) => (
-            <button
-              key={valeur}
-              type="button"
-              className="pastille-filtre"
-              aria-pressed={filtre === valeur}
-              onClick={() => setFiltre(valeur)}
-            >
-              {libelle}
-            </button>
-          ))}
-        </div>
+        {!dettes && (
+          <div className="clients-filtres" role="group" aria-label="Filtre">
+            {FILTRES.filter(([valeur]) => admin || valeur !== "desactives").map(([valeur, libelle]) => (
+              <button
+                key={valeur}
+                type="button"
+                className="pastille-filtre"
+                aria-pressed={filtre === valeur}
+                onClick={() => setFiltre(valeur)}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+        )}
         <input
           type="search"
           className="clients-recherche"
@@ -78,23 +93,32 @@ export function Clients() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
         />
-        <button type="button" className="bouton bouton-plein" onClick={() => setPopup({ type: "nouveau" })}>
-          + Nouveau client
-        </button>
+        {admin && vue === "annuaire" && (
+          <button type="button" className="bouton bouton-plein" onClick={() => setPopup({ type: "nouveau" })}>
+            + Nouveau client
+          </button>
+        )}
       </div>
       {clients.isError && (
         <p className="alerte alerte-danger" role="alert">
           {messageErreur(clients.error)}
         </p>
       )}
-      <div className="clients-tableau" role="table" aria-label="Clients">
+      <div
+        className={`clients-tableau${dettes ? "" : " clients-annuaire"}`}
+        role="table"
+        aria-label="Clients"
+      >
         <div className="clients-ligne clients-entete" role="row">
           <span role="columnheader">Nom</span>
+          {!dettes && <span role="columnheader">Type</span>}
           <span role="columnheader">Téléphone</span>
           <span role="columnheader">Note</span>
-          <span role="columnheader" className="a-droite">
-            Dette
-          </span>
+          {dettes && (
+            <span role="columnheader" className="a-droite">
+              Dette
+            </span>
+          )}
           <span role="columnheader">
             <span className="visuellement-cache">Actions</span>
           </span>
@@ -104,7 +128,11 @@ export function Clients() {
           <p className="vide">
             {recherche.trim() || filtre !== "tous"
               ? "Aucun client ne correspond."
-              : "Aucun client. Ajoutez le premier."}
+              : dettes
+                ? "Aucun client ne doit d'argent."
+                : admin
+                  ? "Aucun client. Ajoutez le premier."
+                  : "Aucun client. Seul l'admin en ajoute."}
           </p>
         )}
         {liste.map((c) => (
@@ -112,55 +140,71 @@ export function Clients() {
             key={c.id}
             role="row"
             className={`clients-ligne cliquable${c.actif ? "" : " inactive"}`}
-            title="Voir le relevé"
-            onClick={() => setPopup({ type: "releve", client: c })}
+            title={
+              dettes ? "Voir le relevé" : vue === "ventes" ? "Voir ses ventes" : "Voir la fiche du client"
+            }
+            onClick={() => ouvrir(c)}
           >
             <span role="cell" className="clients-nom">
-              <span className="clients-nom-bloc">
-                <button
-                  type="button"
-                  className="lien-nom"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPopup({ type: "releve", client: c });
-                  }}
-                >
-                  {c.nom}
-                </button>
-                {c.type === "ENTREPRISE" && detailEntreprise(c) && (
-                  <span className="texte-secondaire clients-detail">{detailEntreprise(c)}</span>
-                )}
-              </span>
-              {c.type === "ENTREPRISE" && <span className="statut statut-entreprise">Entreprise</span>}
+              <button
+                type="button"
+                className="lien-nom"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  ouvrir(c);
+                }}
+              >
+                {c.nom}
+              </button>
               {!c.actif && <span className="statut statut-gris">Désactivé</span>}
             </span>
+            {!dettes && (
+              <span role="cell" className="texte-secondaire">
+                {c.type === "ENTREPRISE" ? "Entreprise" : "Particulier"}
+              </span>
+            )}
             <span role="cell" className="texte-secondaire">
               {c.telephone ?? "—"}
             </span>
             <span role="cell" className="texte-secondaire clients-note">
               {c.note ?? ""}
             </span>
-            <span
-              role="cell"
-              className={`a-droite chiffres${c.dette > 0 ? " texte-dette" : " texte-secondaire"}`}
-            >
-              {texteSolde(c.dette)}
-            </span>
+            {dettes && (
+              <span
+                role="cell"
+                className={`a-droite chiffres${c.dette > 0 ? " texte-dette" : " texte-secondaire"}`}
+              >
+                {texteSolde(c.dette)}
+              </span>
+            )}
             <span role="cell" className="clients-actions" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                className="bouton bouton-plein bouton-petit"
-                onClick={() => setPopup({ type: "dette", client: c })}
-              >
-                Encaisser
-              </button>
-              <button
-                type="button"
-                className="bouton bouton-contour bouton-petit"
-                onClick={() => setPopup({ type: "modifier", client: c })}
-              >
-                Modifier
-              </button>
+              {dettes && (
+                <button
+                  type="button"
+                  className="bouton bouton-plein bouton-petit"
+                  onClick={() => setPopup({ type: "dette", client: c })}
+                >
+                  Encaisser
+                </button>
+              )}
+              {vue === "ventes" && (
+                <button
+                  type="button"
+                  className="bouton bouton-contour bouton-petit"
+                  onClick={() => setPopup({ type: "ventes", client: c })}
+                >
+                  Ventes
+                </button>
+              )}
+              {admin && vue === "annuaire" && (
+                <button
+                  type="button"
+                  className="bouton bouton-contour bouton-petit"
+                  onClick={() => setPopup({ type: "modifier", client: c })}
+                >
+                  Modifier
+                </button>
+              )}
             </span>
           </div>
         ))}
@@ -176,16 +220,84 @@ export function Clients() {
           }
         />
       )}
-      {popup?.type === "releve" && <ReleveDialogue client={popup.client} onFermer={fermer} />}
+      {popup?.type === "fiche" && (
+        <FicheClient
+          client={popup.client}
+          onFermer={fermer}
+          onModifier={admin ? () => setPopup({ type: "modifier", client: popup.client }) : undefined}
+        />
+      )}
+      {popup?.type === "releve" && (
+        <ReleveDialogue client={popup.client} onFermer={fermer} annulable={admin} />
+      )}
+      {popup?.type === "ventes" && <VentesClientDialogue client={popup.client} onFermer={fermer} />}
       {popup?.type === "dette" && <EncaisserDetteDialogue clientInitial={popup.client} onFermer={fermer} />}
       {popup?.type === "supprimer" && <SuppressionDialogue client={popup.client} onFermer={fermer} />}
     </section>
   );
 }
 
-/** Sous le nom d'une entreprise : son ICE et la personne à contacter, s'ils sont renseignés. */
-function detailEntreprise(c: Client): string {
-  return [c.ice && `ICE ${c.ice}`, c.contact && `contact ${c.contact}`].filter(Boolean).join(" · ");
+/**
+ * Fiche d'un client de l'annuaire : toutes ses informations, sans son relevé (vue Crédits et dettes).
+ * Les champs vides sont affichés « — » ; `onModifier` (admin) ouvre la modification.
+ */
+function FicheClient({
+  client: c,
+  onFermer,
+  onModifier,
+}: {
+  client: Client;
+  onFermer: () => void;
+  onModifier?: () => void;
+}) {
+  const entreprise = c.type === "ENTREPRISE";
+  const champs: [string, string | null | undefined][] = [
+    ["Type", entreprise ? "Entreprise" : "Particulier"],
+    [entreprise ? "Raison sociale" : "Nom et prénom", c.nom],
+    ["Téléphone", c.telephone],
+    ...(entreprise
+      ? ([
+          ["Email", c.email],
+          ["Personne à contacter", c.contact],
+          ["Adresse", c.adresse],
+          ["ICE", c.ice],
+          ["IF", c.identifiantFiscal],
+          ["RC", c.rc],
+        ] as [string, string | null | undefined][])
+      : []),
+    ["Note", c.note],
+    ["Plafond de crédit", c.plafond != null ? dh(c.plafond) : "Sans limite"],
+    ["Statut", c.actif ? "Actif (proposé à la caisse)" : "Désactivé"],
+  ];
+
+  return (
+    <Dialogue titre={c.nom} sousTitre="Fiche du client" onFermer={onFermer} largeur={520}>
+      <div className="formulaire">
+        <dl className="fiche-client">
+          {champs.map(([libelle, valeur]) => (
+            <div key={libelle} className="fiche-client-ligne">
+              <dt>{libelle}</dt>
+              <dd className={valeur?.trim() ? undefined : "texte-secondaire"}>{valeur?.trim() || "—"}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="rangee-boutons">
+          <button
+            type="button"
+            className={onModifier ? "bouton bouton-contour" : "bouton bouton-plein"}
+            onClick={onFermer}
+          >
+            Fermer
+          </button>
+          {onModifier && (
+            <button type="button" className="bouton bouton-plein" onClick={onModifier}>
+              Modifier
+            </button>
+          )}
+        </div>
+      </div>
+    </Dialogue>
+  );
 }
 
 /** Suppression ; un client qui a déjà acheté est seulement désactivé (le serveur décide). */

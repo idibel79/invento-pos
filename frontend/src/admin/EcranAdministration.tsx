@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useUtilisateur } from "../auth/AuthContext";
 import { useParametres } from "../caisse/requetes";
+import { Clients } from "../client/Clients";
 import { MonCompte } from "../tresorerie/MonCompte";
 import { useMonCompte } from "../tresorerie/requetes";
 import { heure } from "../ui/format";
@@ -15,44 +16,66 @@ import { HistoriqueVentes } from "./HistoriqueVentes";
 import { ImportCatalogue } from "./ImportCatalogue";
 import { JournalRemises } from "./JournalRemises";
 import { type EntreeMenu, RubriqueAvecMenu } from "./RubriqueAvecMenu";
-import { Clients } from "../client/Clients";
 import { Utilisateurs } from "./Utilisateurs";
 
+/** Onglets par métier : ce qui a été vendu, qui doit de l'argent, où il est, les réglages. */
 const ONGLETS = {
+  ventes: "Ventes",
+  clients: "Clients",
+  tresorerie: "Trésorerie",
   parametres: "Paramètres",
-  comptes: "Comptes",
-  import: "Import du catalogue",
-  securite: "Code de secours",
-  journaux: "Journaux",
 } as const;
 type Onglet = keyof typeof ONGLETS;
 
-/** L'admin a toutes les rubriques ; les responsables et caissiers seulement leur compte et leurs journaux. */
-const ONGLETS_ADMIN: Onglet[] = ["parametres", "comptes", "import", "securite", "journaux"];
-const ONGLETS_VENDEUR: Onglet[] = ["comptes", "journaux"];
+/** L'admin a tous les onglets ; les responsables et caissiers leurs ventes, les clients et leur compte. */
+const ONGLETS_ADMIN: Onglet[] = ["ventes", "clients", "tresorerie", "parametres"];
+const ONGLETS_VENDEUR: Onglet[] = ["ventes", "clients", "tresorerie"];
 
-/** Comptes d'un responsable ou d'un caissier : son seul compte (l'admin voit tous les comptes). */
-const COMPTES_VENDEUR: EntreeMenu[] = [
+const VENTES: EntreeMenu[] = [
+  { nom: "Journal des ventes", detail: "Ventes validées, jour par jour", ecran: () => <HistoriqueVentes /> },
+  { nom: "Remises", detail: "Remises accordées sur les ventes", ecran: () => <JournalRemises /> },
+];
+
+const ANNUAIRE: EntreeMenu = {
+  nom: "Annuaire",
+  detail: "Fiches des clients",
+  ecran: () => <Clients />,
+};
+const DETTES: EntreeMenu = {
+  nom: "Crédits et dettes",
+  detail: "Qui doit combien, encaisser",
+  ecran: () => <Clients vue="dettes" />,
+};
+const VENTES_CLIENTS: EntreeMenu = {
+  nom: "Ventes et factures",
+  detail: "Factures émises, réimpression",
+  ecran: () => <Clients vue="ventes" />,
+};
+const CLIENTS: EntreeMenu[] = [ANNUAIRE, DETTES, VENTES_CLIENTS];
+
+/** Trésorerie d'un responsable ou d'un caissier : son seul compte (l'admin voit tous les comptes). */
+const TRESORERIE_VENDEUR: EntreeMenu[] = [
   { nom: "Mon compte", detail: "Solde dû, versements et ventes", ecran: () => <MonCompte /> },
 ];
 
 const PARAMETRES: EntreeMenu[] = [
   { nom: "Boutique", detail: "Nom, adresse, contact du ticket", ecran: () => <Boutique /> },
   { nom: "Caisses", detail: "Créer, renommer, espèces", ecran: () => <Caisses /> },
-  { nom: "Utilisateurs", detail: "Comptes, rôles, seuils de remise", ecran: () => <Utilisateurs /> },
-  { nom: "Clients", detail: "Annuaire, dettes, relevés", ecran: () => <Clients /> },
-];
-
-const JOURNAUX: EntreeMenu[] = [
-  { nom: "Ventes", detail: "Ventes validées, jour par jour", ecran: () => <HistoriqueVentes /> },
-  { nom: "Remises", detail: "Remises accordées sur les ventes", ecran: () => <JournalRemises /> },
+  { nom: "Utilisateurs", detail: "Rôles, accès, seuils de remise", ecran: () => <Utilisateurs /> },
+  {
+    nom: "Import du catalogue de test",
+    detail: "Fichier Excel des produits",
+    ecran: () => <ImportCatalogue />,
+  },
+  { nom: "Sécurité", detail: "Code de secours de l'admin", ecran: () => <CodeSecours /> },
 ];
 
 /** Administration ; le serveur vérifie le rôle sur chaque appel et filtre les journaux hors admin. */
 export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
   const admin = useUtilisateur().role === "ADMIN";
   const onglets = admin ? ONGLETS_ADMIN : ONGLETS_VENDEUR;
-  const [onglet, setOnglet] = useState<Onglet>(onglets[0] ?? "comptes");
+  // Un vendeur arrive sur son compte, l'admin sur les ventes.
+  const [onglet, setOnglet] = useState<Onglet>(admin ? "ventes" : "tresorerie");
   const fuseau = useParametres().data?.fuseauHoraire;
   const maintenant = useMaintenant(30_000);
   const aValider = useMonCompte().data?.aValider.length ?? 0;
@@ -85,7 +108,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
             onClick={() => setOnglet(cle)}
           >
             {ONGLETS[cle]}
-            {cle === "comptes" && aValider > 0 && (
+            {cle === "tresorerie" && aValider > 0 && (
               <span className="pastille-nombre" aria-label={`${aValider} à valider`}>
                 {aValider}
               </span>
@@ -94,12 +117,15 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         ))}
       </nav>
       <main className="admin-corps">
+        {onglet === "ventes" && <RubriqueAvecMenu titre="Ventes" entrees={VENTES} />}
+        {onglet === "clients" && <RubriqueAvecMenu titre="Clients" entrees={CLIENTS} />}
+        {onglet === "tresorerie" &&
+          (admin ? (
+            <CaissePrincipale />
+          ) : (
+            <RubriqueAvecMenu titre="Trésorerie" entrees={TRESORERIE_VENDEUR} />
+          ))}
         {onglet === "parametres" && <RubriqueAvecMenu titre="Paramètres" entrees={PARAMETRES} />}
-        {onglet === "comptes" &&
-          (admin ? <CaissePrincipale /> : <RubriqueAvecMenu titre="Comptes" entrees={COMPTES_VENDEUR} />)}
-        {onglet === "import" && <ImportCatalogue />}
-        {onglet === "securite" && <CodeSecours />}
-        {onglet === "journaux" && <RubriqueAvecMenu titre="Journaux" entrees={JOURNAUX} />}
       </main>
     </div>
   );
