@@ -4678,12 +4678,13 @@ button.filtre-compact {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0;
+  /* Une ligne vide avant le titre de section. */
+  margin: 1.25em 0 0;
   padding: 0;
   border: 0;
 }
 
 .boutique-legaux legend {
-  margin-bottom: 8px;
-  padding: 0;
+  /* Deux lignes vides après le titre de section. */
+  padding: 0 0 2.5em;
 }

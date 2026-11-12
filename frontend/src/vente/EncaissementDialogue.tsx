@@ -30,7 +30,8 @@ interface Props {
   total: number;
   /** Aperçu calculé par le serveur, pour le récapitulatif du ticket. */
   apercu?: Schemas["PanierDto"];
-  onValidee: (vente: Schemas["VenteDto"]) => void;
+  /** `entreprise` : le client choisi est une entreprise, seule à pouvoir recevoir une facture A4. */
+  onValidee: (vente: Schemas["VenteDto"], entreprise: boolean) => void;
   onFermer: () => void;
 }
 
@@ -118,7 +119,7 @@ export function EncaissementDialogue({ commande, total, apercu, onValidee, onFer
         : mixte
           ? { panier: commande, mode: "CARTE", especesRecues: recu, clientId }
           : { panier: commande, mode: "ESPECES", especesRecues: recu, clientId };
-    valider.mutate({ cle, corps }, { onSuccess: onValidee });
+    valider.mutate({ cle, corps }, { onSuccess: (vente) => onValidee(vente, client?.type === "ENTREPRISE") });
   }
 
   return (

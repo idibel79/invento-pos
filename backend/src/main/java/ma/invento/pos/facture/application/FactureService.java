@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import ma.invento.pos.client.api.ClientDtos.ClientDto;
 import ma.invento.pos.client.application.ClientService;
+import ma.invento.pos.client.domain.TypeClient;
 import ma.invento.pos.facture.api.FactureDtos.ClientFactureDto;
 import ma.invento.pos.facture.api.FactureDtos.FactureDto;
 import ma.invento.pos.facture.domain.ReglesFacture;
@@ -13,13 +14,14 @@ import ma.invento.pos.facture.infrastructure.FacturesJdbc.Facture;
 import ma.invento.pos.journal.application.JournalService;
 import ma.invento.pos.journal.domain.ActionJournal;
 import ma.invento.pos.parametre.application.ParametreService;
+import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.vente.api.VenteDtos.VenteDto;
 import ma.invento.pos.vente.application.VenteService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Facture A4 d'une vente validée avec un client de l'annuaire. Le numéro est attribué à la première
+ * Facture A4 d'une vente validée avec un client entreprise de l'annuaire. Le numéro est attribué à la première
  * impression (séquence annuelle sans trou) et l'identité du client y est figée ; les impressions
  * suivantes ressortent la même facture.
  */
@@ -70,6 +72,9 @@ public class FactureService {
 
     private Facture emettre(VenteDto vente, long utilisateurId) {
         ClientDto client = clients.fiche(vente.client().id());
+        if (client.type() != TypeClient.ENTREPRISE) {
+            throw new RegleMetierException("La facture A4 est réservée aux clients entreprise.");
+        }
         Instant maintenant = Instant.now(clock);
         int annee =
                 maintenant.atZone(ZoneId.of(parametres.lire().fuseauHoraire())).getYear();

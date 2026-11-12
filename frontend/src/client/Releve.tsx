@@ -221,7 +221,7 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
                       Annuler…
                     </button>
                   )}
-                  {m.type === "VENTE_CREDIT" && m.venteId != null && (
+                  {client.type === "ENTREPRISE" && m.type === "VENTE_CREDIT" && m.venteId != null && (
                     <button
                       type="button"
                       className="lien-action"
