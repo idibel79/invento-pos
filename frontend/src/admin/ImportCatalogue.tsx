@@ -37,7 +37,7 @@ export function ImportCatalogue() {
     <section className="admin-section">
       <div className="admin-tete">
         <div>
-          <h1 className="admin-titre">Import du catalogue</h1>
+          <h1 className="admin-titre">Import du catalogue de test</h1>
           <p className="texte-secondaire">
             Fichier Excel (.xlsx) exporté de Sobrus (« Stocks ») ou d'Invento. Le fichier est d'abord analysé,
             rien n'est enregistré avant de cliquer sur Importer.

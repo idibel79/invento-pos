@@ -48,7 +48,7 @@ export function ChoixClient({
               ? "Aucun client ne correspond, ou aucun n'a de dette."
               : recherche.trim()
                 ? "Aucun client ne correspond. Seul l'admin ajoute un client à l'annuaire."
-                : "L'annuaire est vide. Seul l'admin ajoute un client (Paramètres › Clients)."}
+                : "L'annuaire est vide. Seul l'admin ajoute un client (Administration › Clients)."}
           </p>
         )}
         {liste.map((c) => (

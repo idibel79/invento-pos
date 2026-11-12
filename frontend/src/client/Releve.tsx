@@ -165,7 +165,16 @@ function AnnulationDialogue({
  * Relevé d'un client en popup (design B) : une ligne par opération (date, opération, mode, par qui,
  * montant, solde), annulation d'un remboursement pour l'admin, impression et fermeture.
  */
-export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer: () => void }) {
+export function ReleveDialogue({
+  client,
+  onFermer,
+  annulable = true,
+}: {
+  client: Client;
+  onFermer: () => void;
+  /** Annulation d'un remboursement proposée (admin seul ; le serveur vérifie). */
+  annulable?: boolean;
+}) {
   const releve = useReleve(client.id);
   const fuseau = useParametres().data?.fuseauHoraire;
   const [aAnnuler, setAAnnuler] = useState<MouvementClient | null>(null);
@@ -216,7 +225,7 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
               <td className="a-droite">{texteSolde(m.detteApres)}</td>
               {!impression && (
                 <td>
-                  {m.type === "REMBOURSEMENT" && !m.annule && (
+                  {annulable && m.type === "REMBOURSEMENT" && !m.annule && (
                     <button type="button" className="lien-action" onClick={() => setAAnnuler(m)}>
                       Annuler…
                     </button>
@@ -274,7 +283,8 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
         )}
         <div className="rangee-boutons">
           <span className="texte-secondaire releve-aide">
-            Annuler un remboursement saisi par erreur : « Annuler… » sur sa ligne (motif obligatoire).
+            {annulable &&
+              "Annuler un remboursement saisi par erreur : « Annuler… » sur sa ligne (motif obligatoire)."}
           </span>
           <button
             type="button"

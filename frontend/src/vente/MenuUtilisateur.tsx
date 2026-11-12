@@ -115,7 +115,9 @@ export function MenuUtilisateur({ enCaisse = false, onAdministration }: Props) {
                 <span className="menu-element-texte">
                   <span>Administration</span>
                   <span className="menu-element-detail">
-                    {utilisateur.role === "ADMIN" ? "Paramètres, comptes, journaux" : "Mon compte, journaux"}
+                    {utilisateur.role === "ADMIN"
+                      ? "Ventes, clients, trésorerie, paramètres"
+                      : "Mon compte, ventes, clients"}
                   </span>
                 </span>
                 {signale && <span className="pastille-nombre">{aValider}</span>}

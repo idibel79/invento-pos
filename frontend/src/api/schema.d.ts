@@ -3446,6 +3446,7 @@ export interface operations {
                 caisseId?: number;
                 vendeurId?: number;
                 client?: string;
+                clientId?: number;
                 page?: number;
                 taille?: number;
             };
@@ -3517,6 +3518,7 @@ export interface operations {
                 caisseId?: number;
                 vendeurId?: number;
                 client?: string;
+                clientId?: number;
             };
             header?: never;
             path?: never;
