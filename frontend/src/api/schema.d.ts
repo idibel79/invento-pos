@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ventes/{id}/facture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["facturer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ventes/{id}/abandon": {
         parameters: {
             query?: never;
@@ -1121,6 +1137,10 @@ export interface components {
             boutiqueTelephone?: string;
             /** Format: email */
             boutiqueEmail?: string;
+            boutiqueIce?: string;
+            boutiqueIf?: string;
+            boutiqueRc?: string;
+            boutiquePatente?: string;
             ticketMessage?: string;
             fuseauHoraire: string;
         };
@@ -1129,10 +1149,16 @@ export interface components {
             boutiqueAdresse: string;
             boutiqueTelephone: string;
             boutiqueEmail: string;
+            boutiqueIce: string;
+            boutiqueIf: string;
+            boutiqueRc: string;
+            boutiquePatente: string;
             ticketMessage: string;
             fuseauHoraire: string;
         };
         ClientCommande: {
+            /** @enum {string|null} */
+            type?: "PARTICULIER" | "ENTREPRISE" | null;
             nom: string;
             telephone?: string;
             note?: string;
@@ -1140,13 +1166,28 @@ export interface components {
             plafond?: number | null;
             /** @description Actif si absent */
             actif?: boolean | null;
+            /** @description Identifiant commun de l'entreprise, 15 chiffres */
+            ice?: string | null;
+            identifiantFiscal?: string | null;
+            rc?: string | null;
+            contact?: string | null;
+            adresse?: string | null;
+            email?: string | null;
         };
         ClientDto: {
             /** Format: int64 */
             id: number;
+            /** @enum {string} */
+            type: "PARTICULIER" | "ENTREPRISE";
             nom: string;
             telephone: string | null;
             note: string | null;
+            ice: string | null;
+            identifiantFiscal: string | null;
+            rc: string | null;
+            contact: string | null;
+            adresse: string | null;
+            email: string | null;
             actif: boolean;
             dette: number;
             /** @description Plafond de crédit, sans limite si absent */
@@ -1266,6 +1307,24 @@ export interface components {
             totalHt: number;
             totalTva: number;
             totalTtc: number;
+        };
+        ClientFactureDto: {
+            /** @enum {string} */
+            type: "PARTICULIER" | "ENTREPRISE";
+            nom: string;
+            ice: string | null;
+            identifiantFiscal: string | null;
+            rc: string | null;
+            contact: string | null;
+            adresse: string | null;
+        };
+        FactureDto: {
+            numero: string;
+            /** Format: date-time */
+            emiseLe: string;
+            client: components["schemas"]["ClientFactureDto"];
+            vente: components["schemas"]["VenteDto"];
+            montantEnLettres: string;
         };
         AccordRemiseDto: {
             /** Format: int64 */
@@ -1676,7 +1735,7 @@ export interface components {
             /** Format: int64 */
             utilisateurId: number | null;
             /** @enum {string} */
-            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "SESSION_COMPTEE" | "CAISSE_PRINCIPALE_ALIMENTEE" | "CAISSE_PRINCIPALE_RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_VALIDE" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "COMPTE_AJUSTE" | "REMISE_AUTORISEE" | "CLIENT_CREE" | "CLIENT_MODIFIE" | "CLIENT_SUPPRIME" | "DETTE_ENCAISSEE" | "DETTE_REMBOURSEMENT_ANNULE";
+            action: "INSTALLATION_ADMIN" | "CONNEXION_ECHOUEE" | "COMPTE_VERROUILLE" | "MOT_DE_PASSE_CHANGE" | "CODE_SECOURS_UTILISE" | "CODE_SECOURS_RENOUVELE" | "REINITIALISATION_ADMIN_COMMANDE" | "UTILISATEUR_CREE" | "UTILISATEUR_MODIFIE" | "MOT_DE_PASSE_REINITIALISE" | "PIN_DEFINI" | "CAISSE_CREEE" | "CAISSE_MODIFIEE" | "CAISSE_SUPPRIMEE" | "PARAMETRE_MODIFIE" | "PRODUIT_CREE" | "PRODUIT_MODIFIE" | "IMPORT_CATALOGUE" | "SESSION_OUVERTE" | "SESSION_CLOTUREE" | "SESSION_CLOTUREE_D_OFFICE" | "SESSION_COMPTEE" | "CAISSE_PRINCIPALE_ALIMENTEE" | "CAISSE_PRINCIPALE_RETRAIT" | "VERSEMENT_ENVOYE" | "VERSEMENT_VALIDE" | "VERSEMENT_REFUSE" | "VERSEMENT_ANNULE" | "COMPTE_AJUSTE" | "REMISE_AUTORISEE" | "CLIENT_CREE" | "CLIENT_MODIFIE" | "CLIENT_SUPPRIME" | "DETTE_ENCAISSEE" | "DETTE_REMBOURSEMENT_ANNULE" | "FACTURE_EMISE";
             detail: string | null;
             /** Format: date-time */
             creeLe: string;
@@ -2111,6 +2170,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VenteDto"];
+                };
+            };
+        };
+    };
+    facturer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactureDto"];
                 };
             };
         };

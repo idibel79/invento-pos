@@ -56,6 +56,7 @@ import ma.invento.pos.vente.infrastructure.NumeroteurVente;
 import ma.invento.pos.vente.infrastructure.VenteRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -278,6 +279,19 @@ public class VenteService {
                 .filter(v -> utilisateur.estAdmin() || v.getCaissierId() == utilisateur.id())
                 .map(VenteService::versDto)
                 .orElseThrow(() -> new RessourceIntrouvableException("Vente introuvable."));
+    }
+
+    /** Vente validée avec un client de l'annuaire, à facturer ; quel que soit son vendeur. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public VenteDto venteAFacturer(long venteId) {
+        VenteDto vente = ventes.findById(venteId)
+                .filter(v -> v.getStatut() == StatutVente.VALIDEE)
+                .map(VenteService::versDto)
+                .orElseThrow(() -> new RessourceIntrouvableException("Vente introuvable."));
+        if (vente.client() == null) {
+            throw new RegleMetierException("Choisissez un client sur la vente pour imprimer une facture.");
+        }
+        return vente;
     }
 
     /** Ventes en attente de la session ouverte du vendeur (vide sans session). */

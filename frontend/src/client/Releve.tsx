@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { messageErreur } from "../api/erreurs";
 import { useParametres } from "../caisse/requetes";
+import { useImpressionFacture } from "../facture/FactureA4";
 import { Dialogue } from "../ui/Dialogue";
 import { dateHeure, dh } from "../ui/format";
 import {
@@ -168,6 +169,7 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
   const releve = useReleve(client.id);
   const fuseau = useParametres().data?.fuseauHoraire;
   const [aAnnuler, setAAnnuler] = useState<MouvementClient | null>(null);
+  const facture = useImpressionFacture();
   const lignes = releve.data ?? [];
   // Le relevé est relu après une annulation : sa première ligne porte la dette à jour.
   const dette = lignes[0]?.detteApres ?? client.dette;
@@ -219,6 +221,16 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
                       Annuler…
                     </button>
                   )}
+                  {m.type === "VENTE_CREDIT" && m.venteId != null && (
+                    <button
+                      type="button"
+                      className="lien-action"
+                      disabled={facture.enCours}
+                      onClick={() => m.venteId != null && facture.imprimer(m.venteId)}
+                    >
+                      Facture A4
+                    </button>
+                  )}
                 </td>
               )}
             </tr>
@@ -255,6 +267,11 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
         )}
         {releve.isSuccess && lignes.length === 0 && <p className="vide">Aucun mouvement.</p>}
         {lignes.length > 0 && <div className="releve-defilement">{tableau(false)}</div>}
+        {facture.erreur && (
+          <p className="alerte alerte-danger" role="alert">
+            {messageErreur(facture.erreur)}
+          </p>
+        )}
         <div className="rangee-boutons">
           <span className="texte-secondaire releve-aide">
             Annuler un remboursement saisi par erreur : « Annuler… » sur sa ligne (motif obligatoire).
@@ -273,6 +290,7 @@ export function ReleveDialogue({ client, onFermer }: { client: Client; onFermer:
         </div>
       </div>
       {aAnnuler && <AnnulationDialogue remboursement={aAnnuler} onFermer={() => setAAnnuler(null)} />}
+      {facture.rendu}
       {createPortal(
         <div className="zone-impression">
           <div className="releve-impression">

@@ -4430,3 +4430,260 @@ button.filtre-compact {
   flex-direction: column;
   gap: 4px;
 }
+
+/* ------------------------------------------------------------------ Facture A4 */
+
+/* Seule la facture s'imprime, même si le ticket ou le relevé sont aussi dans la page. */
+@page facture {
+  size: A4;
+  margin: 14mm 15mm;
+}
+
+@media print {
+  body.impression-facture > .zone-impression:not(.zone-facture) {
+    display: none !important;
+  }
+
+  .zone-impression .facture-a4 {
+    page: facture;
+  }
+}
+
+.facture-a4 {
+  display: flex;
+  flex-direction: column;
+  gap: 18pt;
+  color: #000000;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  font-size: 10pt;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.facture-entete {
+  display: flex;
+  justify-content: space-between;
+  gap: 24pt;
+}
+
+.facture-boutique,
+.facture-numero,
+.facture-client {
+  display: flex;
+  flex-direction: column;
+  gap: 1pt;
+}
+
+.facture-boutique-nom {
+  font-size: 15pt;
+}
+
+.facture-numero {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.facture-numero h1 {
+  margin: 0;
+  font-size: 20pt;
+  letter-spacing: 1px;
+}
+
+.facture-numero strong {
+  font-size: 11pt;
+}
+
+.facture-legaux {
+  color: #333333;
+}
+
+.facture-client {
+  align-self: flex-end;
+  width: 75mm;
+  padding: 8pt 10pt;
+  border: 1px solid #555555;
+  border-radius: 3px;
+}
+
+.facture-client strong {
+  font-size: 11pt;
+}
+
+.facture-etiquette {
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #333333;
+}
+
+.facture-lignes,
+.facture-tva {
+  border-collapse: collapse;
+}
+
+.facture-lignes {
+  width: 100%;
+}
+
+.facture-lignes th,
+.facture-lignes td,
+.facture-tva th,
+.facture-tva td {
+  padding: 5pt 4pt;
+  text-align: right;
+}
+
+.facture-lignes th:first-child,
+.facture-lignes td:first-child,
+.facture-tva th:first-child,
+.facture-tva td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.facture-lignes th:last-child,
+.facture-lignes td:last-child,
+.facture-tva th:last-child,
+.facture-tva td:last-child {
+  padding-right: 0;
+}
+
+.facture-lignes th {
+  white-space: nowrap;
+}
+
+.facture-lignes thead tr {
+  border-bottom: 2px solid #000000;
+}
+
+.facture-lignes tbody tr,
+.facture-tva tbody tr {
+  border-bottom: 1px solid #999999;
+}
+
+.facture-lignes td:last-child {
+  font-weight: 600;
+}
+
+.facture-bas {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24pt;
+}
+
+.facture-tva {
+  width: 70mm;
+  font-size: 9pt;
+}
+
+.facture-tva thead tr {
+  border-bottom: 1px solid #000000;
+}
+
+.facture-totaux {
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
+  width: 68mm;
+  margin: 0;
+}
+
+.facture-totaux div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.facture-totaux dd {
+  margin: 0;
+}
+
+.facture-ttc {
+  padding-top: 6pt;
+  border-top: 2px solid #000000;
+  font-size: 13pt;
+  font-weight: 700;
+}
+
+.facture-mentions p {
+  margin: 0 0 3pt;
+}
+
+.facture-pied {
+  margin-top: 12pt;
+  padding-top: 6pt;
+  border-top: 1px solid #555555;
+  font-size: 8.5pt;
+  color: #333333;
+  text-align: center;
+}
+
+/* Pastille « Entreprise » à côté du nom d'un client. */
+.statut-entreprise {
+  flex-shrink: 0;
+  background: var(--accent-doux);
+  color: var(--designation);
+  font-weight: 600;
+}
+
+.clients-detail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.clients-nom-bloc {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.choix-type {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.choix-type button {
+  height: 38px;
+  border: 0;
+  background: var(--champ);
+  color: var(--texte);
+  font: inherit;
+  cursor: pointer;
+}
+
+.choix-type button[aria-pressed="true"] {
+  background: var(--texte-fort);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.grille-deux-colonnes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.grille-deux-colonnes .champ-large {
+  grid-column: 1 / -1;
+}
+
+.boutique-legaux {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.boutique-legaux legend {
+  margin-bottom: 8px;
+  padding: 0;
+}

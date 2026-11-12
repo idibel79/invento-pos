@@ -8,7 +8,9 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import ma.invento.pos.client.domain.FicheClient;
 import ma.invento.pos.client.domain.ReglesClient;
+import ma.invento.pos.client.domain.TypeClient;
 import ma.invento.pos.client.domain.TypeMouvementClient;
 import ma.invento.pos.client.infrastructure.ClientsJdbc.Client;
 import ma.invento.pos.client.infrastructure.ClientsJdbc.Mouvement;
@@ -18,11 +20,19 @@ public final class ClientDtos {
 
     private ClientDtos() {}
 
+    /** @param nom nom et prénom, ou raison sociale d'une entreprise */
     public record ClientDto(
             Long id,
+            TypeClient type,
             String nom,
             @Schema(nullable = true) String telephone,
             @Schema(nullable = true) String note,
+            @Schema(nullable = true) String ice,
+            @Schema(nullable = true) String identifiantFiscal,
+            @Schema(nullable = true) String rc,
+            @Schema(nullable = true) String contact,
+            @Schema(nullable = true) String adresse,
+            @Schema(nullable = true) String email,
             boolean actif,
             BigDecimal dette,
 
@@ -33,7 +43,21 @@ public final class ClientDtos {
 
         public static ClientDto depuis(Client c) {
             return new ClientDto(
-                    c.id(), c.nom(), c.telephone(), c.note(), c.actif(), c.dette(), c.plafond(), c.dernierMouvement());
+                    c.id(),
+                    c.type(),
+                    c.nom(),
+                    c.telephone(),
+                    c.note(),
+                    c.ice(),
+                    c.identifiantFiscal(),
+                    c.rc(),
+                    c.contact(),
+                    c.adresse(),
+                    c.email(),
+                    c.actif(),
+                    c.dette(),
+                    c.plafond(),
+                    c.dernierMouvement());
         }
     }
 
@@ -82,7 +106,15 @@ public final class ClientDtos {
         }
     }
 
+    /**
+     * Création ou modification d'un client. Les champs ICE à email ne valent que pour une entreprise ; ils
+     * sont ignorés pour un particulier.
+     *
+     * @param type particulier si absent
+     * @param nom nom et prénom, ou raison sociale d'une entreprise
+     */
     public record ClientCommande(
+            @Schema(nullable = true) TypeClient type,
             @NotBlank @Size(max = ReglesClient.NOM_MAX) String nom,
             @Size(max = ReglesClient.TELEPHONE_MAX) String telephone,
             @Size(max = ReglesClient.NOTE_MAX) String note,
@@ -93,7 +125,31 @@ public final class ClientDtos {
             BigDecimal plafond,
 
             @Schema(nullable = true, description = "Actif si absent")
-            Boolean actif) {}
+            Boolean actif,
+
+            @Schema(nullable = true, description = "Identifiant commun de l'entreprise, 15 chiffres") @Size(max = 20)
+            String ice,
+
+            @Schema(nullable = true) @Size(max = ReglesClient.IDENTIFIANT_FISCAL_MAX)
+            String identifiantFiscal,
+
+            @Schema(nullable = true) @Size(max = ReglesClient.RC_MAX)
+            String rc,
+
+            @Schema(nullable = true) @Size(max = ReglesClient.CONTACT_MAX)
+            String contact,
+
+            @Schema(nullable = true) @Size(max = ReglesClient.ADRESSE_MAX)
+            String adresse,
+
+            @Schema(nullable = true) @Size(max = ReglesClient.EMAIL_MAX)
+            String email) {
+
+        public FicheClient fiche() {
+            return ReglesClient.fiche(
+                    type, nom, telephone, note, plafond, ice, identifiantFiscal, rc, contact, adresse, email);
+        }
+    }
 
     /** @param supprime faux : le client a un historique, il a seulement été désactivé */
     public record SuppressionDto(boolean supprime) {}

@@ -20,6 +20,13 @@ const schema = z.object({
     z.literal(""),
     z.email("Adresse email invalide").max(120, "120 caractères maximum"),
   ]),
+  boutiqueIce: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^\d{15}$/.test(v.replace(/\s/g, "")), "L'ICE compte 15 chiffres"),
+  boutiqueIf: z.string().trim().max(20, "20 caractères maximum"),
+  boutiqueRc: z.string().trim().max(30, "30 caractères maximum"),
+  boutiquePatente: z.string().trim().max(20, "20 caractères maximum"),
   ticketMessage: z.string().trim().max(300, "300 caractères maximum"),
 });
 
@@ -112,6 +119,10 @@ function FormulaireBoutique({ parametres }: { parametres: Schemas["Parametres"] 
       boutiqueAdresse: parametres.boutiqueAdresse,
       boutiqueTelephone: parametres.boutiqueTelephone,
       boutiqueEmail: parametres.boutiqueEmail,
+      boutiqueIce: parametres.boutiqueIce,
+      boutiqueIf: parametres.boutiqueIf,
+      boutiqueRc: parametres.boutiqueRc,
+      boutiquePatente: parametres.boutiquePatente,
       ticketMessage: parametres.ticketMessage,
     },
   });
@@ -127,6 +138,10 @@ function FormulaireBoutique({ parametres }: { parametres: Schemas["Parametres"] 
             boutiqueAdresse: p.boutiqueAdresse,
             boutiqueTelephone: p.boutiqueTelephone,
             boutiqueEmail: p.boutiqueEmail,
+            boutiqueIce: p.boutiqueIce,
+            boutiqueIf: p.boutiqueIf,
+            boutiqueRc: p.boutiqueRc,
+            boutiquePatente: p.boutiquePatente,
             ticketMessage: p.ticketMessage,
           }),
       },
@@ -160,6 +175,38 @@ function FormulaireBoutique({ parametres }: { parametres: Schemas["Parametres"] 
             {errors.boutiqueEmail && <span className="erreur-champ">{errors.boutiqueEmail.message}</span>}
           </label>
         </div>
+        <fieldset className="boutique-legaux">
+          <legend className="libelle">Identifiants légaux (facultatifs, imprimés sur la facture A4)</legend>
+          <div className="grille-deux-colonnes">
+            <label className="champ">
+              <span className="libelle">ICE</span>
+              <input
+                inputMode="numeric"
+                placeholder="15 chiffres"
+                autoComplete="off"
+                {...register("boutiqueIce")}
+              />
+              {errors.boutiqueIce && <span className="erreur-champ">{errors.boutiqueIce.message}</span>}
+            </label>
+            <label className="champ">
+              <span className="libelle">IF (identifiant fiscal)</span>
+              <input autoComplete="off" {...register("boutiqueIf")} />
+              {errors.boutiqueIf && <span className="erreur-champ">{errors.boutiqueIf.message}</span>}
+            </label>
+            <label className="champ">
+              <span className="libelle">RC (registre de commerce)</span>
+              <input autoComplete="off" {...register("boutiqueRc")} />
+              {errors.boutiqueRc && <span className="erreur-champ">{errors.boutiqueRc.message}</span>}
+            </label>
+            <label className="champ">
+              <span className="libelle">Patente</span>
+              <input autoComplete="off" {...register("boutiquePatente")} />
+              {errors.boutiquePatente && (
+                <span className="erreur-champ">{errors.boutiquePatente.message}</span>
+              )}
+            </label>
+          </div>
+        </fieldset>
         <label className="champ">
           <span className="libelle">Message en bas du ticket</span>
           <textarea rows={2} placeholder="Merci de votre visite !" {...register("ticketMessage")} />

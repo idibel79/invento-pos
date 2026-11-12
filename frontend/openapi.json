@@ -383,6 +383,33 @@
         }
       }
     },
+    "/api/v1/ventes/{id}/facture" : {
+      "post" : {
+        "tags" : [ "facture-controller" ],
+        "operationId" : "facturer",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FactureDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ventes/{id}/abandon" : {
       "post" : {
         "tags" : [ "vente-controller" ],
@@ -2473,11 +2500,11 @@
           },
           "ppv" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "pph" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "stockMin" : {
             "type" : "integer",
@@ -2639,6 +2666,27 @@
             "maxLength" : 120,
             "minLength" : 0
           },
+          "boutiqueIce" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0,
+            "pattern" : "[0-9 ]*"
+          },
+          "boutiqueIf" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          },
+          "boutiqueRc" : {
+            "type" : "string",
+            "maxLength" : 30,
+            "minLength" : 0
+          },
+          "boutiquePatente" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          },
           "ticketMessage" : {
             "type" : "string",
             "maxLength" : 300,
@@ -2667,6 +2715,18 @@
           "boutiqueEmail" : {
             "type" : "string"
           },
+          "boutiqueIce" : {
+            "type" : "string"
+          },
+          "boutiqueIf" : {
+            "type" : "string"
+          },
+          "boutiqueRc" : {
+            "type" : "string"
+          },
+          "boutiquePatente" : {
+            "type" : "string"
+          },
           "ticketMessage" : {
             "type" : "string"
           },
@@ -2674,11 +2734,15 @@
             "type" : "string"
           }
         },
-        "required" : [ "boutiqueAdresse", "boutiqueEmail", "boutiqueNom", "boutiqueTelephone", "fuseauHoraire", "ticketMessage" ]
+        "required" : [ "boutiqueAdresse", "boutiqueEmail", "boutiqueIce", "boutiqueIf", "boutiqueNom", "boutiquePatente", "boutiqueRc", "boutiqueTelephone", "fuseauHoraire", "ticketMessage" ]
       },
       "ClientCommande" : {
         "type" : "object",
         "properties" : {
+          "type" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "PARTICULIER", "ENTREPRISE" ]
+          },
           "nom" : {
             "type" : "string",
             "maxLength" : 120,
@@ -2702,6 +2766,37 @@
           "actif" : {
             "type" : [ "boolean", "null" ],
             "description" : "Actif si absent"
+          },
+          "ice" : {
+            "type" : [ "string", "null" ],
+            "description" : "Identifiant commun de l'entreprise, 15 chiffres",
+            "maxLength" : 20,
+            "minLength" : 0
+          },
+          "identifiantFiscal" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 20,
+            "minLength" : 0
+          },
+          "rc" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 30,
+            "minLength" : 0
+          },
+          "contact" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "adresse" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "email" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 120,
+            "minLength" : 0
           }
         },
         "required" : [ "nom" ]
@@ -2713,6 +2808,10 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "PARTICULIER", "ENTREPRISE" ]
+          },
           "nom" : {
             "type" : "string"
           },
@@ -2720,6 +2819,24 @@
             "type" : [ "string", "null" ]
           },
           "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "ice" : {
+            "type" : [ "string", "null" ]
+          },
+          "identifiantFiscal" : {
+            "type" : [ "string", "null" ]
+          },
+          "rc" : {
+            "type" : [ "string", "null" ]
+          },
+          "contact" : {
+            "type" : [ "string", "null" ]
+          },
+          "adresse" : {
+            "type" : [ "string", "null" ]
+          },
+          "email" : {
             "type" : [ "string", "null" ]
           },
           "actif" : {
@@ -2737,7 +2854,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "actif", "dernierMouvement", "dette", "id", "nom", "note", "plafond", "telephone" ]
+        "required" : [ "actif", "adresse", "contact", "dernierMouvement", "dette", "email", "ice", "id", "identifiantFiscal", "nom", "note", "plafond", "rc", "telephone", "type" ]
       },
       "CaisseCommande" : {
         "type" : "object",
@@ -2844,7 +2961,7 @@
           },
           "valeur" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           }
         },
         "required" : [ "type", "valeur" ]
@@ -2861,7 +2978,7 @@
           },
           "especesRecues" : {
             "type" : [ "number", "null" ],
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "clientId" : {
             "type" : [ "integer", "null" ],
@@ -3081,6 +3198,56 @@
           }
         },
         "required" : [ "taux", "totalHt", "totalTtc", "totalTva" ]
+      },
+      "ClientFactureDto" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "PARTICULIER", "ENTREPRISE" ]
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "ice" : {
+            "type" : [ "string", "null" ]
+          },
+          "identifiantFiscal" : {
+            "type" : [ "string", "null" ]
+          },
+          "rc" : {
+            "type" : [ "string", "null" ]
+          },
+          "contact" : {
+            "type" : [ "string", "null" ]
+          },
+          "adresse" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "adresse", "contact", "ice", "identifiantFiscal", "nom", "rc", "type" ]
+      },
+      "FactureDto" : {
+        "type" : "object",
+        "properties" : {
+          "numero" : {
+            "type" : "string"
+          },
+          "emiseLe" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "client" : {
+            "$ref" : "#/components/schemas/ClientFactureDto"
+          },
+          "vente" : {
+            "$ref" : "#/components/schemas/VenteDto"
+          },
+          "montantEnLettres" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "client", "emiseLe", "montantEnLettres", "numero", "vente" ]
       },
       "AccordRemiseDto" : {
         "type" : "object",
@@ -3317,7 +3484,7 @@
           },
           "fondInitial" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           }
         },
         "required" : [ "caisseId", "fondInitial" ]
@@ -3423,15 +3590,15 @@
         "properties" : {
           "montantCompteEspeces" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "montantCompteTpe" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "montantVerse" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           }
         },
         "required" : [ "montantCompteEspeces", "montantCompteTpe", "montantVerse" ]
@@ -3441,11 +3608,11 @@
         "properties" : {
           "montantCompteEspeces" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "montantCompteTpe" : {
             "type" : "number",
-            "minimum" : 0.0
+            "minimum" : 0.00
           }
         },
         "required" : [ "montantCompteEspeces", "montantCompteTpe" ]
@@ -3539,11 +3706,11 @@
         "properties" : {
           "especes" : {
             "type" : [ "number", "null" ],
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "tpe" : {
             "type" : [ "number", "null" ],
-            "minimum" : 0.0
+            "minimum" : 0.00
           },
           "cle" : {
             "type" : [ "string", "null" ],
@@ -4236,7 +4403,7 @@
           },
           "action" : {
             "type" : "string",
-            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "SESSION_COMPTEE", "CAISSE_PRINCIPALE_ALIMENTEE", "CAISSE_PRINCIPALE_RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_VALIDE", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "COMPTE_AJUSTE", "REMISE_AUTORISEE", "CLIENT_CREE", "CLIENT_MODIFIE", "CLIENT_SUPPRIME", "DETTE_ENCAISSEE", "DETTE_REMBOURSEMENT_ANNULE" ]
+            "enum" : [ "INSTALLATION_ADMIN", "CONNEXION_ECHOUEE", "COMPTE_VERROUILLE", "MOT_DE_PASSE_CHANGE", "CODE_SECOURS_UTILISE", "CODE_SECOURS_RENOUVELE", "REINITIALISATION_ADMIN_COMMANDE", "UTILISATEUR_CREE", "UTILISATEUR_MODIFIE", "MOT_DE_PASSE_REINITIALISE", "PIN_DEFINI", "CAISSE_CREEE", "CAISSE_MODIFIEE", "CAISSE_SUPPRIMEE", "PARAMETRE_MODIFIE", "PRODUIT_CREE", "PRODUIT_MODIFIE", "IMPORT_CATALOGUE", "SESSION_OUVERTE", "SESSION_CLOTUREE", "SESSION_CLOTUREE_D_OFFICE", "SESSION_COMPTEE", "CAISSE_PRINCIPALE_ALIMENTEE", "CAISSE_PRINCIPALE_RETRAIT", "VERSEMENT_ENVOYE", "VERSEMENT_VALIDE", "VERSEMENT_REFUSE", "VERSEMENT_ANNULE", "COMPTE_AJUSTE", "REMISE_AUTORISEE", "CLIENT_CREE", "CLIENT_MODIFIE", "CLIENT_SUPPRIME", "DETTE_ENCAISSEE", "DETTE_REMBOURSEMENT_ANNULE", "FACTURE_EMISE" ]
           },
           "detail" : {
             "type" : [ "string", "null" ]
