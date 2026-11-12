@@ -2,6 +2,7 @@ package ma.invento.pos.vente.api;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.time.Clock;
 import java.time.Duration;
 import ma.invento.pos.shared.api.PageResponse;
@@ -45,9 +46,10 @@ class JournalRemisesController {
             @RequestParam(required = false) Portee portee,
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long vendeurId,
+            @RequestParam(required = false) @Size(max = 100) String client,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille) {
-        Filtre filtre = filtre(jwt, jours, portee, caisseId, vendeurId);
+        Filtre filtre = filtre(jwt, jours, portee, caisseId, vendeurId, client);
         long total = requete.resumer(filtre).nombre();
         return new PageResponse<>(
                 requete.lister(filtre, page, taille), page, taille, total, (int) ((total + taille - 1) / taille));
@@ -60,15 +62,17 @@ class JournalRemisesController {
             @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
             @RequestParam(required = false) Portee portee,
             @RequestParam(required = false) Long caisseId,
-            @RequestParam(required = false) Long vendeurId) {
-        return requete.resumer(filtre(jwt, jours, portee, caisseId, vendeurId));
+            @RequestParam(required = false) Long vendeurId,
+            @RequestParam(required = false) @Size(max = 100) String client) {
+        return requete.resumer(filtre(jwt, jours, portee, caisseId, vendeurId, client));
     }
 
-    private Filtre filtre(Jwt jwt, Integer jours, Portee portee, Long caisseId, Long vendeurId) {
+    private Filtre filtre(Jwt jwt, Integer jours, Portee portee, Long caisseId, Long vendeurId, String client) {
         return new Filtre(
                 jours == null ? null : clock.instant().minus(Duration.ofDays(jours)),
                 portee,
                 caisseId,
-                HistoriqueVentesController.vendeurAutorise(jwt, vendeurId));
+                HistoriqueVentesController.vendeurAutorise(jwt, vendeurId),
+                client);
     }
 }

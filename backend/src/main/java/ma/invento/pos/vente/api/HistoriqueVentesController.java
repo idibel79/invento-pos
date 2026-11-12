@@ -2,6 +2,7 @@ package ma.invento.pos.vente.api;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
@@ -53,9 +54,10 @@ class HistoriqueVentesController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long vendeurId,
+            @RequestParam(required = false) @Size(max = 100) String client,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille) {
-        Filtre filtre = filtre(jour, caisseId, vendeurAutorise(jwt, vendeurId));
+        Filtre filtre = filtre(jour, caisseId, vendeurAutorise(jwt, vendeurId), client);
         long total = requete.resumer(filtre).nombre();
         return new PageResponse<>(
                 requete.lister(filtre, page, taille), page, taille, total, (int) ((total + taille - 1) / taille));
@@ -67,8 +69,9 @@ class HistoriqueVentesController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
             @RequestParam(required = false) Long caisseId,
-            @RequestParam(required = false) Long vendeurId) {
-        return requete.resumer(filtre(jour, caisseId, vendeurAutorise(jwt, vendeurId)));
+            @RequestParam(required = false) Long vendeurId,
+            @RequestParam(required = false) @Size(max = 100) String client) {
+        return requete.resumer(filtre(jour, caisseId, vendeurAutorise(jwt, vendeurId), client));
     }
 
     @GetMapping("/{id}")
@@ -91,13 +94,14 @@ class HistoriqueVentesController {
     }
 
     /** Le jour s'entend dans le fuseau de la boutique : de minuit à minuit, heure locale. */
-    private Filtre filtre(LocalDate jour, Long caisseId, Long vendeurId) {
-        if (jour == null) return new Filtre(null, null, caisseId, vendeurId);
+    private Filtre filtre(LocalDate jour, Long caisseId, Long vendeurId, String client) {
+        if (jour == null) return new Filtre(null, null, caisseId, vendeurId, client);
         ZoneId fuseau = ZoneId.of(parametres.lire().fuseauHoraire());
         return new Filtre(
                 jour.atStartOfDay(fuseau).toInstant(),
                 jour.plusDays(1).atStartOfDay(fuseau).toInstant(),
                 caisseId,
-                vendeurId);
+                vendeurId,
+                client);
     }
 }

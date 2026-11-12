@@ -1695,6 +1695,7 @@ export interface components {
             le: string;
             caisse: string;
             vendeur: string;
+            client: string | null;
             autorisePar: string;
             /** @enum {string} */
             portee: "LIGNE" | "TICKET";
@@ -3322,6 +3323,7 @@ export interface operations {
                 portee?: "LIGNE" | "TICKET";
                 caisseId?: number;
                 vendeurId?: number;
+                client?: string;
                 page?: number;
                 taille?: number;
             };
@@ -3349,6 +3351,7 @@ export interface operations {
                 portee?: "LIGNE" | "TICKET";
                 caisseId?: number;
                 vendeurId?: number;
+                client?: string;
             };
             header?: never;
             path?: never;
@@ -3442,6 +3445,7 @@ export interface operations {
                 jour?: string;
                 caisseId?: number;
                 vendeurId?: number;
+                client?: string;
                 page?: number;
                 taille?: number;
             };
@@ -3512,6 +3516,7 @@ export interface operations {
                 jour?: string;
                 caisseId?: number;
                 vendeurId?: number;
+                client?: string;
             };
             header?: never;
             path?: never;

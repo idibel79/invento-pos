@@ -59,8 +59,11 @@ public class HistoriqueVentesRequete {
             BigDecimal carte,
             BigDecimal credit) {}
 
-    /** Sélection : ventes validées dans [debut, fin[, d'une caisse et d'un vendeur ; un critère null ne filtre pas. */
-    public record Filtre(Instant debut, Instant fin, Long caisseId, Long vendeurId) {}
+    /**
+     * Sélection : ventes validées dans [debut, fin[, d'une caisse, d'un vendeur et d'un client (partie de son
+     * nom) ; un critère null ne filtre pas.
+     */
+    public record Filtre(Instant debut, Instant fin, Long caisseId, Long vendeurId, String client) {}
 
     public record LigneHistorique(
             String designation,
@@ -200,7 +203,8 @@ public class HistoriqueVentesRequete {
         return (filtre.debut() == null ? "" : " and v.finalisee_le >= :debut")
                 + (filtre.fin() == null ? "" : " and v.finalisee_le < :fin")
                 + (filtre.caisseId() == null ? "" : " and v.caisse_id = :caisseId")
-                + (filtre.vendeurId() == null ? "" : " and v.caissier_id = :vendeurId");
+                + (filtre.vendeurId() == null ? "" : " and v.caissier_id = :vendeurId")
+                + (RechercheClient.motif(filtre.client()) == null ? "" : RechercheClient.condition("v.client_nom"));
     }
 
     private static MapSqlParameterSource parametres(Filtre filtre) {
@@ -209,6 +213,7 @@ public class HistoriqueVentesRequete {
         if (filtre.fin() != null) parametres.addValue("fin", Timestamp.from(filtre.fin()));
         if (filtre.caisseId() != null) parametres.addValue("caisseId", filtre.caisseId());
         if (filtre.vendeurId() != null) parametres.addValue("vendeurId", filtre.vendeurId());
+        parametres.addValue("client", RechercheClient.motif(filtre.client()));
         return parametres;
     }
 

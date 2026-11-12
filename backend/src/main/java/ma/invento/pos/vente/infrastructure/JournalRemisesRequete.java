@@ -1,5 +1,6 @@
 package ma.invento.pos.vente.infrastructure;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,6 +29,7 @@ public class JournalRemisesRequete {
             Instant le,
             String caisse,
             String vendeur,
+            @Schema(nullable = true) String client,
             String autorisePar,
             Portee portee,
             String produit,
@@ -47,10 +49,10 @@ public class JournalRemisesRequete {
     }
 
     /**
-     * Sélection : remises validées depuis une date, d'une seule portée, d'une caisse et d'un vendeur ; un
-     * critère null ne filtre pas.
+     * Sélection : remises validées depuis une date, d'une seule portée, d'une caisse, d'un vendeur et d'un
+     * client (partie de son nom) ; un critère null ne filtre pas.
      */
-    public record Filtre(Instant depuis, Portee portee, Long caisseId, Long vendeurId) {}
+    public record Filtre(Instant depuis, Portee portee, Long caisseId, Long vendeurId, String client) {}
 
     private final NamedParameterJdbcTemplate jdbc;
     private final String lignes;
@@ -69,7 +71,7 @@ public class JournalRemisesRequete {
         String autoriseTicket = " left join " + s + "utilisateur ua on ua.id = v.validee_par";
         String colonnesVente = "v.numero, v.finalisee_le, c.nom as caisse,"
                 + " uv.prenom || ' ' || uv.nom as vendeur, ua.prenom || ' ' || ua.nom as autorise_par,"
-                + " v.motif_remise as motif";
+                + " v.client_nom as client, v.motif_remise as motif";
         this.lignes = "select " + colonnesVente + ", 'LIGNE' as portee, lv.designation as produit,"
                 + " lv.quantite, lv.remise_type as type, lv.remise_valeur as valeur, lv.remise_montant as montant"
                 + communs
@@ -106,7 +108,8 @@ public class JournalRemisesRequete {
     private String union(Filtre filtre) {
         String conditions = (filtre.depuis() == null ? "" : " and v.finalisee_le >= :depuis")
                 + (filtre.caisseId() == null ? "" : " and v.caisse_id = :caisseId")
-                + (filtre.vendeurId() == null ? "" : " and v.caissier_id = :vendeurId");
+                + (filtre.vendeurId() == null ? "" : " and v.caissier_id = :vendeurId")
+                + (RechercheClient.motif(filtre.client()) == null ? "" : RechercheClient.condition("v.client_nom"));
         List<String> parties = new ArrayList<>();
         if (filtre.portee() != Portee.TICKET) parties.add(lignes + conditions);
         if (filtre.portee() != Portee.LIGNE) parties.add(tickets + conditions);
@@ -118,6 +121,7 @@ public class JournalRemisesRequete {
         if (filtre.depuis() != null) parametres.addValue("depuis", Timestamp.from(filtre.depuis()));
         if (filtre.caisseId() != null) parametres.addValue("caisseId", filtre.caisseId());
         if (filtre.vendeurId() != null) parametres.addValue("vendeurId", filtre.vendeurId());
+        parametres.addValue("client", RechercheClient.motif(filtre.client()));
         return parametres;
     }
 
@@ -128,6 +132,7 @@ public class JournalRemisesRequete {
                 r.getTimestamp("finalisee_le").toInstant(),
                 r.getString("caisse"),
                 r.getString("vendeur"),
+                r.getString("client"),
                 r.getString("autorise_par"),
                 Portee.valueOf(r.getString("portee")),
                 r.getString("produit"),

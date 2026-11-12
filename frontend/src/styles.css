@@ -2328,7 +2328,10 @@ button:disabled {
 .tableau-remises {
   display: grid;
   grid-template-columns:
-    auto auto minmax(80px, auto) minmax(90px, auto) minmax(90px, auto) auto minmax(180px, 2fr)
+    auto auto minmax(80px, auto) minmax(90px, auto) minmax(100px, 1fr) minmax(90px, auto) auto minmax(
+      180px,
+      2fr
+    )
     auto auto minmax(140px, 1.5fr);
   column-gap: 12px;
   overflow-x: auto;
@@ -2407,8 +2410,8 @@ button:disabled {
 /* Historique des ventes : mêmes lignes que le journal des remises, colonnes propres, ligne cliquable. */
 .tableau-remises.tableau-ventes {
   grid-template-columns:
-    auto auto minmax(90px, 1fr) minmax(110px, 1.2fr) auto auto auto minmax(90px, 1fr)
-    auto auto auto auto;
+    auto auto minmax(90px, 1fr) minmax(110px, 1.2fr) minmax(100px, 1fr) auto auto auto
+    minmax(90px, 1fr) auto auto auto auto;
 }
 
 .vente-portees {
@@ -2469,6 +2472,23 @@ button:disabled {
 
 .filtre-jour input {
   padding: 0 8px;
+}
+
+/* Recherche par client dans les journaux : même allure que les listes déroulantes des filtres. */
+.filtre-client input {
+  width: 160px;
+  height: 36px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.filtre-client:focus-within {
+  border-color: var(--primaire);
 }
 
 .bouton-jour {

@@ -4,6 +4,7 @@ import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
 import { useCaisses, useParametres } from "../caisse/requetes";
 import { dh, pourcent } from "../ui/format";
+import { FiltreClient, useRechercheClient } from "./FiltreClient";
 import { useJournalRemises, useResumeRemises, useUtilisateurs, type FiltreRemises } from "./requetes";
 
 const PERIODES = { "7": "7 derniers jours", "30": "30 derniers jours", tout: "Tout l'historique" } as const;
@@ -15,7 +16,9 @@ export function JournalRemises() {
   const [portee, setPortee] = useState<keyof typeof PORTEES>("toutes");
   const [caisseId, setCaisseId] = useState<number>();
   const [vendeurId, setVendeurId] = useState<number>();
+  const [saisieClient, setSaisieClient, client] = useRechercheClient();
   const filtre: FiltreRemises = {
+    client,
     jours: periode === "tout" ? undefined : Number(periode),
     portee: portee === "toutes" ? undefined : portee,
     caisseId,
@@ -93,6 +96,7 @@ export function JournalRemises() {
             ))}
           </select>
         </label>
+        <FiltreClient valeur={saisieClient} onChange={setSaisieClient} />
       </div>
 
       <div className="resume-remises">
@@ -120,6 +124,7 @@ export function JournalRemises() {
             "Vente",
             "Caisse",
             "Vendeur",
+            "Client",
             "Autorisée par",
             "Portée",
             "Produit",
@@ -186,6 +191,9 @@ function LigneRemise({
       </span>
       <span role="cell">{r.caisse}</span>
       <span role="cell">{r.vendeur}</span>
+      <span role="cell" className={r.client ? undefined : "remise-discret"}>
+        {r.client ?? "—"}
+      </span>
       <span role="cell" className={r.autorisePar ? undefined : "remise-discret"}>
         {r.autorisePar ?? "—"}
       </span>
