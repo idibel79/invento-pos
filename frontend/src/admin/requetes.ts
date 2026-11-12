@@ -136,6 +136,8 @@ export interface FiltreRemises {
   portee?: "LIGNE" | "TICKET";
   caisseId?: number;
   vendeurId?: number;
+  /** Partie du nom du client. */
+  client?: string;
 }
 
 const TAILLE_JOURNAL = 50;
@@ -166,6 +168,8 @@ export interface FiltreVentes {
   jour?: string;
   caisseId?: number;
   vendeurId?: number;
+  /** Partie du nom du client. */
+  client?: string;
 }
 
 export function useHistoriqueVentes(filtre: FiltreVentes) {

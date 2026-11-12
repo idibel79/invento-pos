@@ -1914,6 +1914,15 @@
             "format" : "int64"
           }
         }, {
+          "name" : "client",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -1986,6 +1995,15 @@
           "schema" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
           }
         } ],
         "responses" : {
@@ -2125,6 +2143,15 @@
             "format" : "int64"
           }
         }, {
+          "name" : "client",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -2241,6 +2268,15 @@
           "schema" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
           }
         } ],
         "responses" : {
@@ -2500,11 +2536,11 @@
           },
           "ppv" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "pph" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "stockMin" : {
             "type" : "integer",
@@ -2961,7 +2997,7 @@
           },
           "valeur" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           }
         },
         "required" : [ "type", "valeur" ]
@@ -2978,7 +3014,7 @@
           },
           "especesRecues" : {
             "type" : [ "number", "null" ],
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "clientId" : {
             "type" : [ "integer", "null" ],
@@ -3484,7 +3520,7 @@
           },
           "fondInitial" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           }
         },
         "required" : [ "caisseId", "fondInitial" ]
@@ -3590,15 +3626,15 @@
         "properties" : {
           "montantCompteEspeces" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "montantCompteTpe" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "montantVerse" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           }
         },
         "required" : [ "montantCompteEspeces", "montantCompteTpe", "montantVerse" ]
@@ -3608,11 +3644,11 @@
         "properties" : {
           "montantCompteEspeces" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "montantCompteTpe" : {
             "type" : "number",
-            "minimum" : 0.00
+            "minimum" : 0.0
           }
         },
         "required" : [ "montantCompteEspeces", "montantCompteTpe" ]
@@ -3706,11 +3742,11 @@
         "properties" : {
           "especes" : {
             "type" : [ "number", "null" ],
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "tpe" : {
             "type" : [ "number", "null" ],
-            "minimum" : 0.00
+            "minimum" : 0.0
           },
           "cle" : {
             "type" : [ "string", "null" ],
@@ -4303,6 +4339,9 @@
           "vendeur" : {
             "type" : "string"
           },
+          "client" : {
+            "type" : [ "string", "null" ]
+          },
           "autorisePar" : {
             "type" : "string"
           },
@@ -4331,7 +4370,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "autorisePar", "caisse", "le", "montant", "motif", "portee", "produit", "quantite", "type", "valeur", "vendeur", "venteNumero" ]
+        "required" : [ "autorisePar", "caisse", "client", "le", "montant", "motif", "portee", "produit", "quantite", "type", "valeur", "vendeur", "venteNumero" ]
       },
       "ResumeRemises" : {
         "type" : "object",

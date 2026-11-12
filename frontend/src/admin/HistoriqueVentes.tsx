@@ -6,6 +6,7 @@ import { useCaisses, useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
 import { dateHeure, decimal, dh, heure, pourcent } from "../ui/format";
 import { TicketAImprimer } from "../vente/TicketCaisse";
+import { FiltreClient, useRechercheClient } from "./FiltreClient";
 import {
   useDetailVente,
   useHistoriqueVentes,
@@ -31,6 +32,7 @@ const COLONNES = [
   "Ticket",
   "Caisse",
   "Vendeur",
+  "Client",
   "Articles",
   "Remise",
   "Montant remisé",
@@ -65,8 +67,9 @@ export function HistoriqueVentes() {
   const [caisseId, setCaisseId] = useState<number>();
   const [vendeurId, setVendeurId] = useState<number>();
   const [ouverte, setOuverte] = useState<number>();
+  const [saisieClient, setSaisieClient, client] = useRechercheClient();
   const jour = jourChoisi ?? aujourdhui(fuseau);
-  const filtre = { jour, caisseId, vendeurId };
+  const filtre = { jour, caisseId, vendeurId, client };
   const caisses = useCaisses().data ?? [];
   // Hors admin, le serveur ne renvoie que les ventes de l'utilisateur : pas de filtre par vendeur.
   const admin = useUtilisateur().role === "ADMIN";
@@ -145,6 +148,7 @@ export function HistoriqueVentes() {
             </select>
           </label>
         )}
+        <FiltreClient valeur={saisieClient} onChange={setSaisieClient} />
       </div>
 
       <div className="resume-remises">
@@ -239,6 +243,9 @@ function LigneVente({
       </span>
       <span role="cell">{v.caisse}</span>
       <span role="cell">{v.vendeur}</span>
+      <span role="cell" className={v.client ? undefined : "remise-discret"}>
+        {v.client ?? "—"}
+      </span>
       <span role="cell" className="a-droite">
         {v.articles}
       </span>
