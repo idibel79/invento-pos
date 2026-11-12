@@ -161,14 +161,15 @@ test("vente en espèces, vente mise en attente puis reprise, clôture de caisse"
   await page.getByRole("button", { name: "Nouvelle vente" }).click();
   await expect(page.getByRole("button", { name: "En attente (0)" })).toBeVisible();
 
-  // Clôture : le tiroir contient le fond et les espèces encaissées, tout est versé à la caisse principale.
+  // Clôture : le tiroir contient le fond et les espèces encaissées, aucun ticket TPE. Rien n'est versé :
+  // le compté reste sur le compte du caissier.
   const attendu = Math.round((500 + total + attente.ppv) * 100) / 100;
   await page.getByRole("button", { name: "Clôturer" }).click();
   const cloture = page.getByRole("dialog", { name: "Clôturer la caisse" });
-  await cloture.getByLabel("1. Compté dans le tiroir").fill(String(attendu));
+  await cloture.getByLabel("Compté dans le tiroir (espèces)").fill(String(attendu));
+  await cloture.getByLabel("Compté dans le tiroir (tickets TPE)").fill("0");
   await expect(cloture.getByRole("status")).toContainText("0,00");
-  await cloture.getByRole("button", { name: "Tout le compté" }).click();
-  await cloture.getByRole("button", { name: /^Clôturer et verser/ }).click();
+  await cloture.getByRole("button", { name: "Clôturer la caisse", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Caisse clôturée" })).toBeVisible();
   await page.getByRole("button", { name: "Terminer" }).click();
   await expect(page.getByRole("heading", { name: "Ouvrir la caisse" })).toBeVisible();
