@@ -8,7 +8,6 @@ import { decimal, dh, heure } from "../ui/format";
 import { useMaintenant } from "../ui/hooks";
 import { IconeValide } from "../ui/icones";
 import { IconeInvento } from "../ui/Logo";
-import { BoutonAdministration } from "../admin/BoutonAdministration";
 import { AttenteDialogue } from "./AttenteDialogue";
 import { Catalogue } from "./Catalogue";
 import { EncaissementDialogue } from "./EncaissementDialogue";
@@ -108,9 +107,8 @@ export function EcranVente({ session, onAdministration }: Props) {
             ? `${nombreEnAttente} vente${nombreEnAttente > 1 ? "s" : ""} en attente`
             : "Aucune vente en attente"}
         </button>
-        <BoutonAdministration classe="barre-bouton" onClick={onAdministration} />
         <span className="barre-heure">{heure(new Date(maintenant).toISOString(), fuseau)}</span>
-        <MenuUtilisateur enCaisse />
+        <MenuUtilisateur enCaisse onAdministration={onAdministration} />
       </header>
 
       <main className="corps-vente">
