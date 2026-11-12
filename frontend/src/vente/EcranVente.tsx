@@ -27,7 +27,7 @@ type Fenetre =
   | { type: "attente" }
   | { type: "liste-attente" }
   | { type: "cloture" }
-  | { type: "validee"; vente: Schemas["VenteDto"] };
+  | { type: "validee"; vente: Schemas["VenteDto"]; entreprise: boolean };
 
 /** Écran de vente (direction « Table pro ») : barre de caisse en haut, tableau des produits, ticket à droite. */
 interface Props {
@@ -134,9 +134,9 @@ export function EcranVente({ session, onAdministration }: Props) {
           total={total}
           apercu={calcul.data}
           onFermer={fermer}
-          onValidee={(vente) => {
+          onValidee={(vente, entreprise) => {
             dispatch({ type: "vider" });
-            setFenetre({ type: "validee", vente });
+            setFenetre({ type: "validee", vente, entreprise });
           }}
         />
       )}
@@ -201,7 +201,7 @@ export function EcranVente({ session, onAdministration }: Props) {
             <button type="button" className="bouton bouton-contour" onClick={() => window.print()}>
               Imprimer le ticket
             </button>
-            {fenetre.vente.client && (
+            {fenetre.entreprise && (
               <button
                 type="button"
                 className="bouton bouton-contour"
