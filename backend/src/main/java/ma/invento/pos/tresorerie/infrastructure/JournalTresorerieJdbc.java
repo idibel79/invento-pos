@@ -73,11 +73,15 @@ public class JournalTresorerieJdbc {
             String auteur,
             @Schema(nullable = true) BigDecimal ecartSession,
 
-            @Schema(nullable = true, description = "Écart sur les espèces, sur une clôture de session")
-            BigDecimal ecartEspecesSession,
+            @Schema(
+                    nullable = true,
+                    description = "Part en espèces d'un versement, ou espèces comptées à la clôture de session")
+            BigDecimal especes,
 
-            @Schema(nullable = true, description = "Écart sur les tickets TPE, sur une clôture de session")
-            BigDecimal ecartTpeSession,
+            @Schema(
+                    nullable = true,
+                    description = "Part en tickets TPE d'un versement, ou tickets comptés à la clôture de session")
+            BigDecimal tpe,
 
             @Schema(nullable = true) Long versementId,
             @Schema(nullable = true) Boolean versLaPrincipale,
@@ -162,8 +166,9 @@ public class JournalTresorerieJdbc {
                         // pas.
                         + " trim(ua.prenom || ' ' || ua.nom) as auteur,"
                         + " case when o.type = 'CLOTURE_SESSION' then o.ecart_session end as ecart_session,"
-                        + " sc.ecart_especes,"
-                        + " sc.ecart_tpe, o.versement_id,"
+                        // Répartition espèces / TPE : celle du versement, ou le comptage du tiroir à la clôture.
+                        + " coalesce(v.montant_especes, sc.montant_compte_especes) as especes,"
+                        + " coalesce(v.montant_tpe, sc.montant_compte_tpe) as tpe, o.versement_id,"
                         + " case when v.id is null then null else rc.type = 'PRINCIPALE' end as vers_principale,"
                         + " v.statut, coalesce(v.auto_valide, false) as auto_valide,"
                         + " coalesce(v.cloture, false) as cloture, coalesce(v.motif, o.motif) as motif,"
@@ -228,8 +233,8 @@ public class JournalTresorerieJdbc {
                 r.getString("caisse"),
                 r.getString("auteur"),
                 r.getBigDecimal("ecart_session"),
-                r.getBigDecimal("ecart_especes"),
-                r.getBigDecimal("ecart_tpe"),
+                r.getBigDecimal("especes"),
+                r.getBigDecimal("tpe"),
                 r.getObject("versement_id", Long.class),
                 r.getObject("vers_principale", Boolean.class),
                 statut == null ? null : StatutVersement.valueOf(statut),

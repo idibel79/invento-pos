@@ -168,7 +168,8 @@ class TresorerieIT extends IntegrationTest {
         mvc.perform(post("/api/v1/tresorerie/mon-compte/versements")
                         .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("montant", new BigDecimal("100.01")))))
+                        .content(json.writeValueAsString(
+                                Map.of("montantEspeces", new BigDecimal("100"), "montantTpe", new BigDecimal("0.01")))))
                 .andExpect(status().isUnprocessableEntity());
         operation(
                         "/api/v1/tresorerie/principale/retrait",
@@ -250,7 +251,8 @@ class TresorerieIT extends IntegrationTest {
         return lire(mvc.perform(post("/api/v1/tresorerie/mon-compte/versements")
                         .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("montant", new BigDecimal(montant)))))
+                        .content(json.writeValueAsString(
+                                Map.of("montantEspeces", new BigDecimal(montant), "montantTpe", BigDecimal.ZERO))))
                 .andExpect(status().isCreated())
                 .andReturn());
     }

@@ -88,10 +88,13 @@ public final class TresorerieDtos {
             BigDecimal aValiderMontant,
             List<CompteCaissierDto> caissiers) {}
 
-    /** Versement d'un caissier vers la caisse principale. */
+    /** Versement d'un caissier vers la caisse principale, en espèces et en tickets TPE (total non nul). */
     public record VersementCommande(
-            @NotNull @DecimalMin("0.01") @Digits(integer = 10, fraction = 2)
-            BigDecimal montant,
+            @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantEspeces,
+
+            @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantTpe,
 
             @Schema(nullable = true) UUID cle) {}
 

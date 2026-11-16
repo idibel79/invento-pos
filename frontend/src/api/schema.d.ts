@@ -1396,7 +1396,8 @@ export interface components {
             cle?: string | null;
         };
         VersementCommande: {
-            montant: number;
+            montantEspeces: number;
+            montantTpe: number;
             /** Format: uuid */
             cle?: string | null;
         };
@@ -1623,10 +1624,10 @@ export interface components {
             caisse: string | null;
             auteur: string;
             ecartSession: number | null;
-            /** @description Écart sur les espèces, sur une clôture de session */
-            ecartEspecesSession: number | null;
-            /** @description Écart sur les tickets TPE, sur une clôture de session */
-            ecartTpeSession: number | null;
+            /** @description Part en espèces d'un versement, ou espèces comptées à la clôture de session */
+            especes: number | null;
+            /** @description Part en tickets TPE d'un versement, ou tickets comptés à la clôture de session */
+            tpe: number | null;
             /** Format: int64 */
             versementId: number | null;
             versLaPrincipale: boolean | null;

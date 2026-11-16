@@ -45,8 +45,8 @@ const COLONNES_MON_COMPTE: [string, boolean][] = [
   ["Opération", false],
   ["Par", false],
   ["Montant", true],
-  ["Écart espèces", true],
-  ["Écart TPE", true],
+  ["Espèces", true],
+  ["TPE", true],
   ["Statut", false],
   ["Mon solde après", true],
 ];
@@ -242,11 +242,11 @@ export function JournalTresorerie({ fuseau, monCompte = false, caissiers = [], u
               <span role="cell" className={`a-droite montant-signe ${montant < 0 ? "negatif" : "positif"}`}>
                 {signe(montant)}
               </span>
-              {/* Écarts du comptage de clôture, pour information : ils ne changent pas le solde dû. */}
+              {/* Répartition du versement (ou du tiroir compté à la clôture) entre espèces et tickets TPE. */}
               {monCompte &&
-                [o.ecartEspecesSession, o.ecartTpeSession].map((ecart, i) => (
+                [o.especes, o.tpe].map((part, i) => (
                   <span key={i} role="cell" className="a-droite texte-gris">
-                    {ecart == null ? "—" : signe(ecart)}
+                    {part == null ? "—" : decimal(part)}
                   </span>
                 ))}
               <span role="cell" className={cloture ? "texte-gris" : undefined}>

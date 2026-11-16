@@ -3516,16 +3516,20 @@
       "VersementCommande" : {
         "type" : "object",
         "properties" : {
-          "montant" : {
+          "montantEspeces" : {
             "type" : "number",
-            "minimum" : 0.01
+            "minimum" : 0
+          },
+          "montantTpe" : {
+            "type" : "number",
+            "minimum" : 0
           },
           "cle" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
           }
         },
-        "required" : [ "montant" ]
+        "required" : [ "montantEspeces", "montantTpe" ]
       },
       "OuvertureCommande" : {
         "type" : "object",
@@ -4164,13 +4168,13 @@
           "ecartSession" : {
             "type" : [ "number", "null" ]
           },
-          "ecartEspecesSession" : {
+          "especes" : {
             "type" : [ "number", "null" ],
-            "description" : "Écart sur les espèces, sur une clôture de session"
+            "description" : "Part en espèces d'un versement, ou espèces comptées à la clôture de session"
           },
-          "ecartTpeSession" : {
+          "tpe" : {
             "type" : [ "number", "null" ],
-            "description" : "Écart sur les tickets TPE, sur une clôture de session"
+            "description" : "Part en tickets TPE d'un versement, ou tickets comptés à la clôture de session"
           },
           "versementId" : {
             "type" : [ "integer", "null" ],
@@ -4203,7 +4207,7 @@
             "description" : "Ventes de la session, sur une clôture de session"
           }
         },
-        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartEspecesSession", "ecartSession", "ecartTpeSession", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "type", "ventesSession", "versLaPrincipale", "versementId" ]
+        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartSession", "especes", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "tpe", "type", "ventesSession", "versLaPrincipale", "versementId" ]
       },
       "PageResponseOperation" : {
         "type" : "object",
