@@ -1559,6 +1559,8 @@ export interface components {
         };
         MonCompteDto: {
             solde: number;
+            soldeEspeces: number;
+            soldeTpe: number;
             sessionOuverte: boolean;
             tiroirAttendu: number | null;
             aValider: components["schemas"]["VersementDto"][];
@@ -1664,6 +1666,8 @@ export interface components {
             role: "CAISSIER" | "RESPONSABLE" | "ADMIN";
             actif: boolean;
             solde: number;
+            soldeEspeces: number;
+            soldeTpe: number;
             sessionOuverteCaisse: string | null;
             /** Format: int32 */
             recusEnTransitNombre: number;

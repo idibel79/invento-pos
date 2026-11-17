@@ -62,6 +62,14 @@ public class ComptesJdbc {
     }
 
     /**
+     * Verrou de ligne sur le compte jusqu'à la fin de la transaction : deux versements simultanés du même
+     * caissier ne vérifient pas leur répartition sur le même dû.
+     */
+    public void verrouiller(long compteId) {
+        jdbc.query("select id from " + table + " where id = :id for update", Map.of("id", compteId), r -> {});
+    }
+
+    /**
      * Débite le compte si son solde reste supérieur ou égal au plancher ; renvoie le nouveau solde, vide
      * si le solde ne le permet pas.
      */

@@ -58,11 +58,13 @@ public final class TresorerieDtos {
 
     /**
      * Compte de l'utilisateur connecté : solde dû à la caisse principale (ventes de la session ouverte
-     * comprises), attendu dans le tiroir si une session est ouverte, versements à valider et historique
-     * du jour (avec les versements encore en transit).
+     * comprises) et sa répartition entre espèces et tickets TPE, attendu dans le tiroir si une session est
+     * ouverte, versements à valider et historique du jour (avec les versements encore en transit).
      */
     public record MonCompteDto(
             BigDecimal solde,
+            BigDecimal soldeEspeces,
+            BigDecimal soldeTpe,
             boolean sessionOuverte,
             @Schema(nullable = true) BigDecimal tiroirAttendu,
             List<VersementDto> aValider,
@@ -75,6 +77,8 @@ public final class TresorerieDtos {
             Role role,
             boolean actif,
             BigDecimal solde,
+            BigDecimal soldeEspeces,
+            BigDecimal soldeTpe,
             @Schema(nullable = true) String sessionOuverteCaisse,
             int recusEnTransitNombre,
             BigDecimal recusEnTransitMontant,

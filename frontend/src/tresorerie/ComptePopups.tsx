@@ -22,13 +22,18 @@ export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
   const repartition = lireComptage(saisieEspeces, saisieTpe);
   const montant = repartition?.total ?? null;
   const solde = compte.data?.solde ?? 0;
-  const depasse = montant !== null && montant > solde;
-  const valide = montant !== null && montant > 0 && !depasse;
+  const duEspeces = Math.max(compte.data?.soldeEspeces ?? 0, 0);
+  const duTpe = compte.data?.soldeTpe ?? 0;
+  // Le serveur refait la vérification et fait foi.
+  const depasseEspeces = repartition !== null && repartition.especes > duEspeces;
+  const depasseTpe = repartition !== null && repartition.tpe > duTpe;
+  const valide = montant !== null && montant > 0 && !depasseEspeces && !depasseTpe;
 
   return (
     <Dialogue titre="Verser à la caisse principale" sousTitre={`Solde dû : ${dh(solde)}`} onFermer={onFermer}>
       <label className="champ" htmlFor="versement-especes">
         <span className="libelle">Espèces</span>
+        <span className="texte-secondaire">dû {dh(duEspeces)}</span>
       </label>
       <div className="champ-montant">
         <input
@@ -44,6 +49,7 @@ export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
       </div>
       <label className="champ" htmlFor="versement-tpe">
         <span className="libelle">Tickets TPE</span>
+        <span className="texte-secondaire">dû {dh(duTpe)}</span>
       </label>
       <div className="champ-montant">
         <input
@@ -56,7 +62,10 @@ export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
         />
         <span>DH</span>
       </div>
-      {depasse && <p className="erreur-champ">Le montant dépasse votre solde ({dh(solde)}).</p>}
+      {depasseEspeces && (
+        <p className="erreur-champ">Les espèces dépassent votre dû en espèces ({dh(duEspeces)}).</p>
+      )}
+      {depasseTpe && <p className="erreur-champ">Les tickets TPE dépassent votre dû en TPE ({dh(duTpe)}).</p>}
       <p className="texte-secondaire">
         {utilisateur.role === "ADMIN"
           ? "Vous tenez la caisse principale : votre versement est auto-validé."

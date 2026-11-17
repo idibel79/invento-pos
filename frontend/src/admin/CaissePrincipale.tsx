@@ -4,6 +4,7 @@ import { messageErreur } from "../api/erreurs";
 import { useParametres } from "../caisse/requetes";
 import { JournalTresorerie } from "../tresorerie/JournalTresorerie";
 import { MonCompte } from "../tresorerie/MonCompte";
+import { RepartitionDu } from "../tresorerie/RepartitionDu";
 import {
   useAValiderPrincipale,
   useComptagesEnAttente,
@@ -329,6 +330,7 @@ function EnteteCaissier({
             {compte.sessionOuverteCaisse ? ` · ${compte.sessionOuverteCaisse} ouverte, ventes comprises` : ""}
           </span>
           <SoldeDh montant={compte.solde} />
+          <RepartitionDu especes={compte.soldeEspeces} tpe={compte.soldeTpe} />
         </div>
         <button
           type="button"
