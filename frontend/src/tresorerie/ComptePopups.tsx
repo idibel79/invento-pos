@@ -1,38 +1,58 @@
 import { useState } from "react";
 import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
+import { lireComptage } from "../caisse/cloture";
 import { useParametres } from "../caisse/requetes";
 import { Dialogue } from "../ui/Dialogue";
-import { decimal, dh, lireMontant } from "../ui/format";
+import { decimal, dh } from "../ui/format";
 import { nouvelleCle, useMonCompte, useVerserALaPrincipale } from "./requetes";
 import { VersementAValider } from "./VersementAValider";
 
-/** Popup centrée : versement à la caisse principale, dans la limite du solde. */
+/**
+ * Popup centrée : versement à la caisse principale, en espèces et en tickets TPE (comme le paiement d'un ticket),
+ * dans la limite du solde. Un champ vide vaut 0.
+ */
 export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
   const utilisateur = useUtilisateur();
   const compte = useMonCompte();
   const verser = useVerserALaPrincipale();
-  const [saisie, setSaisie] = useState("");
+  const [saisieEspeces, setSaisieEspeces] = useState("");
+  const [saisieTpe, setSaisieTpe] = useState("");
   const [cle] = useState(nouvelleCle);
-  const montant = lireMontant(saisie);
+  const repartition = lireComptage(saisieEspeces, saisieTpe);
+  const montant = repartition?.total ?? null;
   const solde = compte.data?.solde ?? 0;
   const depasse = montant !== null && montant > solde;
   const valide = montant !== null && montant > 0 && !depasse;
 
   return (
     <Dialogue titre="Verser à la caisse principale" sousTitre={`Solde dû : ${dh(solde)}`} onFermer={onFermer}>
-      <label className="champ" htmlFor="montant-a-verser">
-        <span className="libelle">Montant versé</span>
+      <label className="champ" htmlFor="versement-especes">
+        <span className="libelle">Espèces</span>
       </label>
       <div className="champ-montant">
         <input
-          id="montant-a-verser"
+          id="versement-especes"
           inputMode="decimal"
           autoComplete="off"
           placeholder={decimal(0)}
-          value={saisie}
-          onChange={(e) => setSaisie(e.target.value)}
+          value={saisieEspeces}
+          onChange={(e) => setSaisieEspeces(e.target.value)}
           autoFocus
+        />
+        <span>DH</span>
+      </div>
+      <label className="champ" htmlFor="versement-tpe">
+        <span className="libelle">Tickets TPE</span>
+      </label>
+      <div className="champ-montant">
+        <input
+          id="versement-tpe"
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder={decimal(0)}
+          value={saisieTpe}
+          onChange={(e) => setSaisieTpe(e.target.value)}
         />
         <span>DH</span>
       </div>
@@ -55,7 +75,13 @@ export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
           type="button"
           className="bouton bouton-plein"
           disabled={!valide || verser.isPending}
-          onClick={() => montant !== null && verser.mutate({ montant, cle }, { onSuccess: onFermer })}
+          onClick={() =>
+            repartition !== null &&
+            verser.mutate(
+              { montantEspeces: repartition.especes, montantTpe: repartition.tpe, cle },
+              { onSuccess: onFermer },
+            )
+          }
         >
           Verser {montant !== null && montant > 0 ? dh(montant) : ""}
         </button>

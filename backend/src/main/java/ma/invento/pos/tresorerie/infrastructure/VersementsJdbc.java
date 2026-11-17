@@ -47,6 +47,8 @@ public class VersementsJdbc {
             long emetteurId,
             long recepteurId,
             BigDecimal montant,
+            BigDecimal montantEspeces,
+            BigDecimal montantTpe,
             String motif,
             Long sessionEmissionId,
             boolean cloture,
@@ -79,13 +81,15 @@ public class VersementsJdbc {
 
     public long inserer(NouveauVersement v) {
         return jdbc.queryForObject(
-                "insert into " + s + "versement (emetteur_id, recepteur_id, montant, statut, motif,"
-                        + " session_emission_id, cloture, cle_idempotence, cree_par, cree_le)"
-                        + " values (:emetteur, :recepteur, :montant, 'EN_TRANSIT', :motif, :session, :cloture, :cle,"
-                        + " :creePar, :creeLe) returning id",
+                "insert into " + s + "versement (emetteur_id, recepteur_id, montant, montant_especes, montant_tpe,"
+                        + " statut, motif, session_emission_id, cloture, cle_idempotence, cree_par, cree_le)"
+                        + " values (:emetteur, :recepteur, :montant, :especes, :tpe, 'EN_TRANSIT', :motif, :session,"
+                        + " :cloture, :cle, :creePar, :creeLe) returning id",
                 new MapSqlParameterSource("emetteur", v.emetteurId())
                         .addValue("recepteur", v.recepteurId())
                         .addValue("montant", v.montant())
+                        .addValue("especes", v.montantEspeces())
+                        .addValue("tpe", v.montantTpe())
                         .addValue("motif", v.motif())
                         .addValue("session", v.sessionEmissionId())
                         .addValue("cloture", v.cloture())

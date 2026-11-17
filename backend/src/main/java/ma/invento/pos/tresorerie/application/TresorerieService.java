@@ -172,7 +172,16 @@ public class TresorerieService implements ComptesCaissiers {
         if (montantVerse.signum() > 0) {
             // L'admin a le tiroir en main : le versement entre directement dans la caisse principale.
             Versement versement = envoyer(
-                    compte, comptes.principale(), montantVerse, null, session, true, BigDecimal.ZERO, null, adminId);
+                    compte,
+                    comptes.principale(),
+                    montantVerse,
+                    null,
+                    null,
+                    session,
+                    true,
+                    BigDecimal.ZERO,
+                    null,
+                    adminId);
             valider(versement, adminId, false);
         }
     }
@@ -192,9 +201,15 @@ public class TresorerieService implements ComptesCaissiers {
         return new MonCompteDto(soldeAffiche(utilisateurId), session.isPresent(), attendu, aValider, historique);
     }
 
-    /** Versement du caissier vers la caisse principale, à tout moment, si son solde le permet. */
+    /**
+     * Versement du caissier vers la caisse principale, à tout moment, si son solde le permet : en espèces et en
+     * tickets TPE, comme le paiement d'un ticket ; le total est débité de son compte.
+     */
     @Transactional
-    public VersementDto verserALaPrincipale(UtilisateurConnecte utilisateur, BigDecimal montant, UUID cle) {
+    public VersementDto verserALaPrincipale(
+            UtilisateurConnecte utilisateur, BigDecimal especes, BigDecimal tpe, UUID cle) {
+        Repartition repartition = new Repartition(especes, tpe);
+        BigDecimal montant = repartition.total();
         ReglesTresorerie.verifierMontant(montant);
         Optional<VersementDto> deja = dejaEnvoye(cle, utilisateur.id());
         if (deja.isPresent()) return deja.get();
@@ -204,6 +219,7 @@ public class TresorerieService implements ComptesCaissiers {
                 compte,
                 comptes.principale(),
                 montant,
+                repartition,
                 null,
                 session.orElse(null),
                 false,
@@ -290,6 +306,7 @@ public class TresorerieService implements ComptesCaissiers {
                 comptes.principale(),
                 comptes.caissierOuCree(utilisateurId),
                 montant,
+                null,
                 propre,
                 null,
                 false,
@@ -554,11 +571,22 @@ public class TresorerieService implements ComptesCaissiers {
 
     // ---------------------------------------------------------------- Mouvements
 
-    /** Débite l'émetteur, crée le versement en transit et l'inscrit au journal. */
+    /** Répartition d'un versement entre espèces et tickets TPE. */
+    private record Repartition(BigDecimal especes, BigDecimal tpe) {
+        BigDecimal total() {
+            return especes.add(tpe);
+        }
+    }
+
+    /**
+     * Débite l'émetteur, crée le versement en transit et l'inscrit au journal ; {@code repartition} est absente
+     * quand elle n'est pas saisie (versement de la caisse principale, comptage de l'admin).
+     */
     private Versement envoyer(
             Compte emetteur,
             Compte recepteur,
             BigDecimal montant,
+            Repartition repartition,
             String motif,
             SessionCaisse sessionEmetteur,
             boolean cloture,
@@ -577,6 +605,8 @@ public class TresorerieService implements ComptesCaissiers {
                 emetteur.id(),
                 recepteur.id(),
                 montant,
+                repartition == null ? null : repartition.especes(),
+                repartition == null ? null : repartition.tpe(),
                 motif,
                 sessionEmetteur == null ? null : sessionEmetteur.getId(),
                 cloture,

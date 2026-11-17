@@ -88,7 +88,8 @@ class MonCompteController {
     @PostMapping("/mon-compte/versements")
     @ResponseStatus(HttpStatus.CREATED)
     VersementDto verser(@Valid @RequestBody VersementCommande commande, @AuthenticationPrincipal Jwt jwt) {
-        return tresorerie.verserALaPrincipale(UtilisateurConnecte.depuis(jwt), commande.montant(), commande.cle());
+        return tresorerie.verserALaPrincipale(
+                UtilisateurConnecte.depuis(jwt), commande.montantEspeces(), commande.montantTpe(), commande.cle());
     }
 
     /** Le récepteur confirme avoir reçu l'argent. */

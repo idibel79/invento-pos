@@ -52,7 +52,7 @@ export function useMonCompte() {
 export function useVerserALaPrincipale() {
   const apres = useApresOperation();
   return useMutation({
-    mutationFn: (corps: { montant: number; cle: string }) =>
+    mutationFn: (corps: { montantEspeces: number; montantTpe: number; cle: string }) =>
       appel(api.POST("/api/v1/tresorerie/mon-compte/versements", { body: corps })),
     onSuccess: apres,
   });
