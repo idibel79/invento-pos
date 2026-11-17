@@ -3987,6 +3987,12 @@
           "solde" : {
             "type" : "number"
           },
+          "soldeEspeces" : {
+            "type" : "number"
+          },
+          "soldeTpe" : {
+            "type" : "number"
+          },
           "sessionOuverte" : {
             "type" : "boolean"
           },
@@ -4006,7 +4012,7 @@
             }
           }
         },
-        "required" : [ "aValider", "historique", "sessionOuverte", "solde", "tiroirAttendu" ]
+        "required" : [ "aValider", "historique", "sessionOuverte", "solde", "soldeEspeces", "soldeTpe", "tiroirAttendu" ]
       },
       "JourneeDto" : {
         "type" : "object",
@@ -4273,6 +4279,12 @@
           "solde" : {
             "type" : "number"
           },
+          "soldeEspeces" : {
+            "type" : "number"
+          },
+          "soldeTpe" : {
+            "type" : "number"
+          },
           "sessionOuverteCaisse" : {
             "type" : [ "string", "null" ]
           },
@@ -4291,7 +4303,7 @@
             "type" : "number"
           }
         },
-        "required" : [ "actif", "envoyesEnTransitMontant", "envoyesEnTransitNombre", "nom", "recusEnTransitMontant", "recusEnTransitNombre", "role", "sessionOuverteCaisse", "solde", "utilisateurId" ]
+        "required" : [ "actif", "envoyesEnTransitMontant", "envoyesEnTransitNombre", "nom", "recusEnTransitMontant", "recusEnTransitNombre", "role", "sessionOuverteCaisse", "solde", "soldeEspeces", "soldeTpe", "utilisateurId" ]
       },
       "ComptesDto" : {
         "type" : "object",

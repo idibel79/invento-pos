@@ -5,6 +5,7 @@ import { decimal } from "../ui/format";
 import { EncaisserDetteDialogue } from "../client/EncaisserDetteDialogue";
 import { AValiderDialogue, VerserDialogue } from "./ComptePopups";
 import { JournalTresorerie } from "./JournalTresorerie";
+import { RepartitionDu } from "./RepartitionDu";
 import { useMonCompte } from "./requetes";
 
 /**
@@ -25,6 +26,7 @@ export function MonCompte() {
           <strong className="tresorerie-solde-montant">
             {compte.data ? decimal(compte.data.solde) : "…"} <span>DH</span>
           </strong>
+          {compte.data && <RepartitionDu especes={compte.data.soldeEspeces} tpe={compte.data.soldeTpe} />}
         </div>
         <button type="button" className="bouton-compact" onClick={() => setPopup("valider")}>
           À valider ({aValider})

@@ -6,11 +6,14 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import ma.invento.pos.tresorerie.domain.MouvementTpe;
 import ma.invento.pos.tresorerie.domain.StatutVersement;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -177,6 +180,39 @@ public class VersementsJdbc {
                         + " from " + s + "versement where session_reception_id = :s or session_emission_id = :s",
                 new MapSqlParameterSource("s", sessionId),
                 (r, i) -> new BigDecimal[] {r.getBigDecimal("recu"), r.getBigDecimal("verse")});
+    }
+
+    /**
+     * Tickets TPE encaissés par chaque utilisateur et pas encore versés, en une requête : ventes validées
+     * payées par carte dans ses sessions et dettes de clients remboursées par TPE sur son compte (non
+     * annulées) d'un côté, ses versements à la caisse principale ni refusés ni annulés de l'autre, par ordre
+     * chronologique, en une requête. Un utilisateur sans aucun de ces mouvements est absent de la table.
+     */
+    public Map<Long, List<MouvementTpe>> mouvementsTpe(Collection<Long> utilisateurIds) {
+        Map<Long, List<MouvementTpe>> resultat = new HashMap<>();
+        if (utilisateurIds.isEmpty()) return resultat;
+        jdbc.query(
+                "select utilisateur_id, nature, montant from ("
+                        + " select sc.caissier_id as utilisateur_id, 'ENCAISSEMENT' as nature, p.montant,"
+                        + " coalesce(v.finalisee_le, v.cree_le) as le, v.id from " + s + "paiement p"
+                        + " join " + s + "vente v on v.id = p.vente_id"
+                        + " join " + s + "session_caisse sc on sc.id = v.session_caisse_id"
+                        + " where p.mode = 'CARTE' and v.statut = 'VALIDEE' and sc.caissier_id in (:u)"
+                        + " union all select m.utilisateur_id, 'ENCAISSEMENT', m.tpe, m.cree_le, m.id from " + s
+                        + "mouvement_client m where m.type = 'REMBOURSEMENT' and not m.annule"
+                        + " and not m.caisse_principale and m.tpe > 0 and m.utilisateur_id in (:u)"
+                        + " union all select c.utilisateur_id, 'VERSEMENT', coalesce(v.montant_tpe, v.montant),"
+                        + " v.cree_le, v.id from " + s + "versement v"
+                        + " join " + s + "compte_tresorerie c on c.id = v.emetteur_id and c.type = 'CAISSIER'"
+                        + " where v.statut in ('EN_TRANSIT', 'VALIDE') and c.utilisateur_id in (:u)"
+                        + ") t order by utilisateur_id, le, id",
+                new MapSqlParameterSource("u", utilisateurIds),
+                r -> {
+                    resultat.computeIfAbsent(r.getLong("utilisateur_id"), k -> new ArrayList<>())
+                            .add(new MouvementTpe(
+                                    MouvementTpe.Nature.valueOf(r.getString("nature")), r.getBigDecimal("montant")));
+                });
+        return resultat;
     }
 
     /** Versements en transit par compte de caissier (utilisateur), dans les deux sens. */

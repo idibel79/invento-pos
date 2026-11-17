@@ -198,6 +198,23 @@ class TresorerieIT extends IntegrationTest {
     }
 
     @Test
+    void versement_limite_au_du_de_chaque_mode() throws Exception {
+        valider(verserAuCaissier("100"));
+        mvc.perform(get("/api/v1/tresorerie/mon-compte").header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.soldeEspeces").value(100.0))
+                .andExpect(jsonPath("$.soldeTpe").value(0.0));
+        // Rien n'a été encaissé par TPE : aucun ticket TPE ne peut être versé, même dans la limite du solde.
+        mvc.perform(post("/api/v1/tresorerie/mon-compte/versements")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(
+                                Map.of("montantEspeces", new BigDecimal("50"), "montantTpe", new BigDecimal("10")))))
+                .andExpect(status().isUnprocessableEntity());
+        verserALaPrincipale("100");
+    }
+
+    @Test
     void cloture_avec_manque_puis_excedent_et_monnaie_insuffisante() throws Exception {
         valider(verserAuCaissier("100"));
         long produit = produit("50.00");

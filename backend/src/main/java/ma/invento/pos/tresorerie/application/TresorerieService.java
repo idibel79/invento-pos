@@ -36,6 +36,8 @@ import ma.invento.pos.tresorerie.api.TresorerieDtos.CompteCaissierDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.ComptesDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.MonCompteDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementDto;
+import ma.invento.pos.tresorerie.domain.DuParMode;
+import ma.invento.pos.tresorerie.domain.MouvementTpe;
 import ma.invento.pos.tresorerie.domain.ReglesTresorerie;
 import ma.invento.pos.tresorerie.domain.StatutVersement;
 import ma.invento.pos.tresorerie.domain.TypeCompte;
@@ -198,7 +200,8 @@ public class TresorerieService implements ComptesCaissiers {
                 compte.map(c -> dtos(versements.enTransitVers(c.id()))).orElse(List.of());
         List<VersementDto> historique = compte.map(c -> dtos(versements.recentsDuCompte(c.id(), debutDuJour())))
                 .orElse(List.of());
-        return new MonCompteDto(soldeAffiche(utilisateurId), session.isPresent(), attendu, aValider, historique);
+        DuParMode du = du(utilisateurId);
+        return new MonCompteDto(du.total(), du.especes(), du.tpe(), session.isPresent(), attendu, aValider, historique);
     }
 
     /**
@@ -215,6 +218,8 @@ public class TresorerieService implements ComptesCaissiers {
         if (deja.isPresent()) return deja.get();
         Compte compte = comptes.caissierOuCree(utilisateur.id());
         Optional<SessionCaisse> session = sessions.findOuverteDuCaissierForUpdate(utilisateur.id());
+        comptes.verrouiller(compte.id());
+        du(utilisateur.id()).verifierVersement(repartition.especes(), repartition.tpe());
         Versement versement = envoyer(
                 compte,
                 comptes.principale(),
@@ -350,6 +355,9 @@ public class TresorerieService implements ComptesCaissiers {
         Compte principale = comptes.principale();
         List<Versement> aValider = versements.enTransitVers(principale.id());
         Map<Long, BigDecimal> soldes = comptes.soldesCaissiers();
+        List<Utilisateur> tous = utilisateurs.findAllByOrderByNomAscPrenomAsc();
+        Map<Long, List<MouvementTpe>> mouvementsTpe =
+                versements.mouvementsTpe(tous.stream().map(Utilisateur::getId).toList());
         Map<Long, EnTransit> enTransit = versements.enTransitParCaissier();
         Map<Long, SessionCaisse> ouvertes = sessions.findByFermetureIsNull().stream()
                 .collect(Collectors.toMap(SessionCaisse::getCaissierId, Function.identity()));
@@ -362,7 +370,7 @@ public class TresorerieService implements ComptesCaissiers {
                                 .toList())
                         .stream()
                         .collect(Collectors.toMap(Caisse::getId, Caisse::getNom));
-        List<CompteCaissierDto> caissiers = utilisateurs.findAllByOrderByNomAscPrenomAsc().stream()
+        List<CompteCaissierDto> caissiers = tous.stream()
                 .map(u -> {
                     SessionCaisse session = ouvertes.get(u.getId());
                     BigDecimal ventesSession = session == null
@@ -370,12 +378,17 @@ public class TresorerieService implements ComptesCaissiers {
                             : ventes.getOrDefault(session.getId(), VentesSession.AUCUNE)
                                     .total();
                     EnTransit transit = enTransit.getOrDefault(u.getId(), EnTransit.AUCUN);
+                    DuParMode du = DuParMode.depuis(
+                            soldes.getOrDefault(u.getId(), BigDecimal.ZERO).add(ventesSession),
+                            MouvementTpe.nonVerses(mouvementsTpe.getOrDefault(u.getId(), List.of())));
                     return new CompteCaissierDto(
                             u.getId(),
                             (u.getPrenom() + " " + u.getNom()).trim(),
                             u.getRole(),
                             u.isActif(),
-                            soldes.getOrDefault(u.getId(), BigDecimal.ZERO).add(ventesSession),
+                            du.total(),
+                            du.especes(),
+                            du.tpe(),
                             session == null ? null : nomsCaisses.get(session.getCaisseId()),
                             transit.recusNombre(),
                             transit.recusMontant(),
@@ -735,6 +748,14 @@ public class TresorerieService implements ComptesCaissiers {
         return stocke.add(sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
                 .map(s -> encaissements.ventes(s.getId()).total())
                 .orElse(BigDecimal.ZERO));
+    }
+
+    /** Solde dû réparti entre espèces et tickets TPE. */
+    private DuParMode du(long utilisateurId) {
+        return DuParMode.depuis(
+                soldeAffiche(utilisateurId),
+                MouvementTpe.nonVerses(
+                        versements.mouvementsTpe(List.of(utilisateurId)).getOrDefault(utilisateurId, List.of())));
     }
 
     /**

@@ -3513,6 +3513,15 @@ button:disabled {
   color: var(--texte-fort);
 }
 
+.tresorerie-repartition {
+  font-variant-numeric: tabular-nums;
+}
+
+.tresorerie-repartition strong {
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
 .tresorerie-solde-montant span {
   font-size: 16px;
   font-weight: 600;
