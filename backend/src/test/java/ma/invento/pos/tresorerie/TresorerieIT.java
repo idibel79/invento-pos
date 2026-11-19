@@ -242,6 +242,41 @@ class TresorerieIT extends IntegrationTest {
         assertThat(soldeCaissier()).isEqualByComparingTo("205"); // 150 + 50 + 5
     }
 
+    @Test
+    void ventes_d_une_session_ouverte_hors_du_solde_du_jusqu_a_la_cloture() throws Exception {
+        valider(verserAuCaissier("100"));
+        long produit = produit("50.00");
+        ouvrir("0").andExpect(status().isCreated());
+        long session = sessionCourante();
+        vendre(produit, "50").andExpect(status().isCreated());
+
+        // Session ouverte : la vente n'entre ni dans Mon compte ni dans la vue de l'admin.
+        mvc.perform(get("/api/v1/tresorerie/mon-compte").header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.solde").value(100.0))
+                .andExpect(jsonPath("$.soldeEspeces").value(100.0));
+        mvc.perform(get("/api/v1/tresorerie/comptes").header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.caissiers[?(@.utilisateurId == " + caissier.getId() + ")].solde")
+                        .value(100.0));
+        // Un versement reçu pendant la session ne fait pas entrer les ventes dans le solde dû.
+        valider(verserAuCaissier("20"));
+        assertThat(soldeCaissier()).isEqualByComparingTo("120");
+        // Le versement vers la caisse principale reste plafonné au solde dû, ventes en cours exclues.
+        mvc.perform(post("/api/v1/tresorerie/mon-compte/versements")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(
+                                Map.of("montantEspeces", new BigDecimal("120.01"), "montantTpe", BigDecimal.ZERO))))
+                .andExpect(status().isUnprocessableEntity());
+
+        // À la clôture (tiroir : 50 de ventes + 20 reçus), les ventes de la session entrent dans le solde dû.
+        cloturer(session, "70")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ecart").value(0.0));
+        assertThat(soldeCaissier()).isEqualByComparingTo("170");
+    }
+
     // ---------------------------------------------------------------- Aides
 
     private ResultActions operation(String chemin, String montant, String motif) throws Exception {
