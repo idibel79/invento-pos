@@ -28,8 +28,17 @@ export function MonCompte() {
           </strong>
           {compte.data && <RepartitionDu especes={compte.data.soldeEspeces} tpe={compte.data.soldeTpe} />}
         </div>
-        <button type="button" className="bouton-compact" onClick={() => setPopup("valider")}>
-          À valider ({aValider})
+        <button
+          type="button"
+          className="bouton-compact bouton-avec-pastille"
+          onClick={() => setPopup("valider")}
+        >
+          À valider
+          {aValider > 0 && (
+            <span className="pastille-nombre" aria-label={`${aValider} à valider`}>
+              {aValider}
+            </span>
+          )}
         </button>
         <button type="button" className="bouton-compact" onClick={() => setPopup("dette")}>
           Encaisser une dette

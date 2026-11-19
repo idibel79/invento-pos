@@ -5,7 +5,7 @@ import { z } from "zod";
 import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
 import { Dialogue } from "../ui/Dialogue";
-import { decimal, dh, lireMontant } from "../ui/format";
+import { decimal, dh, lireMontant, telephone } from "../ui/format";
 import { EncaisserDetteDialogue } from "./EncaisserDetteDialogue";
 import { ReleveDialogue } from "./Releve";
 import { VentesClientDialogue } from "./VentesClient";
@@ -159,12 +159,14 @@ export function Clients({ vue = "annuaire" }: { vue?: "annuaire" | "ventes" | "d
               {!c.actif && <span className="statut statut-gris">Désactivé</span>}
             </span>
             {!dettes && (
-              <span role="cell" className="texte-secondaire">
-                {c.type === "ENTREPRISE" ? "Entreprise" : "Particulier"}
+              <span role="cell">
+                <span className={`statut ${c.type === "ENTREPRISE" ? "statut-info" : "statut-ok"}`}>
+                  {c.type === "ENTREPRISE" ? "Entreprise" : "Particulier"}
+                </span>
               </span>
             )}
             <span role="cell" className="texte-secondaire">
-              {c.telephone ?? "—"}
+              {c.telephone ? telephone(c.telephone) : "—"}
             </span>
             <span role="cell" className="texte-secondaire clients-note">
               {c.note ?? ""}
@@ -254,7 +256,7 @@ function FicheClient({
   const champs: [string, string | null | undefined][] = [
     ["Type", entreprise ? "Entreprise" : "Particulier"],
     [entreprise ? "Raison sociale" : "Nom et prénom", c.nom],
-    ["Téléphone", c.telephone],
+    ["Téléphone", c.telephone && telephone(c.telephone)],
     ...(entreprise
       ? ([
           ["Email", c.email],

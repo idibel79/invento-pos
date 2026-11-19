@@ -7,10 +7,15 @@ import java.util.Objects;
  * Mouvements d'argent du tiroir pendant une session, hors fond de caisse : ventes en espèces et par
  * carte (les tickets TPE comptent comme de l'argent), versements reçus de la caisse principale et
  * versements faits pendant la session. {@code recu} (espèces) et {@code recuTpe} comptent aussi les dettes
- * de clients remboursées pendant la session.
+ * de clients remboursées pendant la session ; {@code dettesEspeces} est la part des dettes dans {@code recu}.
  */
 public record ComptageTiroir(
-        BigDecimal ventesEspeces, BigDecimal ventesCarte, BigDecimal recu, BigDecimal recuTpe, BigDecimal verse) {
+        BigDecimal ventesEspeces,
+        BigDecimal ventesCarte,
+        BigDecimal recu,
+        BigDecimal recuTpe,
+        BigDecimal verse,
+        BigDecimal dettesEspeces) {
 
     public ComptageTiroir {
         Objects.requireNonNull(ventesEspeces);
@@ -18,10 +23,16 @@ public record ComptageTiroir(
         Objects.requireNonNull(recu);
         Objects.requireNonNull(recuTpe);
         Objects.requireNonNull(verse);
+        Objects.requireNonNull(dettesEspeces);
     }
 
     public ComptageTiroir(BigDecimal ventesEspeces, BigDecimal ventesCarte, BigDecimal recu, BigDecimal verse) {
-        this(ventesEspeces, ventesCarte, recu, BigDecimal.ZERO, verse);
+        this(ventesEspeces, ventesCarte, recu, BigDecimal.ZERO, verse, BigDecimal.ZERO);
+    }
+
+    /** Alimentations reçues de la caisse principale (espèces) : le reçu hors dettes. */
+    public BigDecimal alimentations() {
+        return recu.subtract(dettesEspeces);
     }
 
     public BigDecimal ventes() {

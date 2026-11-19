@@ -4,8 +4,7 @@ import { useUtilisateur } from "../auth/AuthContext";
 import { Dialogue } from "../ui/Dialogue";
 import { dh, lireMontant } from "../ui/format";
 import { ChoixClient } from "./ChoixClient";
-import { Releve } from "./Releve";
-import { type Client, libelleSolde, useReleve, useRembourser } from "./requetes";
+import { type Client, libelleSolde, useRembourser } from "./requetes";
 
 /**
  * Encaisser une dette (Mon compte, ou fiche client pour l'admin) : le client rembourse en espèces, par TPE
@@ -28,7 +27,6 @@ export function EncaisserDetteDialogue({
   // Une clé par encaissement : un renvoi après coupure ne rembourse pas deux fois.
   const [cle, setCle] = useState(() => crypto.randomUUID());
   const rembourser = useRembourser();
-  const releve = useReleve(client?.id ?? null);
 
   const montantEspeces = especes === "" ? 0 : lireMontant(especes);
   const montantTpe = tpe === "" ? 0 : lireMontant(tpe);
@@ -73,43 +71,37 @@ export function EncaisserDetteDialogue({
         )}
         {client && !changer && (
           <>
-            <>
-              <div className="dette-montants">
-                <ChampMontant
-                  id="dette-especes"
-                  libelle="En espèces"
-                  valeur={especes}
-                  onChange={setEspeces}
-                  autoFocus
-                />
-                <ChampMontant id="dette-tpe" libelle="Par TPE" valeur={tpe} onChange={setTpe} />
-              </div>
-              <dl className="dette-apres">
-                <div>
-                  <dt>Remboursé</dt>
-                  <dd>{dh(total)}</dd>
-                </div>
-                <div>
-                  <dt>{admin ? "Ajouté à la caisse principale" : "Ajouté à mon compte"}</dt>
-                  <dd className="texte-succes">+ {dh(total)}</dd>
-                </div>
-                <div className="dette-apres-total">
-                  <dt>{apres < -0.005 ? "Avance du client" : "Dette restante"}</dt>
-                  <dd>{dh(Math.abs(apres))}</dd>
-                </div>
-              </dl>
-              {!saisieValide && <p className="erreur-champ">Montant invalide.</p>}
-              {saisieValide && apres < -0.005 && (
-                <p className="alerte alerte-attention">
-                  Le remboursement dépasse la dette : {dh(-apres)} resteront en avance au client, déduits de
-                  ses prochains achats à crédit.
-                </p>
-              )}
-            </>
-            <div className="dette-derniers">
-              <span className="libelle">Derniers mouvements</span>
-              <Releve requete={releve} limite={3} />
+            <div className="dette-montants">
+              <ChampMontant
+                id="dette-especes"
+                libelle="En espèces"
+                valeur={especes}
+                onChange={setEspeces}
+                autoFocus
+              />
+              <ChampMontant id="dette-tpe" libelle="Par TPE" valeur={tpe} onChange={setTpe} />
             </div>
+            <dl className="dette-apres">
+              <div>
+                <dt>Remboursé</dt>
+                <dd>{dh(total)}</dd>
+              </div>
+              <div>
+                <dt>{admin ? "Ajouté à la caisse principale" : "Ajouté à mon compte"}</dt>
+                <dd className="texte-succes">+ {dh(total)}</dd>
+              </div>
+              <div className="dette-apres-total">
+                <dt>{apres < -0.005 ? "Avance du client" : "Dette restante"}</dt>
+                <dd>{dh(Math.abs(apres))}</dd>
+              </div>
+            </dl>
+            {!saisieValide && <p className="erreur-champ">Montant invalide.</p>}
+            {saisieValide && apres < -0.005 && (
+              <p className="alerte alerte-attention">
+                Le remboursement dépasse la dette : {dh(-apres)} resteront en avance au client, déduits de ses
+                prochains achats à crédit.
+              </p>
+            )}
           </>
         )}
         {rembourser.isError && (

@@ -255,6 +255,10 @@ function BandeauVersement({
           {titre ? " · " : ""}
           <strong style={{ color: "var(--primaire)" }}>{v.caissier}</strong>{" "}
           <strong style={{ color: "var(--succes)" }}>+ {decimal(v.montant)}</strong>
+          {/* Répartition saisie par le caissier : ce que l'admin doit trouver en espèces et en tickets TPE. */}
+          {v.especes != null && (
+            <strong>{` (espèces ${decimal(v.especes)} · TPE ${decimal(v.tpe ?? 0)})`}</strong>
+          )}
           {` · ${heure(v.creeLe, fuseau)}`}
           {v.cloture && " · clôture"}
           {v.motif && ` · ${v.motif}`}
@@ -327,7 +331,9 @@ function EnteteCaissier({
         <div className="tresorerie-solde">
           <span>
             Solde dû par {compte.nom}
-            {compte.sessionOuverteCaisse ? ` · ${compte.sessionOuverteCaisse} ouverte, ventes comprises` : ""}
+            {compte.sessionOuverteCaisse
+              ? ` · ${compte.sessionOuverteCaisse} ouverte, ventes comptées à la clôture`
+              : ""}
           </span>
           <SoldeDh montant={compte.solde} />
           <RepartitionDu especes={compte.soldeEspeces} tpe={compte.soldeTpe} />

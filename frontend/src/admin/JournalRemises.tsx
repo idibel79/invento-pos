@@ -3,23 +3,27 @@ import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
 import { useCaisses, useParametres } from "../caisse/requetes";
+import { FiltreJour } from "../ui/ChoixJour";
 import { dh, pourcent } from "../ui/format";
 import { FiltreClient, useRechercheClient } from "./FiltreClient";
 import { useJournalRemises, useResumeRemises, useUtilisateurs, type FiltreRemises } from "./requetes";
 
-const PERIODES = { "7": "7 derniers jours", "30": "30 derniers jours", tout: "Tout l'historique" } as const;
 const PORTEES = { toutes: "Toutes", LIGNE: "Sur une ligne", TICKET: "Sur le ticket" } as const;
 
 /** Journal des remises (design A) : filtres, totaux de la sélection, tableau paginé des remises. */
 export function JournalRemises() {
-  const [periode, setPeriode] = useState<keyof typeof PERIODES>("7");
+  const fuseau = useParametres().data?.fuseauHoraire;
+  // undefined : aujourd'hui par défaut ; null : tous les jours.
+  const [jourChoisi, setJour] = useState<string | null>();
   const [portee, setPortee] = useState<keyof typeof PORTEES>("toutes");
   const [caisseId, setCaisseId] = useState<number>();
   const [vendeurId, setVendeurId] = useState<number>();
   const [saisieClient, setSaisieClient, client] = useRechercheClient();
+  const jourCourant = new Intl.DateTimeFormat("en-CA", { timeZone: fuseau }).format(new Date());
+  const jour = jourChoisi === undefined ? jourCourant : (jourChoisi ?? undefined);
   const filtre: FiltreRemises = {
     client,
-    jours: periode === "tout" ? undefined : Number(periode),
+    jour,
     portee: portee === "toutes" ? undefined : portee,
     caisseId,
     vendeurId,
@@ -30,7 +34,6 @@ export function JournalRemises() {
   const vendeurs = useUtilisateurs(admin).data ?? [];
   const remises = useJournalRemises(filtre);
   const resume = useResumeRemises(filtre);
-  const fuseau = useParametres().data?.fuseauHoraire;
   const liste = remises.data?.pages.flatMap((p) => p.contenu) ?? [];
 
   return (
@@ -46,16 +49,7 @@ export function JournalRemises() {
       </div>
 
       <div className="barre-outils">
-        <label className="filtre">
-          <span>Période :</span>
-          <select value={periode} onChange={(e) => setPeriode(e.target.value as keyof typeof PERIODES)}>
-            {Object.entries(PERIODES).map(([cle, libelle]) => (
-              <option key={cle} value={cle}>
-                {libelle}
-              </option>
-            ))}
-          </select>
-        </label>
+        <FiltreJour jour={jour ?? null} aujourdhui={jourCourant} onChange={setJour} />
         <label className="filtre">
           <span>Caisse :</span>
           <select
@@ -117,13 +111,14 @@ export function JournalRemises() {
           {messageErreur(remises.error ?? resume.error)}
         </p>
       )}
-      <div className="tableau-remises" role="table" aria-label="Remises">
+      <div className={`tableau-remises${admin ? "" : " sans-vendeur"}`} role="table" aria-label="Remises">
         <div className="remise-ligne remise-entete" role="row">
+          {/* Hors admin, l'utilisateur ne voit que ses remises : pas de colonne Vendeur. */}
           {[
             "Date",
             "Vente",
             "Caisse",
-            "Vendeur",
+            ...(admin ? ["Vendeur"] : []),
             "Client",
             "Autorisée par",
             "Portée",
@@ -137,9 +132,14 @@ export function JournalRemises() {
             </span>
           ))}
         </div>
-        {remises.isSuccess && liste.length === 0 && <p className="vide">Aucune remise sur cette période.</p>}
+        {remises.isSuccess && liste.length === 0 && <p className="vide">Aucune remise ce jour-là.</p>}
         {liste.map((r) => (
-          <LigneRemise key={`${r.venteNumero}-${r.portee}-${r.produit ?? ""}`} remise={r} fuseau={fuseau} />
+          <LigneRemise
+            key={`${r.venteNumero}-${r.portee}-${r.produit ?? ""}`}
+            remise={r}
+            fuseau={fuseau}
+            avecVendeur={admin}
+          />
         ))}
         {remises.hasNextPage && (
           <button
@@ -169,9 +169,11 @@ function Indicateur({ libelle, valeur, detail }: { libelle: string; valeur: stri
 function LigneRemise({
   remise: r,
   fuseau,
+  avecVendeur,
 }: {
   remise: Schemas["RemiseJournal"];
   fuseau: string | undefined;
+  avecVendeur: boolean;
 }) {
   const date = new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
@@ -190,7 +192,7 @@ function LigneRemise({
         {r.venteNumero}
       </span>
       <span role="cell">{r.caisse}</span>
-      <span role="cell">{r.vendeur}</span>
+      {avecVendeur && <span role="cell">{r.vendeur}</span>}
       <span role="cell" className={r.client ? undefined : "remise-discret"}>
         {r.client ?? "—"}
       </span>

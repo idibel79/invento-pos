@@ -3,14 +3,16 @@ package ma.invento.pos.vente.api;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
-import java.time.Clock;
-import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import ma.invento.pos.parametre.application.ParametreService;
 import ma.invento.pos.shared.api.PageResponse;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.Filtre;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.Portee;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.RemiseJournal;
 import ma.invento.pos.vente.infrastructure.JournalRemisesRequete.ResumeRemises;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +23,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Journal des remises accordées (ventes validées). Filtres : les {@code jours} derniers jours (absent : tout
- * l'historique), la portée de la remise (ligne ou ticket), la caisse et le vendeur. L'admin voit toutes les
- * remises ; les autres rôles seulement celles de leurs propres ventes.
+ * Journal des remises accordées (ventes validées). Filtres : un {@code jour} dans le fuseau de la boutique
+ * (absent : tout l'historique), la portée de la remise (ligne ou ticket), la caisse et le vendeur. L'admin voit
+ * toutes les remises ; les autres rôles seulement celles de leurs propres ventes.
  */
 @RestController
 @RequestMapping("/api/v1/remises")
@@ -31,25 +33,25 @@ import org.springframework.web.bind.annotation.RestController;
 class JournalRemisesController {
 
     private final JournalRemisesRequete requete;
-    private final Clock clock;
+    private final ParametreService parametres;
 
-    JournalRemisesController(JournalRemisesRequete requete, Clock clock) {
+    JournalRemisesController(JournalRemisesRequete requete, ParametreService parametres) {
         this.requete = requete;
-        this.clock = clock;
+        this.parametres = parametres;
     }
 
     @GetMapping
     @Transactional(readOnly = true)
     PageResponse<RemiseJournal> lister(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
             @RequestParam(required = false) Portee portee,
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long vendeurId,
             @RequestParam(required = false) @Size(max = 100) String client,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille) {
-        Filtre filtre = filtre(jwt, jours, portee, caisseId, vendeurId, client);
+        Filtre filtre = filtre(jwt, jour, portee, caisseId, vendeurId, client);
         long total = requete.resumer(filtre).nombre();
         return new PageResponse<>(
                 requete.lister(filtre, page, taille), page, taille, total, (int) ((total + taille - 1) / taille));
@@ -59,20 +61,25 @@ class JournalRemisesController {
     @Transactional(readOnly = true)
     ResumeRemises resumer(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(required = false) @Min(1) @Max(3660) Integer jours,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
             @RequestParam(required = false) Portee portee,
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long vendeurId,
             @RequestParam(required = false) @Size(max = 100) String client) {
-        return requete.resumer(filtre(jwt, jours, portee, caisseId, vendeurId, client));
+        return requete.resumer(filtre(jwt, jour, portee, caisseId, vendeurId, client));
     }
 
-    private Filtre filtre(Jwt jwt, Integer jours, Portee portee, Long caisseId, Long vendeurId, String client) {
+    /** Le jour s'entend dans le fuseau de la boutique : de minuit à minuit, heure locale. */
+    private Filtre filtre(Jwt jwt, LocalDate jour, Portee portee, Long caisseId, Long vendeurId, String client) {
+        Long vendeur = HistoriqueVentesController.vendeurAutorise(jwt, vendeurId);
+        if (jour == null) return new Filtre(null, null, portee, caisseId, vendeur, client);
+        ZoneId fuseau = ZoneId.of(parametres.lire().fuseauHoraire());
         return new Filtre(
-                jours == null ? null : clock.instant().minus(Duration.ofDays(jours)),
+                jour.atStartOfDay(fuseau).toInstant(),
+                jour.plusDays(1).atStartOfDay(fuseau).toInstant(),
                 portee,
                 caisseId,
-                HistoriqueVentesController.vendeurAutorise(jwt, vendeurId),
+                vendeur,
                 client);
     }
 }

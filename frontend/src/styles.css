@@ -2414,6 +2414,19 @@ button:disabled {
     minmax(90px, 1fr) auto auto auto auto;
 }
 
+/* Caissier et responsable : ils ne voient que leurs ventes, pas de colonne Vendeur. */
+.tableau-remises.sans-vendeur {
+  grid-template-columns:
+    auto auto minmax(80px, auto) minmax(100px, 1fr) minmax(90px, auto) auto minmax(180px, 2fr)
+    auto auto minmax(140px, 1.5fr);
+}
+
+.tableau-remises.tableau-ventes.sans-vendeur {
+  grid-template-columns:
+    auto auto minmax(90px, 1fr) minmax(100px, 1fr) auto auto auto
+    minmax(90px, 1fr) auto auto auto auto;
+}
+
 .vente-portees {
   display: flex;
   flex-wrap: wrap;
@@ -2472,6 +2485,137 @@ button:disabled {
 
 .filtre-jour input {
   padding: 0 8px;
+}
+
+/* Choix d'un jour : calendrier maison, pied Tous (bleu) et Aujourd'hui (vert). */
+.choix-jour {
+  position: relative;
+  display: inline-flex;
+}
+
+.choix-jour-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--texte-fort);
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.choix-jour-calendrier {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  width: 252px;
+  padding: 10px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--ombre);
+  color: var(--texte-fort);
+  font-size: 13px;
+}
+
+.choix-jour-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.choix-jour-tete button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.choix-jour-tete button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.choix-jour-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.choix-jour-nom {
+  padding: 4px 0;
+  color: var(--gris);
+  font-size: 11px;
+}
+
+.choix-jour-case {
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.choix-jour-case:hover:not(:disabled) {
+  background: var(--fond);
+}
+
+.choix-jour-case.aujourdhui {
+  font-weight: 700;
+  color: var(--succes);
+}
+
+.choix-jour-case.choisi {
+  background: var(--primaire);
+  color: var(--sur-primaire);
+}
+
+.choix-jour-case:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.choix-jour-pied {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.choix-jour-pied button {
+  flex: 1;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Teintes foncées fixes : le texte blanc reste lisible en mode sombre aussi. */
+.choix-jour-tous {
+  background: #1249c4;
+}
+
+.choix-jour-aujourdhui {
+  background: #047857;
 }
 
 /* Recherche par client dans les journaux : même allure que les listes déroulantes des filtres. */
@@ -3067,6 +3211,13 @@ button:disabled {
   margin-left: 6px;
 }
 
+/* Bouton suivi d'un compteur (À valider de Mon compte), comme l'onglet Trésorerie. */
+.bouton-avec-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .pastille-nombre {
   min-width: 18px;
   height: 18px;
@@ -3327,6 +3478,14 @@ button:disabled {
   justify-content: space-between;
   align-items: baseline;
   font-variant-numeric: tabular-nums;
+}
+
+.cloture-ecart .cloture-ecart-ligne.negatif {
+  color: var(--danger);
+}
+
+.cloture-ecart .cloture-ecart-ligne.positif {
+  color: var(--succes-texte);
 }
 
 .cloture-ecart-total {
@@ -3649,20 +3808,14 @@ button.filtre-compact {
 
 .journal-ligne {
   display: grid;
-  grid-template-columns: 96px 80px minmax(200px, 1fr) 130px 104px 100px 110px 150px;
+  grid-template-columns: 96px 80px minmax(200px, 1fr) 110px 130px 104px 104px 104px 100px 130px;
   gap: 10px;
   align-items: center;
-  min-width: 1010px;
+  min-width: 1230px;
   min-height: 42px;
   padding: 6px 14px;
   border-bottom: 1px solid var(--bordure);
   font-size: 13px;
-}
-
-/* Journal de Mon compte : écarts espèces et TPE de clôture, sans Solde CP. */
-.journal-mon-compte .journal-ligne {
-  grid-template-columns: 96px 80px minmax(200px, 1fr) 130px 104px 104px 104px 100px 130px;
-  min-width: 1110px;
 }
 
 /* Rubrique Mon compte de l'administration : solde dû et actions en tête, journal dessous. */
@@ -3983,19 +4136,19 @@ button.filtre-compact {
 .pastille-filtre {
   height: 32px;
   padding: 0 12px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--primaire);
   border-radius: 999px;
   background: var(--surface);
-  color: var(--texte);
+  color: var(--primaire);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
 
 .pastille-filtre[aria-pressed="true"] {
-  border-color: var(--texte-fort);
-  background: var(--texte-fort);
-  color: var(--surface);
+  border-color: var(--primaire);
+  background: var(--primaire);
+  color: var(--sur-primaire);
   font-weight: 600;
 }
 
@@ -4497,12 +4650,6 @@ button.filtre-compact {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-}
-
-.dette-derniers {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 /* ------------------------------------------------------------------ Facture A4 */

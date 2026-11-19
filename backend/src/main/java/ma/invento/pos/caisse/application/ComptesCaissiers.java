@@ -31,8 +31,9 @@ public interface ComptesCaissiers {
     /** Comptage par l'admin : l'excédent est crédité, {@code montantVerse} entre dans la caisse principale. */
     void terminerComptage(SessionCaisse session, BigDecimal montantVerse, long adminId);
 
-    record MouvementsSession(BigDecimal recu, BigDecimal recuTpe, BigDecimal verse) {
+    /** {@code recu} : alimentations et dettes en espèces, dont {@code dettesEspeces} ; {@code recuTpe} : dettes TPE. */
+    record MouvementsSession(BigDecimal recu, BigDecimal recuTpe, BigDecimal verse, BigDecimal dettesEspeces) {
         public static final MouvementsSession AUCUN =
-                new MouvementsSession(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+                new MouvementsSession(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }

@@ -49,10 +49,10 @@ public class JournalRemisesRequete {
     }
 
     /**
-     * Sélection : remises validées depuis une date, d'une seule portée, d'une caisse, d'un vendeur et d'un
-     * client (partie de son nom) ; un critère null ne filtre pas.
+     * Sélection : remises validées entre deux instants (fin exclue), d'une seule portée, d'une caisse, d'un
+     * vendeur et d'un client (partie de son nom) ; un critère null ne filtre pas.
      */
-    public record Filtre(Instant depuis, Portee portee, Long caisseId, Long vendeurId, String client) {}
+    public record Filtre(Instant depuis, Instant jusqua, Portee portee, Long caisseId, Long vendeurId, String client) {}
 
     private final NamedParameterJdbcTemplate jdbc;
     private final String lignes;
@@ -107,6 +107,7 @@ public class JournalRemisesRequete {
     /** Union des remises retenues par le filtre ; les conditions sont fixes, seules les valeurs varient. */
     private String union(Filtre filtre) {
         String conditions = (filtre.depuis() == null ? "" : " and v.finalisee_le >= :depuis")
+                + (filtre.jusqua() == null ? "" : " and v.finalisee_le < :jusqua")
                 + (filtre.caisseId() == null ? "" : " and v.caisse_id = :caisseId")
                 + (filtre.vendeurId() == null ? "" : " and v.caissier_id = :vendeurId")
                 + (RechercheClient.motif(filtre.client()) == null ? "" : RechercheClient.condition("v.client_nom"));
@@ -119,6 +120,7 @@ public class JournalRemisesRequete {
     private static MapSqlParameterSource parametres(Filtre filtre) {
         MapSqlParameterSource parametres = new MapSqlParameterSource();
         if (filtre.depuis() != null) parametres.addValue("depuis", Timestamp.from(filtre.depuis()));
+        if (filtre.jusqua() != null) parametres.addValue("jusqua", Timestamp.from(filtre.jusqua()));
         if (filtre.caisseId() != null) parametres.addValue("caisseId", filtre.caisseId());
         if (filtre.vendeurId() != null) parametres.addValue("vendeurId", filtre.vendeurId());
         parametres.addValue("client", RechercheClient.motif(filtre.client()));

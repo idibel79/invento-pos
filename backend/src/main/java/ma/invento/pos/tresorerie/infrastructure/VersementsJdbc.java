@@ -36,6 +36,8 @@ public class VersementsJdbc {
             long caissierId,
             String caissier,
             BigDecimal montant,
+            BigDecimal montantEspeces,
+            BigDecimal montantTpe,
             StatutVersement statut,
             String motif,
             Long sessionEmissionId,
@@ -73,7 +75,8 @@ public class VersementsJdbc {
         // Schéma issu de la configuration, jamais d'une saisie.
         this.s = schema + ".";
         this.selection = "select v.id, v.emetteur_id, v.recepteur_id, r.type = 'PRINCIPALE' as vers_principale,"
-                + " u.id as caissier_id, trim(u.prenom || ' ' || u.nom) as caissier, v.montant, v.statut, v.motif,"
+                + " u.id as caissier_id, trim(u.prenom || ' ' || u.nom) as caissier, v.montant,"
+                + " v.montant_especes, v.montant_tpe, v.statut, v.motif,"
                 + " v.session_emission_id, v.session_reception_id, v.cloture, v.auto_valide, v.cree_par, v.cree_le,"
                 + " v.traite_le"
                 + " from " + s + "versement v"
@@ -197,7 +200,9 @@ public class VersementsJdbc {
                         + " coalesce(v.finalisee_le, v.cree_le) as le, v.id from " + s + "paiement p"
                         + " join " + s + "vente v on v.id = p.vente_id"
                         + " join " + s + "session_caisse sc on sc.id = v.session_caisse_id"
-                        + " where p.mode = 'CARTE' and v.statut = 'VALIDEE' and sc.caissier_id in (:u)"
+                        // Ventes d'une session close seulement : elles n'entrent au solde dû qu'à la clôture.
+                        + " where p.mode = 'CARTE' and v.statut = 'VALIDEE' and sc.fermeture is not null"
+                        + " and sc.caissier_id in (:u)"
                         + " union all select m.utilisateur_id, 'ENCAISSEMENT', m.tpe, m.cree_le, m.id from " + s
                         + "mouvement_client m where m.type = 'REMBOURSEMENT' and not m.annule"
                         + " and not m.caisse_principale and m.tpe > 0 and m.utilisateur_id in (:u)"
@@ -253,6 +258,8 @@ public class VersementsJdbc {
                 r.getLong("caissier_id"),
                 r.getString("caissier"),
                 r.getBigDecimal("montant"),
+                r.getBigDecimal("montant_especes"),
+                r.getBigDecimal("montant_tpe"),
                 StatutVersement.valueOf(r.getString("statut")),
                 r.getString("motif"),
                 r.getObject("session_emission_id", Long.class),
