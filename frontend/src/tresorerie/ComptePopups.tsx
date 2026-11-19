@@ -32,8 +32,9 @@ export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
   return (
     <Dialogue titre="Verser à la caisse principale" sousTitre={`Solde dû : ${dh(solde)}`} onFermer={onFermer}>
       <label className="champ" htmlFor="versement-especes">
-        <span className="libelle">Espèces</span>
-        <span className="texte-secondaire">dû {dh(duEspeces)}</span>
+        <span className="libelle">
+          Espèces · dû <strong>{dh(duEspeces)}</strong>
+        </span>
       </label>
       <div className="champ-montant">
         <input
@@ -48,8 +49,9 @@ export function VerserDialogue({ onFermer }: { onFermer: () => void }) {
         <span>DH</span>
       </div>
       <label className="champ" htmlFor="versement-tpe">
-        <span className="libelle">Tickets TPE</span>
-        <span className="texte-secondaire">dû {dh(duTpe)}</span>
+        <span className="libelle">
+          Tickets TPE · dû <strong>{dh(duTpe)}</strong>
+        </span>
       </label>
       <div className="champ-montant">
         <input

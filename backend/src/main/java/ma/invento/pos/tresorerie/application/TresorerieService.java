@@ -114,7 +114,8 @@ public class TresorerieService implements ComptesCaissiers {
     public MouvementsSession mouvementsSession(long sessionId) {
         BigDecimal[] recuEtVerse = versements.recuEtVerse(sessionId);
         RemboursementsDettes.Montants dettes = remboursements.pendantLaSession(sessionId);
-        return new MouvementsSession(recuEtVerse[0].add(dettes.especes()), dettes.tpe(), recuEtVerse[1]);
+        return new MouvementsSession(
+                recuEtVerse[0].add(dettes.especes()), dettes.tpe(), recuEtVerse[1], dettes.especes());
     }
 
     @Override
@@ -228,7 +229,7 @@ public class TresorerieService implements ComptesCaissiers {
                 null,
                 session.orElse(null),
                 false,
-                plancher(session),
+                BigDecimal.ZERO,
                 cle,
                 utilisateur.id());
         // L'admin qui est aussi caissier valide lui-même ses versements (auto-validation au journal).
@@ -331,7 +332,7 @@ public class TresorerieService implements ComptesCaissiers {
         chargerUtilisateur(utilisateurId);
         Compte compte = comptes.caissierOuCree(utilisateurId);
         Optional<SessionCaisse> session = sessions.findOuverteDuCaissierForUpdate(utilisateurId);
-        comptes.debiter(compte.id(), montant, plancher(session))
+        comptes.debiter(compte.id(), montant, BigDecimal.ZERO)
                 .orElseThrow(() -> soldeInsuffisant("du caissier", soldeAffiche(utilisateurId)));
         journaliser(
                 TypeOperation.AJUSTEMENT,
@@ -361,8 +362,6 @@ public class TresorerieService implements ComptesCaissiers {
         Map<Long, EnTransit> enTransit = versements.enTransitParCaissier();
         Map<Long, SessionCaisse> ouvertes = sessions.findByFermetureIsNull().stream()
                 .collect(Collectors.toMap(SessionCaisse::getCaissierId, Function.identity()));
-        Map<Long, VentesSession> ventes = encaissements.ventesParSession(
-                ouvertes.values().stream().map(SessionCaisse::getId).toList());
         Map<Long, String> nomsCaisses =
                 caisses
                         .findAllById(ouvertes.values().stream()
@@ -373,13 +372,10 @@ public class TresorerieService implements ComptesCaissiers {
         List<CompteCaissierDto> caissiers = tous.stream()
                 .map(u -> {
                     SessionCaisse session = ouvertes.get(u.getId());
-                    BigDecimal ventesSession = session == null
-                            ? BigDecimal.ZERO
-                            : ventes.getOrDefault(session.getId(), VentesSession.AUCUNE)
-                                    .total();
                     EnTransit transit = enTransit.getOrDefault(u.getId(), EnTransit.AUCUN);
+                    // Les ventes d'une session ouverte n'entrent dans le solde dû qu'à sa clôture.
                     DuParMode du = DuParMode.depuis(
-                            soldes.getOrDefault(u.getId(), BigDecimal.ZERO).add(ventesSession),
+                            soldes.getOrDefault(u.getId(), BigDecimal.ZERO),
                             MouvementTpe.nonVerses(mouvementsTpe.getOrDefault(u.getId(), List.of())));
                     return new CompteCaissierDto(
                             u.getId(),
@@ -424,15 +420,22 @@ public class TresorerieService implements ComptesCaissiers {
             Long caisseId,
             Long utilisateurId,
             JournalTresorerieJdbc.FiltreStatut statut,
+            JournalTresorerieJdbc.FiltreType type,
             boolean croissant,
             int page,
             int taille) {
         // Sans utilisateur : les seules opérations de la caisse principale. Avec : tout le compte de cet
-        // utilisateur, clôtures (ventes) et ajustements compris.
+        // utilisateur, clôtures (ventes) et ajustements compris, vu de son compte.
         Set<TypeOperation> types = utilisateurId == null
-                ? Set.of(TypeOperation.ALIMENTATION, TypeOperation.RETRAIT, TypeOperation.VERSEMENT_ENVOYE)
+                ? Set.of(
+                        TypeOperation.ALIMENTATION,
+                        TypeOperation.RETRAIT,
+                        TypeOperation.VERSEMENT_ENVOYE,
+                        TypeOperation.REMBOURSEMENT_DETTE,
+                        TypeOperation.ANNULATION_DETTE)
                 : Set.of();
-        return journal(jour, caisseId, utilisateurId, statut, types, croissant, page, taille);
+        return journal(
+                jour, caisseId, utilisateurId, statut, type, utilisateurId != null, types, croissant, page, taille);
     }
 
     /** Journal de l'utilisateur connecté (Mon compte) : ses versements, alimentations et écarts de clôture. */
@@ -440,15 +443,19 @@ public class TresorerieService implements ComptesCaissiers {
     public PageResponse<Operation> journalDe(
             long utilisateurId,
             LocalDate jour,
+            Long caisseId,
             JournalTresorerieJdbc.FiltreStatut statut,
+            JournalTresorerieJdbc.FiltreType type,
             boolean croissant,
             int page,
             int taille) {
         return journal(
                 jour,
-                null,
+                caisseId,
                 utilisateurId,
                 statut,
+                type,
+                true,
                 Set.of(
                         TypeOperation.ALIMENTATION,
                         TypeOperation.VERSEMENT_ENVOYE,
@@ -465,6 +472,8 @@ public class TresorerieService implements ComptesCaissiers {
             Long caisseId,
             Long utilisateurId,
             JournalTresorerieJdbc.FiltreStatut statut,
+            JournalTresorerieJdbc.FiltreType type,
+            boolean vueCompte,
             Set<TypeOperation> types,
             boolean croissant,
             int page,
@@ -476,7 +485,9 @@ public class TresorerieService implements ComptesCaissiers {
                 caisseId,
                 utilisateurId,
                 statut,
-                types);
+                types,
+                type,
+                vueCompte);
         long total = operations.compter(filtre);
         return new PageResponse<>(operations.lister(filtre, croissant, page, taille), page, taille, total, (int)
                 ((total + taille - 1) / taille));
@@ -742,12 +753,12 @@ public class TresorerieService implements ComptesCaissiers {
 
     // ---------------------------------------------------------------- Lectures
 
-    /** Solde dû à la caisse principale : solde stocké + ventes de la session ouverte. */
+    /**
+     * Solde dû à la caisse principale : le solde stocké. Les ventes d'une session ouverte n'y entrent qu'à la
+     * clôture, même si un versement arrive pendant la session.
+     */
     private BigDecimal soldeAffiche(long utilisateurId) {
-        BigDecimal stocke = comptes.caissier(utilisateurId).map(Compte::solde).orElse(BigDecimal.ZERO);
-        return stocke.add(sessions.findByCaissierIdAndFermetureIsNull(utilisateurId)
-                .map(s -> encaissements.ventes(s.getId()).total())
-                .orElse(BigDecimal.ZERO));
+        return comptes.caissier(utilisateurId).map(Compte::solde).orElse(BigDecimal.ZERO);
     }
 
     /** Solde dû réparti entre espèces et tickets TPE. */
@@ -758,21 +769,16 @@ public class TresorerieService implements ComptesCaissiers {
                         versements.mouvementsTpe(List.of(utilisateurId)).getOrDefault(utilisateurId, List.of())));
     }
 
-    /**
-     * Plancher du solde stocké d'un caissier : ses ventes de la session ouverte n'y sont pas encore
-     * reportées, il peut donc descendre jusqu'à leur opposé (solde affiché ≥ 0).
-     */
-    private BigDecimal plancher(Optional<SessionCaisse> sessionVerrouillee) {
-        return sessionVerrouillee
-                .map(s -> encaissements.ventes(s.getId()).total().negate())
-                .orElse(BigDecimal.ZERO);
-    }
-
     private ComptageTiroir tiroir(SessionCaisse session) {
         VentesSession ventes = encaissements.ventes(session.getId());
         MouvementsSession mouvements = mouvementsSession(session.getId());
         return new ComptageTiroir(
-                ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.recuTpe(), mouvements.verse());
+                ventes.especes(),
+                ventes.carte(),
+                mouvements.recu(),
+                mouvements.recuTpe(),
+                mouvements.verse(),
+                mouvements.dettesEspeces());
     }
 
     private Optional<VersementDto> dejaEnvoye(UUID cle, long auteurId) {

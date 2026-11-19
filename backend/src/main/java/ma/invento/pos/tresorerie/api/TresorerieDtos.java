@@ -30,6 +30,13 @@ public final class TresorerieDtos {
     public record VersementDto(
             Long id,
             BigDecimal montant,
+
+            @Schema(nullable = true, description = "Part en espèces (absente : versement de la caisse principale)")
+            BigDecimal especes,
+
+            @Schema(nullable = true, description = "Part en tickets TPE (absente : versement de la caisse principale)")
+            BigDecimal tpe,
+
             StatutVersement statut,
             boolean versLaPrincipale,
             Long caissierId,
@@ -44,6 +51,8 @@ public final class TresorerieDtos {
             return new VersementDto(
                     v.id(),
                     v.montant(),
+                    v.montantEspeces(),
+                    v.montantTpe(),
                     v.statut(),
                     v.versLaPrincipale(),
                     v.caissierId(),

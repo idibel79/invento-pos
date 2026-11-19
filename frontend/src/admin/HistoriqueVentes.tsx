@@ -4,6 +4,7 @@ import { messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
 import { useCaisses, useParametres } from "../caisse/requetes";
 import { useImpressionFacture } from "../facture/FactureA4";
+import { FiltreJour } from "../ui/ChoixJour";
 import { Dialogue } from "../ui/Dialogue";
 import { dateHeure, decimal, dh, heure, pourcent } from "../ui/format";
 import { TicketAImprimer } from "../vente/TicketCaisse";
@@ -50,12 +51,6 @@ function aujourdhui(fuseau: string | undefined): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: fuseau }).format(new Date());
 }
 
-function decaler(jour: string, jours: number): string {
-  const date = new Date(`${jour}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + jours);
-  return date.toISOString().slice(0, 10);
-}
-
 function remise(type: "POURCENT" | "MONTANT" | null | undefined, valeur: number | null | undefined): string {
   if (!type || valeur == null) return "";
   return type === "POURCENT" ? pourcent(valeur) : dh(valeur);
@@ -64,12 +59,14 @@ function remise(type: "POURCENT" | "MONTANT" | null | undefined, valeur: number 
 /** Historique des ventes validées d'un jour : filtres, totaux de la sélection, tableau paginé, détail d'une vente. */
 export function HistoriqueVentes() {
   const fuseau = useParametres().data?.fuseauHoraire;
-  const [jourChoisi, setJour] = useState<string>();
+  // undefined : aujourd'hui par défaut ; null : tous les jours.
+  const [jourChoisi, setJour] = useState<string | null>();
   const [caisseId, setCaisseId] = useState<number>();
   const [vendeurId, setVendeurId] = useState<number>();
   const [ouverte, setOuverte] = useState<number>();
   const [saisieClient, setSaisieClient, client] = useRechercheClient();
-  const jour = jourChoisi ?? aujourdhui(fuseau);
+  const jourCourant = aujourdhui(fuseau);
+  const jour = jourChoisi === undefined ? jourCourant : (jourChoisi ?? undefined);
   const filtre = { jour, caisseId, vendeurId, client };
   const caisses = useCaisses().data ?? [];
   // Hors admin, le serveur ne renvoie que les ventes de l'utilisateur : pas de filtre par vendeur.
@@ -83,7 +80,7 @@ export function HistoriqueVentes() {
     <section className="admin-section admin-section-large">
       <div className="admin-tete">
         <div>
-          <h1 className="admin-titre">Ventes</h1>
+          <h1 className="admin-titre">{admin ? "Ventes" : "Mes ventes"}</h1>
           <p className="texte-secondaire">
             {admin ? "Les ventes encaissées" : "Vos ventes encaissées"} du jour choisi, de la plus récente à
             la plus ancienne. Cliquez sur une vente pour voir son détail.
@@ -92,33 +89,7 @@ export function HistoriqueVentes() {
       </div>
 
       <div className="barre-outils">
-        <div className="filtre filtre-jour">
-          <span>Jour :</span>
-          <button
-            type="button"
-            className="bouton-jour"
-            aria-label="Jour précédent"
-            onClick={() => setJour(decaler(jour, -1))}
-          >
-            ‹
-          </button>
-          <input
-            type="date"
-            aria-label="Jour"
-            value={jour}
-            max={aujourdhui(fuseau)}
-            onChange={(e) => setJour(e.target.value || undefined)}
-          />
-          <button
-            type="button"
-            className="bouton-jour"
-            aria-label="Jour suivant"
-            disabled={jour >= aujourdhui(fuseau)}
-            onClick={() => setJour(decaler(jour, 1))}
-          >
-            ›
-          </button>
-        </div>
+        <FiltreJour jour={jour ?? null} aujourdhui={jourCourant} onChange={setJour} />
         <label className="filtre">
           <span>Caisse :</span>
           <select
@@ -172,9 +143,14 @@ export function HistoriqueVentes() {
           {messageErreur(ventes.error ?? resume.error)}
         </p>
       )}
-      <div className="tableau-remises tableau-ventes" role="table" aria-label="Ventes">
+      <div
+        className={`tableau-remises tableau-ventes${admin ? "" : " sans-vendeur"}`}
+        role="table"
+        aria-label="Ventes"
+      >
         <div className="remise-ligne remise-entete" role="row">
-          {COLONNES.map((titre) => (
+          {/* Hors admin, l'utilisateur ne voit que ses ventes : pas de colonne Vendeur. */}
+          {COLONNES.filter((titre) => admin || titre !== "Vendeur").map((titre) => (
             <span
               key={titre}
               role="columnheader"
@@ -186,7 +162,13 @@ export function HistoriqueVentes() {
         </div>
         {ventes.isSuccess && liste.length === 0 && <p className="vide">Aucune vente ce jour-là.</p>}
         {liste.map((v) => (
-          <LigneVente key={v.id} vente={v} fuseau={fuseau} onOuvrir={() => setOuverte(v.id)} />
+          <LigneVente
+            key={v.id}
+            vente={v}
+            fuseau={fuseau}
+            avecVendeur={admin}
+            onOuvrir={() => setOuverte(v.id)}
+          />
         ))}
         {ventes.hasNextPage && (
           <button
@@ -219,10 +201,12 @@ function Indicateur({ libelle, valeur, detail }: { libelle: string; valeur: stri
 function LigneVente({
   vente: v,
   fuseau,
+  avecVendeur,
   onOuvrir,
 }: {
   vente: Schemas["VenteHistorique"];
   fuseau: string | undefined;
+  avecVendeur: boolean;
   onOuvrir: () => void;
 }) {
   return (
@@ -243,7 +227,7 @@ function LigneVente({
         </button>
       </span>
       <span role="cell">{v.caisse}</span>
-      <span role="cell">{v.vendeur}</span>
+      {avecVendeur && <span role="cell">{v.vendeur}</span>}
       <span role="cell" className={v.client ? undefined : "remise-discret"}>
         {v.client ?? "—"}
       </span>

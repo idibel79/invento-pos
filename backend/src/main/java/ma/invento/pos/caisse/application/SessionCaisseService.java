@@ -134,7 +134,12 @@ public class SessionCaisseService {
         VentesSession ventes = encaissements.ventes(sessionId);
         MouvementsSession mouvements = comptes.mouvementsSession(sessionId);
         return new ComptageTiroir(
-                ventes.especes(), ventes.carte(), mouvements.recu(), mouvements.recuTpe(), mouvements.verse());
+                ventes.especes(),
+                ventes.carte(),
+                mouvements.recu(),
+                mouvements.recuTpe(),
+                mouvements.verse(),
+                mouvements.dettesEspeces());
     }
 
     /** Toutes les caisses avec, pour celles qui sont ouvertes, le fond et les espèces (écran admin). */
@@ -364,6 +369,16 @@ public class SessionCaisseService {
             BigDecimal ventesEspeces,
             BigDecimal ventesCarte,
             BigDecimal recu,
+
+            @Schema(description = "Alimentations reçues de la caisse principale pendant la session (espèces)")
+            BigDecimal alimentations,
+
+            @Schema(description = "Dettes de clients encaissées en espèces pendant la session")
+            BigDecimal dettesEspeces,
+
+            @Schema(description = "Dettes de clients encaissées par TPE pendant la session")
+            BigDecimal dettesTpe,
+
             BigDecimal verse,
             BigDecimal attendu,
             BigDecimal attenduEspeces,
@@ -375,6 +390,9 @@ public class SessionCaisseService {
                     tiroir.ventesEspeces(),
                     tiroir.ventesCarte(),
                     tiroir.recu(),
+                    tiroir.alimentations(),
+                    tiroir.dettesEspeces(),
+                    tiroir.recuTpe(),
                     tiroir.verse(),
                     tiroir.attendu(s.getFondInitial()),
                     tiroir.attenduEspeces(s.getFondInitial()),

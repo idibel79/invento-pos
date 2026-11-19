@@ -154,7 +154,7 @@ public class DonneesDemo {
      * la caisse principale est vide.
      */
     private void creerTresorerieSiVide() {
-        if (tresorerie.journal(null, null, null, null, false, 0, 1).totalElements() > 0) return;
+        if (tresorerie.journal(null, null, null, null, null, false, 0, 1).totalElements() > 0) return;
         long adminId = utilisateurs.findByRole(Role.ADMIN).orElseThrow().getId();
         tresorerie.alimenter(new BigDecimal("20000.00"), "Fonds de démo", null, adminId);
         log.info("Caisse principale de démo alimentée ; les comptes des caissiers partent de 0 DH.");

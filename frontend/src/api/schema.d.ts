@@ -1364,6 +1364,10 @@ export interface components {
             /** Format: int64 */
             id: number;
             montant: number;
+            /** @description Part en espèces (absente : versement de la caisse principale) */
+            especes: number | null;
+            /** @description Part en tickets TPE (absente : versement de la caisse principale) */
+            tpe: number | null;
             /** @enum {string} */
             statut: "EN_TRANSIT" | "VALIDE" | "REFUSE" | "ANNULE";
             versLaPrincipale: boolean;
@@ -1434,6 +1438,12 @@ export interface components {
             ventesEspeces: number;
             ventesCarte: number;
             recu: number;
+            /** @description Alimentations reçues de la caisse principale pendant la session (espèces) */
+            alimentations: number;
+            /** @description Dettes de clients encaissées en espèces pendant la session */
+            dettesEspeces: number;
+            /** @description Dettes de clients encaissées par TPE pendant la session */
+            dettesTpe: number;
             verse: number;
             attendu: number;
             attenduEspeces: number;
@@ -1638,8 +1648,14 @@ export interface components {
             autoValide: boolean;
             cloture: boolean;
             motif: string | null;
-            soldePrincipaleApres: number;
-            soldeCaissierApres: number | null;
+            /** @description Qui a validé, refusé ou annulé le versement */
+            traitePar: string | null;
+            /** @description Client d'un remboursement de dette */
+            client: string | null;
+            /** @description Solde de la caisse principale juste avant l'opération */
+            soldePrincipaleAvant: number;
+            /** @description Solde dû du caissier juste avant l'opération */
+            soldeCaissierAvant: number | null;
             /** @description Ventes de la session, sur une clôture de session */
             ventesSession: number | null;
         };
@@ -3167,7 +3183,9 @@ export interface operations {
         parameters: {
             query?: {
                 jour?: string;
+                caisseId?: number;
                 statut?: "EN_TRANSIT" | "VALIDE" | "AUTO_VALIDE" | "REFUSE" | "ANNULE";
+                type?: "VENTES" | "DETTE" | "CREDIT" | "VERSEMENT";
                 croissant?: boolean;
                 page?: number;
                 taille?: number;
@@ -3218,6 +3236,7 @@ export interface operations {
                 caisseId?: number;
                 utilisateurId?: number;
                 statut?: "EN_TRANSIT" | "VALIDE" | "AUTO_VALIDE" | "REFUSE" | "ANNULE";
+                type?: "VENTES" | "DETTE" | "CREDIT" | "VERSEMENT";
                 croissant?: boolean;
                 page?: number;
                 taille?: number;
@@ -3324,7 +3343,7 @@ export interface operations {
     lister_3: {
         parameters: {
             query?: {
-                jours?: number;
+                jour?: string;
                 portee?: "LIGNE" | "TICKET";
                 caisseId?: number;
                 vendeurId?: number;
@@ -3352,7 +3371,7 @@ export interface operations {
     resumer: {
         parameters: {
             query?: {
-                jours?: number;
+                jour?: string;
                 portee?: "LIGNE" | "TICKET";
                 caisseId?: number;
                 vendeurId?: number;

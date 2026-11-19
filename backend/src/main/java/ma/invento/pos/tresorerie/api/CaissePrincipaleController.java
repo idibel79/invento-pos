@@ -13,6 +13,7 @@ import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementCaissierCommande;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementDto;
 import ma.invento.pos.tresorerie.application.TresorerieService;
 import ma.invento.pos.tresorerie.infrastructure.JournalTresorerieJdbc.FiltreStatut;
+import ma.invento.pos.tresorerie.infrastructure.JournalTresorerieJdbc.FiltreType;
 import ma.invento.pos.tresorerie.infrastructure.JournalTresorerieJdbc.Operation;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -113,9 +114,10 @@ class CaissePrincipaleController {
             @RequestParam(required = false) Long caisseId,
             @RequestParam(required = false) Long utilisateurId,
             @RequestParam(required = false) FiltreStatut statut,
+            @RequestParam(required = false) FiltreType type,
             @RequestParam(defaultValue = "false") boolean croissant,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int taille) {
-        return tresorerie.journal(jour, caisseId, utilisateurId, statut, croissant, page, taille);
+        return tresorerie.journal(jour, caisseId, utilisateurId, statut, type, croissant, page, taille);
     }
 }

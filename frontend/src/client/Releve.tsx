@@ -5,7 +5,7 @@ import { messageErreur } from "../api/erreurs";
 import { useParametres } from "../caisse/requetes";
 import { useImpressionFacture } from "../facture/FactureA4";
 import { Dialogue } from "../ui/Dialogue";
-import { dateHeure, dh } from "../ui/format";
+import { dateHeure, dh, telephone } from "../ui/format";
 import {
   type Client,
   type MouvementClient,
@@ -253,7 +253,7 @@ export function ReleveDialogue({
     <div className="releve-entete">
       <div>
         <strong className="releve-client">{client.nom}</strong>
-        {client.telephone && <span className="texte-secondaire">{client.telephone}</span>}
+        {client.telephone && <span className="texte-secondaire">{telephone(client.telephone)}</span>}
       </div>
       <div className="a-droite">
         <span className="texte-secondaire">{libelleSolde(dette)} actuelle</span>

@@ -21,6 +21,13 @@ export function lireMontant(saisie: string): number | null {
   return Number(texte);
 }
 
+/** Téléphone par paires de chiffres : « 06 60 69 02 01 » ; une saisie avec d'autres signes (+212…) reste telle quelle. */
+export function telephone(numero: string): string {
+  const chiffres = numero.replace(/[\s.-]/g, "");
+  if (!/^\d+$/.test(chiffres)) return numero;
+  return chiffres.replace(/(\d{2})(?=\d)/g, "$1 ");
+}
+
 /** Heure dans le fuseau de la boutique (paramètre fuseau_horaire). */
 export function heure(iso: string, fuseau: string | undefined): string {
   return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: fuseau }).format(

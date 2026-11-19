@@ -16,12 +16,15 @@ export const clesTresorerie = {
 };
 
 export type StatutJournal = "EN_TRANSIT" | "VALIDE" | "AUTO_VALIDE" | "REFUSE" | "ANNULE";
+/** Colonne Type du journal, vue du compte consulté. */
+export type TypeJournal = "VENTES" | "DETTE" | "CREDIT" | "VERSEMENT";
 
 export interface FiltreJournal {
   jour?: string;
   caisseId?: number;
   utilisateurId?: number;
   statut?: StatutJournal;
+  type?: TypeJournal;
   croissant?: boolean;
 }
 
@@ -195,18 +198,20 @@ export function useTerminerComptage() {
 
 /**
  * Journal de la caisse principale (admin) ou, avec `monCompte`, celui de l'utilisateur connecté : ses
- * versements et alimentations (ventes de la session sur un versement de clôture), sans filtre de caisse ni d'utilisateur.
+ * versements et alimentations (ventes de la session sur un versement de clôture), sans filtre d'utilisateur.
  */
 export function useJournalTresorerie(filtre: FiltreJournal, monCompte = false) {
   return useInfiniteQuery({
     queryKey: [...TRESORERIE, monCompte ? "journal-mon-compte" : "journal", filtre],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
-      const { jour, statut, croissant } = filtre;
+      const { jour, caisseId, statut, type, croissant } = filtre;
       return appel(
         monCompte
           ? api.GET("/api/v1/tresorerie/mon-compte/journal", {
-              params: { query: { jour, statut, croissant, page: pageParam, taille: TAILLE_JOURNAL } },
+              params: {
+                query: { jour, caisseId, statut, type, croissant, page: pageParam, taille: TAILLE_JOURNAL },
+              },
             })
           : api.GET("/api/v1/tresorerie/journal", {
               params: { query: { ...filtre, page: pageParam, taille: TAILLE_JOURNAL } },

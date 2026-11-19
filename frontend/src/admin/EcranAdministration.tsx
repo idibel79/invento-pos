@@ -35,6 +35,11 @@ const VENTES: EntreeMenu[] = [
   { nom: "Journal des ventes", detail: "Ventes validées, jour par jour", ecran: () => <HistoriqueVentes /> },
   { nom: "Remises", detail: "Remises accordées sur les ventes", ecran: () => <JournalRemises /> },
 ];
+/** Caissier et responsable : seulement leurs propres ventes. */
+const VENTES_VENDEUR: EntreeMenu[] = [
+  { nom: "Mes ventes", detail: "Mes ventes validées, jour par jour", ecran: () => <HistoriqueVentes /> },
+  { nom: "Remises", detail: "Remises accordées sur mes ventes", ecran: () => <JournalRemises /> },
+];
 
 const ANNUAIRE: EntreeMenu = {
   nom: "Annuaire",
@@ -117,7 +122,7 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         ))}
       </nav>
       <main className="admin-corps">
-        {onglet === "ventes" && <RubriqueAvecMenu titre="Ventes" entrees={VENTES} />}
+        {onglet === "ventes" && <RubriqueAvecMenu titre="Ventes" entrees={admin ? VENTES : VENTES_VENDEUR} />}
         {onglet === "clients" && <RubriqueAvecMenu titre="Clients" entrees={CLIENTS} />}
         {onglet === "tresorerie" &&
           (admin ? (

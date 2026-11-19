@@ -130,9 +130,9 @@ export function useImporterCatalogue() {
   });
 }
 
-/** Filtres du journal des remises : les n derniers jours, une portée, une caisse, un vendeur (absent : pas de filtre). */
+/** Filtres du journal des remises : un jour (AAAA-MM-JJ), une portée, une caisse, un vendeur (absent : pas de filtre). */
 export interface FiltreRemises {
-  jours?: number;
+  jour?: string;
   portee?: "LIGNE" | "TICKET";
   caisseId?: number;
   vendeurId?: number;

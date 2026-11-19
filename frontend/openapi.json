@@ -1630,12 +1630,28 @@
             "format" : "date"
           }
         }, {
+          "name" : "caisseId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
           "name" : "statut",
           "in" : "query",
           "required" : false,
           "schema" : {
             "type" : "string",
             "enum" : [ "EN_TRANSIT", "VALIDE", "AUTO_VALIDE", "REFUSE", "ANNULE" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "VENTES", "DETTE", "CREDIT", "VERSEMENT" ]
           }
         }, {
           "name" : "croissant",
@@ -1743,6 +1759,14 @@
           "schema" : {
             "type" : "string",
             "enum" : [ "EN_TRANSIT", "VALIDE", "AUTO_VALIDE", "REFUSE", "ANNULE" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "VENTES", "DETTE", "CREDIT", "VERSEMENT" ]
           }
         }, {
           "name" : "croissant",
@@ -1880,14 +1904,12 @@
         "tags" : [ "journal-remises-controller" ],
         "operationId" : "lister_3",
         "parameters" : [ {
-          "name" : "jours",
+          "name" : "jour",
           "in" : "query",
           "required" : false,
           "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "maximum" : 3660,
-            "minimum" : 1
+            "type" : "string",
+            "format" : "date"
           }
         }, {
           "name" : "portee",
@@ -1963,14 +1985,12 @@
         "tags" : [ "journal-remises-controller" ],
         "operationId" : "resumer",
         "parameters" : [ {
-          "name" : "jours",
+          "name" : "jour",
           "in" : "query",
           "required" : false,
           "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "maximum" : 3660,
-            "minimum" : 1
+            "type" : "string",
+            "format" : "date"
           }
         }, {
           "name" : "portee",
@@ -3426,6 +3446,14 @@
           "montant" : {
             "type" : "number"
           },
+          "especes" : {
+            "type" : [ "number", "null" ],
+            "description" : "Part en espèces (absente : versement de la caisse principale)"
+          },
+          "tpe" : {
+            "type" : [ "number", "null" ],
+            "description" : "Part en tickets TPE (absente : versement de la caisse principale)"
+          },
           "statut" : {
             "type" : "string",
             "enum" : [ "EN_TRANSIT", "VALIDE", "REFUSE", "ANNULE" ]
@@ -3458,7 +3486,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "autoValide", "caissier", "caissierId", "cloture", "creeLe", "id", "montant", "motif", "statut", "traiteLe", "versLaPrincipale" ]
+        "required" : [ "autoValide", "caissier", "caissierId", "cloture", "creeLe", "especes", "id", "montant", "motif", "statut", "tpe", "traiteLe", "versLaPrincipale" ]
       },
       "RefusCommande" : {
         "type" : "object",
@@ -3623,6 +3651,18 @@
           "recu" : {
             "type" : "number"
           },
+          "alimentations" : {
+            "type" : "number",
+            "description" : "Alimentations reçues de la caisse principale pendant la session (espèces)"
+          },
+          "dettesEspeces" : {
+            "type" : "number",
+            "description" : "Dettes de clients encaissées en espèces pendant la session"
+          },
+          "dettesTpe" : {
+            "type" : "number",
+            "description" : "Dettes de clients encaissées par TPE pendant la session"
+          },
           "verse" : {
             "type" : "number"
           },
@@ -3639,7 +3679,7 @@
             "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "attendu", "attenduEspeces", "attenduTpe", "recu", "soldeCompte", "ventesCarte", "ventesEspeces", "verse" ]
+        "required" : [ "alimentations", "attendu", "attenduEspeces", "attenduTpe", "dettesEspeces", "dettesTpe", "recu", "soldeCompte", "ventesCarte", "ventesEspeces", "verse" ]
       },
       "ComptageCommande" : {
         "type" : "object",
@@ -4202,18 +4242,28 @@
           "motif" : {
             "type" : [ "string", "null" ]
           },
-          "soldePrincipaleApres" : {
-            "type" : "number"
+          "traitePar" : {
+            "type" : [ "string", "null" ],
+            "description" : "Qui a validé, refusé ou annulé le versement"
           },
-          "soldeCaissierApres" : {
-            "type" : [ "number", "null" ]
+          "client" : {
+            "type" : [ "string", "null" ],
+            "description" : "Client d'un remboursement de dette"
+          },
+          "soldePrincipaleAvant" : {
+            "type" : "number",
+            "description" : "Solde de la caisse principale juste avant l'opération"
+          },
+          "soldeCaissierAvant" : {
+            "type" : [ "number", "null" ],
+            "description" : "Solde dû du caissier juste avant l'opération"
           },
           "ventesSession" : {
             "type" : [ "number", "null" ],
             "description" : "Ventes de la session, sur une clôture de session"
           }
         },
-        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "cloture", "compte", "ecartSession", "especes", "id", "le", "montant", "motif", "soldeCaissierApres", "soldePrincipaleApres", "statut", "tpe", "type", "ventesSession", "versLaPrincipale", "versementId" ]
+        "required" : [ "auteur", "autoValide", "caisse", "caissier", "caissierId", "client", "cloture", "compte", "ecartSession", "especes", "id", "le", "montant", "motif", "soldeCaissierAvant", "soldePrincipaleAvant", "statut", "tpe", "traitePar", "type", "ventesSession", "versLaPrincipale", "versementId" ]
       },
       "PageResponseOperation" : {
         "type" : "object",

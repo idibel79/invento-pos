@@ -84,6 +84,19 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
             <Ligne libelle="Fond de caisse espèces" montant={session.fondInitial} />
             <Ligne libelle="Ventes espèces" montant={tiroir?.ventesEspeces ?? 0} plus />
             <Ligne libelle="Ventes carte (tickets TPE)" montant={tiroir?.ventesCarte ?? 0} plus />
+            {/* Reçu pendant la session, par origine : seulement les lignes qui ont eu lieu. */}
+            {(tiroir?.alimentations ?? 0) > 0 && (
+              <Ligne libelle="Alimentations reçues CP (espèces)" montant={tiroir?.alimentations ?? 0} plus />
+            )}
+            {(tiroir?.dettesEspeces ?? 0) > 0 && (
+              <Ligne libelle="Dettes encaissées (espèces)" montant={tiroir?.dettesEspeces ?? 0} plus />
+            )}
+            {(tiroir?.dettesTpe ?? 0) > 0 && (
+              <Ligne libelle="Dettes encaissées (TPE)" montant={tiroir?.dettesTpe ?? 0} plus />
+            )}
+            {(tiroir?.verse ?? 0) > 0 && (
+              <Ligne libelle="Versements effectués" montant={-(tiroir?.verse ?? 0)} plus />
+            )}
             <div className="encadre-ligne encadre-total">
               <span>Attendu dans le tiroir (espèces + TPE)</span>
               <span>{dh(attendu)}</span>
@@ -172,13 +185,16 @@ function Ecarts({
 }) {
   const ton = total === null ? " vide" : total < 0 ? " manque" : " excedent";
   const montant = (valeur: number | null) => (valeur === null ? "—" : signe(valeur));
+  // Chaque écart a sa propre couleur : un manque reste rouge même si le total est à l'équilibre.
+  const couleur = (valeur: number | null) =>
+    `cloture-ecart-ligne${valeur !== null && valeur < -0.005 ? " negatif" : ""}${valeur !== null && valeur > 0.005 ? " positif" : ""}`;
   return (
     <div className={`cloture-ecart cloture-ecart-lignes${ton}`} role="status">
-      <div className="cloture-ecart-ligne">
+      <div className={couleur(especes)}>
         <span>Écart espèces</span>
         <span>{montant(especes)}</span>
       </div>
-      <div className="cloture-ecart-ligne">
+      <div className={couleur(tpe)}>
         <span>Écart TPE</span>
         <span>{montant(tpe)}</span>
       </div>

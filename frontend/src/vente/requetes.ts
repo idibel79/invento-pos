@@ -46,7 +46,7 @@ export function useValiderVente() {
       appel(api.POST("/api/v1/ventes", { params: { header: { "Idempotency-Key": cle } }, body: corps })),
     onSuccess: () => {
       invalider();
-      // Contenu du tiroir affiché dans la barre de caisse, et solde du compte (ventes comprises).
+      // Contenu du tiroir affiché dans la barre de caisse, et solde du compte (sans les ventes de la session, comptées à la clôture).
       void queryClient.invalidateQueries({ queryKey: cles.sessionCourante });
       void queryClient.invalidateQueries({ queryKey: ["tresorerie"] });
       // Dette des clients (vente à crédit).

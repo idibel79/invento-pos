@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { messageErreur } from "../api/erreurs";
-import { dh } from "../ui/format";
+import { dh, telephone } from "../ui/format";
 import { type Client, libelleSolde, useClients } from "./requetes";
 
 /**
@@ -62,7 +62,7 @@ export function ChoixClient({
           >
             <span className="choix-client-texte">
               <span className="choix-client-nom">{c.nom}</span>
-              {c.telephone && <span className="texte-secondaire">{c.telephone}</span>}
+              {c.telephone && <span className="texte-secondaire">{telephone(c.telephone)}</span>}
             </span>
             <span className="choix-client-dette">
               <span className="texte-secondaire">{libelleSolde(c.dette)}</span>
