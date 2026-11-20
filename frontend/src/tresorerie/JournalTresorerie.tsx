@@ -176,7 +176,7 @@ export function JournalTresorerie({ fuseau, monCompte = false, caissiers = [], u
     <section className="carte-journal" aria-label={titre}>
       <div className="carte-journal-tete">
         <h2>{titre}</h2>
-        <FiltreJour jour={jour ?? null} aujourdhui={jourCourant} onChange={setJour} />
+        <FiltreJour jour={jour ?? null} aujourdhui={jourCourant} onChange={setJour} compact />
         <label className="filtre-compact">
           <span className="visuellement-cache">Caisse</span>
           <select

@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import type { Schemas } from "../api/client";
 import { ErreurApi, messageErreur } from "../api/erreurs";
 import { useUtilisateur } from "../auth/AuthContext";
@@ -27,6 +27,11 @@ interface Props {
 export function Catalogue({ onAjouter, onMessage }: Props) {
   const champ = useRef<HTMLInputElement>(null);
   const [saisie, setSaisie] = useState("");
+  // Une douchette ne se détecte pas au branchement (c'est un clavier) : seulement à son premier scan.
+  const [douchette, setDouchette] = useState(false);
+  // Curseur dans un autre champ de saisie : le scan y irait, le badge passe en orange.
+  const [autreChamp, setAutreChamp] = useState(false);
+  const frappes = useRef<number[]>([]);
   const [zoneId, setZoneId] = useState<number | null>(null);
   const [categorieId, setCategorieId] = useState<number | null>(null);
   const recherche = useValeurDifferee(saisie.trim(), 250);
@@ -78,22 +83,81 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
     onAjouter(produit);
   }
 
-  // La douchette tape le code puis Entrée : recherche immédiate, sans délai.
-  async function valider(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    const code = saisie.trim();
-    if (!code) return;
+  /** Code tapé puis Entrée : produit ajouté au ticket, sinon le texte reste une recherche dans la grille. */
+  async function traiterCode(code: string) {
     try {
       ajouter(await chercherParCodeBarre(code));
       setSaisie("");
     } catch (erreur) {
-      // Pas un code-barre connu : le texte reste une recherche dans la grille.
       if (!(erreur instanceof ErreurApi && erreur.statut === 404)) onMessage(messageErreur(erreur));
       else if (/^\d{6,}$/.test(code)) onMessage(`Aucun produit pour le code-barre ${code}`);
     }
     champ.current?.focus();
   }
+
+  // La douchette tape le code puis Entrée : recherche immédiate, sans délai.
+  function valider(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key.length === 1) frappes.current.push(e.timeStamp);
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (estUnScan(frappes.current)) setDouchette(true);
+    frappes.current = [];
+    const code = saisie.trim();
+    if (code) void traiterCode(code);
+  }
+
+  // Dernière version de traiterCode pour l'écoute globale, enregistrée une seule fois.
+  const traiterCodeRef = useRef(traiterCode);
+  useEffect(() => {
+    traiterCodeRef.current = traiterCode;
+  });
+
+  // Scan quand le curseur n'est dans aucun champ (après un clic sur un produit, le ticket, un bouton) :
+  // il est capté ici. Dans un autre champ de saisie ou une fenêtre, on n'intercepte rien.
+  useEffect(() => {
+    let tampon: { touche: string; instant: number }[] = [];
+    const cibleLibre = (cible: EventTarget | null) =>
+      cible !== champ.current &&
+      !estChampDeSaisie(cible) &&
+      !(cible instanceof Element && cible.closest("[role=dialog], dialog"));
+    const surTouche = (e: globalThis.KeyboardEvent) => {
+      if (!cibleLibre(e.target) || e.ctrlKey || e.altKey || e.metaKey) {
+        tampon = [];
+        return;
+      }
+      const dernier = tampon.at(-1);
+      if (dernier && e.timeStamp - dernier.instant > 100) tampon = [];
+      if (e.key.length === 1) {
+        tampon.push({ touche: e.key, instant: e.timeStamp });
+        return;
+      }
+      if (e.key !== "Enter") return;
+      const code = tampon
+        .map((f) => f.touche)
+        .join("")
+        .trim();
+      const scan = estUnScan(tampon.map((f) => f.instant));
+      tampon = [];
+      if (!scan || !code) return;
+      // Entrée de la douchette : ne pas déclencher le bouton qui a le focus.
+      e.preventDefault();
+      e.stopPropagation();
+      setDouchette(true);
+      void traiterCodeRef.current(code);
+    };
+    const surFocus = (e: FocusEvent) => {
+      const cible = e.type === "focusin" ? e.target : e.relatedTarget;
+      setAutreChamp(cible !== champ.current && estChampDeSaisie(cible));
+    };
+    document.addEventListener("keydown", surTouche, true);
+    document.addEventListener("focusin", surFocus);
+    document.addEventListener("focusout", surFocus);
+    return () => {
+      document.removeEventListener("keydown", surTouche, true);
+      document.removeEventListener("focusin", surFocus);
+      document.removeEventListener("focusout", surFocus);
+    };
+  }, []);
 
   return (
     <section className="catalogue" aria-label="Catalogue">
@@ -106,6 +170,9 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
             onKeyDown={(e) => void valider(e)}
+            onBlur={() => {
+              frappes.current = [];
+            }}
             placeholder="Scanner un code-barre ou rechercher (nom, PID)"
             autoFocus
             autoComplete="off"
@@ -123,7 +190,13 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
               ×
             </button>
           )}
-          <span className="badge-douchette">Douchette prête</span>
+          {/* Dans le label : un clic sur le badge remet le curseur dans le champ. */}
+          <span
+            className={`badge-douchette${autreChamp ? " inactif" : douchette ? " detectee" : ""}`}
+            aria-live="polite"
+          >
+            {autreChamp ? "Cliquez ici pour scanner" : douchette ? "Douchette détectée" : "Prêt à scanner"}
+          </span>
         </label>
         <Filtre libelle="Zone" options={zones.data ?? []} valeur={zoneId} onChoisir={setZoneId} />
         <Filtre
@@ -183,6 +256,29 @@ export function Catalogue({ onAjouter, onMessage }: Props) {
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * Saisie d'une douchette : au moins 4 caractères tapés en moyenne à moins de 35 ms d'intervalle
+ * (une personne au clavier tape rarement plus vite que 80 ms).
+ */
+function estUnScan(instants: number[]): boolean {
+  if (instants.length < 4) return false;
+  const premier = instants[0] ?? 0;
+  const dernier = instants.at(-1) ?? 0;
+  return (dernier - premier) / (instants.length - 1) < 35;
+}
+
+/** Champ où une frappe s'écrit (zone de texte, liste, contenu éditable) : un scan y est laissé tel quel. */
+function estChampDeSaisie(cible: EventTarget | null): boolean {
+  if (!(cible instanceof HTMLElement)) return false;
+  if (cible.isContentEditable || cible instanceof HTMLTextAreaElement || cible instanceof HTMLSelectElement) {
+    return true;
+  }
+  return (
+    cible instanceof HTMLInputElement &&
+    !["button", "checkbox", "radio", "submit", "reset", "range", "file", "color"].includes(cible.type)
   );
 }
 

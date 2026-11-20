@@ -28,11 +28,19 @@ function decaler(jour: string, jours: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Filtre « Jour : ‹ [calendrier] › » : jour précédent, choix au calendrier, jour suivant (jusqu'à aujourd'hui). */
-export function FiltreJour({ jour, aujourdhui, onChange }: Omit<Props, "className">) {
+/**
+ * Filtre « Jour : ‹ [calendrier] › » : jour précédent, choix au calendrier, jour suivant (jusqu'à aujourd'hui).
+ * compact : même hauteur que les listes « filtre-compact » des journaux (libellé masqué).
+ */
+export function FiltreJour({
+  jour,
+  aujourdhui,
+  onChange,
+  compact = false,
+}: Omit<Props, "className"> & { compact?: boolean }) {
   return (
-    <div className="filtre filtre-jour">
-      <span>Jour :</span>
+    <div className={`filtre filtre-jour${compact ? " compact" : ""}`}>
+      <span className={compact ? "visuellement-cache" : undefined}>Jour :</span>
       <button
         type="button"
         className="bouton-jour"

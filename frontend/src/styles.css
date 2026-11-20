@@ -780,15 +780,26 @@ button:disabled {
   color: var(--texte-fort);
 }
 
+/* Badge du champ de scan : gris en attente, vert après un vrai scan, orange quand le curseur est ailleurs. */
 .badge-douchette {
   font-size: 12px;
   font-weight: 500;
-  color: var(--succes);
+  color: var(--gris-clair);
   white-space: nowrap;
+  cursor: text;
 }
 
-.badge-douchette::before {
+.badge-douchette.detectee {
+  color: var(--succes);
+}
+
+.badge-douchette.detectee::before {
   content: "● ";
+}
+
+.badge-douchette.inactif {
+  color: var(--alerte);
+  cursor: pointer;
 }
 
 .filtre {
@@ -2466,25 +2477,65 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* Filtre Jour : une seule boîte comme les autres filtres, flèches et date sans cadre propre. */
 .filtre-jour {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  gap: 2px;
+  padding-right: 4px;
 }
 
-.filtre-jour input,
-.bouton-jour {
-  height: 34px;
-  border: 1px solid var(--bordure);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--texte-fort);
+.filtre-jour .bouton-jour,
+.filtre-jour .choix-jour-bouton {
+  height: 30px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   font: inherit;
-  font-size: 13px;
+  cursor: pointer;
 }
 
-.filtre-jour input {
-  padding: 0 8px;
+.filtre-jour .bouton-jour {
+  width: 24px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--gris);
+}
+
+.filtre-jour .choix-jour-bouton {
+  padding: 0 6px;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.filtre-jour .bouton-jour:hover:not(:disabled),
+.filtre-jour .choix-jour-bouton:hover {
+  background: var(--fond);
+}
+
+.filtre-jour .bouton-jour:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Variante des journaux : 32 px, comme les listes « filtre-compact » voisines. */
+.filtre-jour.compact {
+  height: 32px;
+  padding: 0 2px;
+  gap: 0;
+  background: var(--champ);
+  font-size: 12.5px;
+}
+
+.filtre-jour.compact .bouton-jour,
+.filtre-jour.compact .choix-jour-bouton {
+  height: 26px;
+}
+
+.filtre-jour.compact .choix-jour-bouton {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--gris);
 }
 
 /* Choix d'un jour : calendrier maison, pied Tous (bleu) et Aujourd'hui (vert). */
@@ -4908,4 +4959,15 @@ button.filtre-compact {
 .boutique-legaux legend {
   /* Deux lignes vides après le titre de section. */
   padding: 0 0 2.5em;
+}
+
+/* Titres « Nom de la boutique » et « Identifiants légaux » : texte souligné. */
+.boutique-titre {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Un espace entre le titre « Nom de la boutique » et son champ. */
+.boutique-nom-titre {
+  margin-bottom: 0.75em;
 }

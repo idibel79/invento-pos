@@ -152,7 +152,7 @@ function FormulaireBoutique({ parametres }: { parametres: Schemas["Parametres"] 
     <div className="boutique-ecran">
       <form className="carte admin-carte formulaire" onSubmit={envoyer} noValidate>
         <label className="champ">
-          <span className="libelle">Nom de la boutique</span>
+          <span className="libelle boutique-titre boutique-nom-titre">Nom de la boutique</span>
           <input autoComplete="off" {...register("boutiqueNom")} />
           {errors.boutiqueNom && <span className="erreur-champ">{errors.boutiqueNom.message}</span>}
         </label>
@@ -176,7 +176,9 @@ function FormulaireBoutique({ parametres }: { parametres: Schemas["Parametres"] 
           </label>
         </div>
         <fieldset className="boutique-legaux">
-          <legend className="libelle">Identifiants légaux (facultatifs, imprimés sur la facture A4)</legend>
+          <legend className="libelle boutique-titre">
+            Identifiants légaux (facultatifs, imprimés sur la facture A4)
+          </legend>
           <div className="grille-deux-colonnes">
             <label className="champ">
               <span className="libelle">ICE</span>
