@@ -601,6 +601,15 @@
             "format" : "int64"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ValidationVersementCommande"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -3436,6 +3445,15 @@
         },
         "required" : [ "caisseIds", "login", "motDePasseTemporaire", "nom", "prenom", "role", "seuilsRemise" ]
       },
+      "ValidationVersementCommande" : {
+        "type" : "object",
+        "properties" : {
+          "tiroir" : {
+            "type" : [ "number", "null" ],
+            "minimum" : 0
+          }
+        }
+      },
       "VersementDto" : {
         "type" : "object",
         "properties" : {
@@ -3453,6 +3471,10 @@
           "tpe" : {
             "type" : [ "number", "null" ],
             "description" : "Part en tickets TPE (absente : versement de la caisse principale)"
+          },
+          "tiroir" : {
+            "type" : "number",
+            "description" : "Part sortie du tiroir du caissier ou entrée dedans (le reste : son compte)"
           },
           "statut" : {
             "type" : "string",
@@ -3486,7 +3508,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "autoValide", "caissier", "caissierId", "cloture", "creeLe", "especes", "id", "montant", "motif", "statut", "tpe", "traiteLe", "versLaPrincipale" ]
+        "required" : [ "autoValide", "caissier", "caissierId", "cloture", "creeLe", "especes", "id", "montant", "motif", "statut", "tiroir", "tpe", "traiteLe", "versLaPrincipale" ]
       },
       "RefusCommande" : {
         "type" : "object",
@@ -3550,6 +3572,16 @@
           },
           "montantTpe" : {
             "type" : "number",
+            "minimum" : 0
+          },
+          "tiroirEspeces" : {
+            "type" : [ "number", "null" ],
+            "description" : "Part des espèces prise dans le tiroir (caisse ouverte)",
+            "minimum" : 0
+          },
+          "tiroirTpe" : {
+            "type" : [ "number", "null" ],
+            "description" : "Part des tickets TPE prise dans le tiroir (caisse ouverte)",
             "minimum" : 0
           },
           "cle" : {
@@ -4039,6 +4071,22 @@
           "tiroirAttendu" : {
             "type" : [ "number", "null" ]
           },
+          "plafondTiroirEspeces" : {
+            "type" : "number",
+            "description" : "Plafond du versement en espèces depuis le tiroir (0 sans caisse ouverte)"
+          },
+          "plafondTiroirTpe" : {
+            "type" : "number",
+            "description" : "Plafond du versement en tickets TPE depuis le tiroir (0 sans caisse ouverte)"
+          },
+          "plafondCompteEspeces" : {
+            "type" : "number",
+            "description" : "Plafond du versement en espèces hors tiroir (argent gardé sur soi)"
+          },
+          "plafondCompteTpe" : {
+            "type" : "number",
+            "description" : "Plafond du versement en tickets TPE hors tiroir"
+          },
           "aValider" : {
             "type" : "array",
             "items" : {
@@ -4052,7 +4100,7 @@
             }
           }
         },
-        "required" : [ "aValider", "historique", "sessionOuverte", "solde", "soldeEspeces", "soldeTpe", "tiroirAttendu" ]
+        "required" : [ "aValider", "historique", "plafondCompteEspeces", "plafondCompteTpe", "plafondTiroirEspeces", "plafondTiroirTpe", "sessionOuverte", "solde", "soldeEspeces", "soldeTpe", "tiroirAttendu" ]
       },
       "JourneeDto" : {
         "type" : "object",

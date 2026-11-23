@@ -127,7 +127,7 @@ public class SessionCaisseService {
         return session.getFondInitial()
                 .add(tiroir.ventesEspeces())
                 .add(tiroir.recu())
-                .subtract(tiroir.verse());
+                .subtract(tiroir.verseEspeces());
     }
 
     private ComptageTiroir tiroir(long sessionId) {
@@ -138,7 +138,8 @@ public class SessionCaisseService {
                 ventes.carte(),
                 mouvements.recu(),
                 mouvements.recuTpe(),
-                mouvements.verse(),
+                mouvements.verseEspeces(),
+                mouvements.verseTpe(),
                 mouvements.dettesEspeces());
     }
 

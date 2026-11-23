@@ -55,17 +55,28 @@ export function useMonCompte() {
 export function useVerserALaPrincipale() {
   const apres = useApresOperation();
   return useMutation({
-    mutationFn: (corps: { montantEspeces: number; montantTpe: number; cle: string }) =>
-      appel(api.POST("/api/v1/tresorerie/mon-compte/versements", { body: corps })),
+    mutationFn: (corps: {
+      montantEspeces: number;
+      montantTpe: number;
+      tiroirEspeces: number;
+      tiroirTpe: number;
+      cle: string;
+    }) => appel(api.POST("/api/v1/tresorerie/mon-compte/versements", { body: corps })),
     onSuccess: apres,
   });
 }
 
+/** Confirmation de réception ; {@code tiroir} : part mise dans le tiroir quand la caisse est ouverte. */
 export function useValiderVersement() {
   const apres = useApresOperation();
   return useMutation({
-    mutationFn: (id: number) =>
-      appel(api.POST("/api/v1/tresorerie/versements/{id}/validation", { params: { path: { id } } })),
+    mutationFn: ({ id, tiroir }: { id: number; tiroir?: number }) =>
+      appel(
+        api.POST("/api/v1/tresorerie/versements/{id}/validation", {
+          params: { path: { id } },
+          body: { tiroir: tiroir ?? null },
+        }),
+      ),
     onSettled: apres,
   });
 }

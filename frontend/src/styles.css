@@ -3405,6 +3405,17 @@ button:disabled {
   color: var(--gris-clair);
 }
 
+.a-valider-tiroir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a-valider-tiroir .champ-montant {
+  width: 140px;
+}
+
 .a-valider-actions,
 .a-valider-refus {
   display: flex;
