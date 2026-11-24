@@ -38,11 +38,18 @@ function afficher(utilisateur: Schemas["UtilisateurDto"] | null, autres: Schemas
   return onFermer;
 }
 
-function simulerServeur(statut = 200, corps: unknown = salma) {
+/** Simule l'API ; `requetes` ne garde que les enregistrements, pas les demandes d'identifiant proposé. */
+function simulerServeur(statut = 200, corps: unknown = salma, identifiantPropose = "") {
   const requetes: Request[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (requete: Request) => {
+      if (new URL(requete.url).pathname.endsWith("/identifiant-propose")) {
+        return new Response(JSON.stringify({ login: identifiantPropose }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       requetes.push(requete);
       return new Response(JSON.stringify(corps), {
         status: statut,
@@ -61,7 +68,7 @@ describe("UtilisateurDialogue", () => {
     afficher(null);
 
     await userEvent.type(screen.getByLabelText("Nom"), "Alaoui");
-    await userEvent.type(screen.getByLabelText("Identifiant"), "karim alaoui");
+    await userEvent.type(screen.getByLabelText("Identifiant de connexion"), "karim alaoui");
     await userEvent.type(screen.getByLabelText("Mot de passe temporaire"), "court");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
@@ -77,7 +84,7 @@ describe("UtilisateurDialogue", () => {
     expect(screen.queryByLabelText(/Ancienne/)).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Prénom"), "Karim");
     await userEvent.type(screen.getByLabelText("Nom"), "Alaoui");
-    await userEvent.type(screen.getByLabelText("Identifiant"), "karim");
+    await userEvent.type(screen.getByLabelText("Identifiant de connexion"), "karim");
     await userEvent.type(screen.getByLabelText("Mot de passe temporaire"), "Temporaire-2026");
     await userEvent.click(screen.getByRole("button", { name: "Responsable" }));
     await userEvent.click(screen.getByLabelText("Caisse 2"));
@@ -101,7 +108,7 @@ describe("UtilisateurDialogue", () => {
     const requetes = simulerServeur();
     const onFermer = afficher(salma);
 
-    expect(screen.getByLabelText("Identifiant")).toHaveValue("salma");
+    expect(screen.getByLabelText("Identifiant de connexion")).toHaveValue("salma");
     await userEvent.click(screen.getByLabelText("Ancienne (inactive)"));
     await userEvent.click(screen.getByLabelText("Caisse 1"));
     await userEvent.click(screen.getByRole("button", { name: "Désactivé" }));
@@ -133,7 +140,7 @@ describe("UtilisateurDialogue", () => {
       seuilsRemise: { ligne: 10, ticket: 5 },
     });
 
-    const identifiant = screen.getByLabelText("Identifiant");
+    const identifiant = screen.getByLabelText("Identifiant de connexion");
     await userEvent.clear(identifiant);
     await userEvent.type(identifiant, "salma.b");
     await userEvent.type(screen.getByLabelText("Nouveau mot de passe temporaire"), "court");
@@ -170,6 +177,18 @@ describe("UtilisateurDialogue", () => {
     });
   });
 
+  it("propose l'identifiant depuis le prénom et le nom tant qu'il n'est pas saisi", async () => {
+    simulerServeur(200, salma, "karim.alaoui");
+    afficher(null);
+
+    await userEvent.type(screen.getByLabelText("Prénom"), "Karim");
+    await userEvent.type(screen.getByLabelText("Nom"), "Alaoui");
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identifiant de connexion")).toHaveValue("karim.alaoui"),
+    );
+  });
+
   it("ne propose ni PIN ni seuils pour un caissier", () => {
     simulerServeur();
     afficher(salma);
@@ -194,7 +213,7 @@ describe("UtilisateurDialogue", () => {
     const onFermer = afficher(null);
 
     await userEvent.type(screen.getByLabelText("Nom"), "Alaoui");
-    await userEvent.type(screen.getByLabelText("Identifiant"), "karim");
+    await userEvent.type(screen.getByLabelText("Identifiant de connexion"), "karim");
     await userEvent.type(screen.getByLabelText("Mot de passe temporaire"), "Temporaire-2026");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
