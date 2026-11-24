@@ -13,7 +13,8 @@ import {
   useRefuserVersement,
   useValiderVersement,
 } from "../tresorerie/requetes";
-import { decimal, heure } from "../ui/format";
+import { Dialogue } from "../ui/Dialogue";
+import { decimal, dh, heure } from "../ui/format";
 import { ComptageDialogue } from "./ComptageDialogue";
 import { OperationTresorerieDialogue, type TypeOperation } from "./OperationTresorerieDialogue";
 
@@ -194,8 +195,7 @@ function EntetePrincipale({
   fuseau: string | undefined;
   onOperation: (type: TypeOperation) => void;
 }) {
-  const aValider = useAValiderPrincipale();
-  const liste = aValider.data ?? [];
+  const [popupAValider, setPopupAValider] = useState(false);
   return (
     <>
       <div className="tresorerie-entete">
@@ -203,6 +203,18 @@ function EntetePrincipale({
           <span>Caisse principale</span>
           <SoldeDh montant={solde} />
         </div>
+        <button
+          type="button"
+          className="bouton-compact bouton-avec-pastille"
+          onClick={() => setPopupAValider(true)}
+        >
+          À valider
+          {aValiderNombre > 0 && (
+            <span className="pastille-nombre" aria-label={`${aValiderNombre} à valider`}>
+              {aValiderNombre}
+            </span>
+          )}
+        </button>
         <button type="button" className="bouton-compact" onClick={() => onOperation("retirer")}>
           Retirer
         </button>
@@ -213,29 +225,54 @@ function EntetePrincipale({
           Alimenter
         </button>
       </div>
-      {aValiderNombre > 0 &&
-        liste.map((v, i) => (
-          <BandeauVersement
-            key={v.id}
-            versement={v}
-            titre={
-              i === 0 ? `${aValiderNombre} versement${aValiderNombre > 1 ? "s" : ""} à valider` : undefined
-            }
-            fuseau={fuseau}
-          />
-        ))}
+      {popupAValider && (
+        <AValiderPrincipaleDialogue fuseau={fuseau} onFermer={() => setPopupAValider(false)} />
+      )}
     </>
   );
 }
 
-/** Bandeau d'un versement reçu par la caisse principale, validé ou refusé (avec motif) sur place. */
-function BandeauVersement({
+/** Popup centrée, comme celle de Mon compte : versements reçus des caissiers, à valider ou refuser. */
+function AValiderPrincipaleDialogue({
+  fuseau,
+  onFermer,
+}: {
+  fuseau: string | undefined;
+  onFermer: () => void;
+}) {
+  const aValider = useAValiderPrincipale();
+  const liste = aValider.data ?? [];
+  return (
+    <Dialogue titre="Versements à valider" onFermer={onFermer} largeur={520}>
+      {aValider.isError && (
+        <p className="alerte alerte-danger" role="alert">
+          {messageErreur(aValider.error)}
+        </p>
+      )}
+      {aValider.isSuccess && liste.length === 0 ? (
+        <p className="vide">Aucun versement à valider.</p>
+      ) : (
+        <ul className="liste-a-valider">
+          {liste.map((v) => (
+            <VersementRecuPrincipale key={v.id} versement={v} fuseau={fuseau} />
+          ))}
+        </ul>
+      )}
+      <div className="rangee-boutons">
+        <button type="button" className="bouton bouton-contour" onClick={onFermer}>
+          Fermer
+        </button>
+      </div>
+    </Dialogue>
+  );
+}
+
+/** Versement reçu d'un caissier : la caisse principale le valide ou le refuse avec un motif. */
+function VersementRecuPrincipale({
   versement: v,
-  titre,
   fuseau,
 }: {
   versement: Schemas["VersementDto"];
-  titre: string | undefined;
   fuseau: string | undefined;
 }) {
   const valider = useValiderVersement();
@@ -243,73 +280,67 @@ function BandeauVersement({
   const [refus, setRefus] = useState<string | null>(null);
   const occupe = valider.isPending || refuser.isPending;
   const erreur = valider.error ?? refuser.error;
-  const envoyerRefus = () => {
-    if (refus === null) setRefus("");
-    else if (refus.trim()) refuser.mutate({ id: v.id, motif: refus.trim() });
-  };
   return (
-    <div className="bandeau-info" style={{ flexWrap: "wrap" }}>
-      <span className="bandeau-info-texte">
-        {titre && <strong>{titre}</strong>}
-        <span className={titre ? "texte-gris" : undefined}>
-          {titre ? " · " : ""}
-          <strong style={{ color: "var(--primaire)" }}>{v.caissier}</strong>{" "}
-          <strong style={{ color: "var(--succes)" }}>+ {decimal(v.montant)}</strong>
-          {/* Répartition saisie par le caissier : ce que l'admin doit trouver en espèces et en tickets TPE. */}
-          {v.especes != null && (
-            <strong>{` (espèces ${decimal(v.especes)} · TPE ${decimal(v.tpe ?? 0)})`}</strong>
-          )}
-          {` · ${heure(v.creeLe, fuseau)}`}
+    <li className="a-valider">
+      <div className="a-valider-ligne">
+        <span className="a-valider-detail">
+          Reçu de {v.caissier} · {heure(v.creeLe, fuseau)}
           {v.cloture && " · clôture"}
-          {v.motif && ` · ${v.motif}`}
+          {/* Répartition saisie par le caissier : ce que l'admin doit trouver en espèces et en tickets TPE. */}
+          {v.especes != null && ` · espèces ${decimal(v.especes)} · TPE ${decimal(v.tpe ?? 0)}`}
+          {v.motif && <span className="a-valider-motif">« {v.motif} »</span>}
         </span>
-        {erreur && (
-          <span className="erreur-champ" role="alert">
-            {" "}
-            {messageErreur(erreur)}
-          </span>
-        )}
-      </span>
-      {/* Premier clic sur Refuser : ouvre le motif ; second clic, motif saisi : envoie le refus. */}
-      <button
-        type="button"
-        className="bouton-compact"
-        disabled={occupe || (refus !== null && !refus.trim())}
-        onClick={envoyerRefus}
-      >
-        Refuser
-      </button>
-      <button
-        type="button"
-        className="bouton-compact plein"
-        disabled={occupe}
-        onClick={() => valider.mutate({ id: v.id })}
-      >
-        Valider
-      </button>
-      {refus !== null && (
+        <strong className="a-valider-montant">{dh(v.montant)}</strong>
+      </div>
+      {refus === null ? (
+        <div className="a-valider-actions">
+          <button type="button" className="bouton-petit" disabled={occupe} onClick={() => setRefus("")}>
+            Refuser…
+          </button>
+          <button
+            type="button"
+            className="bouton-petit bouton-petit-plein"
+            disabled={occupe}
+            onClick={() => valider.mutate({ id: v.id })}
+          >
+            Valider {dh(v.montant)}
+          </button>
+        </div>
+      ) : (
         <form
           className="a-valider-refus"
-          style={{ flexBasis: "100%" }}
           onSubmit={(e) => {
             e.preventDefault();
-            envoyerRefus();
+            e.stopPropagation();
+            if (refus.trim()) refuser.mutate({ id: v.id, motif: refus.trim() });
           }}
         >
           <input
             aria-label="Motif du refus"
-            placeholder="Motif du refus (obligatoire), Échap pour annuler"
+            placeholder="Motif du refus (obligatoire)"
             maxLength={300}
             value={refus}
             onChange={(e) => setRefus(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setRefus(null);
-            }}
             autoFocus
           />
+          <button type="button" className="bouton-petit" onClick={() => setRefus(null)}>
+            Retour
+          </button>
+          <button
+            type="submit"
+            className="bouton-petit bouton-petit-danger"
+            disabled={!refus.trim() || occupe}
+          >
+            Refuser
+          </button>
         </form>
       )}
-    </div>
+      {erreur && (
+        <p className="erreur-champ" role="alert">
+          {messageErreur(erreur)}
+        </p>
+      )}
+    </li>
   );
 }
 
