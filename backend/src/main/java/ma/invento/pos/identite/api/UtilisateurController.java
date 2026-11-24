@@ -3,6 +3,7 @@ package ma.invento.pos.identite.api;
 import jakarta.validation.Valid;
 import java.util.List;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
+import ma.invento.pos.identite.api.UtilisateurDtos.IdentifiantProposeDto;
 import ma.invento.pos.identite.api.UtilisateurDtos.ModificationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.UtilisateurDto;
 import ma.invento.pos.identite.application.UtilisateurConnecte;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,6 +37,15 @@ class UtilisateurController {
     @GetMapping
     List<UtilisateurDto> lister() {
         return utilisateurService.lister();
+    }
+
+    /** Identifiant proposé depuis le prénom et le nom (prenom.nom, suivi d'un chiffre s'il est pris). */
+    @GetMapping("/identifiant-propose")
+    IdentifiantProposeDto proposerIdentifiant(
+            @RequestParam(defaultValue = "") String prenom,
+            @RequestParam(defaultValue = "") String nom,
+            @RequestParam(required = false) Long utilisateurId) {
+        return new IdentifiantProposeDto(utilisateurService.proposerIdentifiant(prenom, nom, utilisateurId));
     }
 
     @PostMapping

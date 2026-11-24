@@ -1,4 +1,11 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { api, type Schemas } from "../api/client";
 import { appel } from "../api/erreurs";
 import { cles } from "../caisse/requetes";
@@ -57,6 +64,29 @@ export function useModifierParametres() {
     mutationFn: (corps: Schemas["ParametresCommande"]) =>
       appel(api.PUT("/api/v1/parametres", { body: corps })),
     onSuccess: (parametres) => queryClient.setQueryData(cles.parametres, parametres),
+  });
+}
+
+/**
+ * Identifiant proposé par le serveur depuis le prénom et le nom (prenom.nom, suivi d'un chiffre s'il
+ * est pris), relu 300 ms après la dernière frappe.
+ */
+export function useIdentifiantPropose(prenom: string, nom: string, utilisateurId: number | undefined) {
+  const [saisie, setSaisie] = useState({ prenom, nom });
+  useEffect(() => {
+    const minuteur = setTimeout(() => setSaisie({ prenom, nom }), 300);
+    return () => clearTimeout(minuteur);
+  }, [prenom, nom]);
+  return useQuery({
+    queryKey: [...cleUtilisateurs, "identifiant-propose", saisie.prenom, saisie.nom, utilisateurId],
+    queryFn: () =>
+      appel(
+        api.GET("/api/v1/utilisateurs/identifiant-propose", {
+          params: { query: { prenom: saisie.prenom, nom: saisie.nom, utilisateurId } },
+        }),
+      ),
+    enabled: `${saisie.prenom}${saisie.nom}`.trim() !== "",
+    placeholderData: keepPreviousData,
   });
 }
 

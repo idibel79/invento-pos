@@ -2301,6 +2301,13 @@ button:disabled {
   font-weight: 500;
 }
 
+/* « Utiliser prenom.nom » sous le champ identifiant d'un compte existant. */
+.bouton-lien.bouton-proposition {
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 0;
+}
+
 .bouton-lien.danger {
   color: var(--danger);
 }

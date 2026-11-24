@@ -124,5 +124,8 @@ public final class UtilisateurDtos {
 
     public record RecuperationDto(String login, String nouveauCodeSecours) {}
 
+    /** Identifiant libre proposé ; vide si le prénom et le nom n'en donnent pas. */
+    public record IdentifiantProposeDto(String login) {}
+
     public record CodeSecoursDto(String codeSecours) {}
 }

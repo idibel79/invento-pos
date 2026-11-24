@@ -2,9 +2,11 @@ package ma.invento.pos.identite.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import ma.invento.pos.identite.api.UtilisateurDtos.UtilisateurDto;
 import ma.invento.pos.identite.application.JetonService.Jetons;
 import ma.invento.pos.identite.domain.GenerateurSecrets;
+import ma.invento.pos.identite.domain.IdentifiantConnexion;
 import ma.invento.pos.identite.domain.PolitiqueSecrets;
 import ma.invento.pos.identite.domain.RefreshToken;
 import ma.invento.pos.identite.domain.Role;
@@ -58,8 +60,7 @@ public class AuthService {
     /** Les essais ratés sont comptés même si la connexion échoue (pas d'annulation sur 401/403). */
     @Transactional(noRollbackFor = {IdentifiantsInvalidesException.class, CompteVerrouilleException.class})
     public Session connecter(String login, String motDePasse) {
-        Utilisateur utilisateur =
-                utilisateurs.findByLoginIgnoreCase(login.trim()).orElse(null);
+        Utilisateur utilisateur = trouverParLogin(login);
         if (utilisateur == null || !utilisateur.isActif()) {
             encoder.matches(motDePasse, empreinteFactice);
             throw new IdentifiantsInvalidesException(IDENTIFIANTS_INVALIDES);
@@ -154,6 +155,23 @@ public class AuthService {
     @Transactional(readOnly = true)
     public UtilisateurDto profil(long utilisateurId) {
         return UtilisateurDto.depuis(charger(utilisateurId));
+    }
+
+    /**
+     * L'identifiant tel que saisi, sinon sa forme normalisée : « Mohamed Alaoui » retrouve
+     * {@code mohamed.alaoui}, et un ancien identifiant hors de cette forme reste utilisable.
+     */
+    private Utilisateur trouverParLogin(String saisie) {
+        String brut = saisie.trim();
+        return utilisateurs
+                .findByLoginIgnoreCase(brut)
+                .or(() -> {
+                    String forme = IdentifiantConnexion.normaliser(brut);
+                    return forme.isEmpty() || forme.equalsIgnoreCase(brut)
+                            ? Optional.<Utilisateur>empty()
+                            : utilisateurs.findByLoginIgnoreCase(forme);
+                })
+                .orElse(null);
     }
 
     private void enregistrerEchec(Utilisateur utilisateur) {
