@@ -31,7 +31,7 @@ export function Dialogue({ titre, sousTitre, onFermer, children, largeur = 460, 
       ref={ref}
       className={classe ? `dialogue ${classe}` : "dialogue"}
       aria-label={titre}
-      style={{ width: `min(${largeur}px, calc(100vw - 32px))` }}
+      style={{ width: `min(${largeur}px, calc(var(--largeur-ecran) - 32px))` }}
       onCancel={(e) => {
         e.preventDefault();
         onFermer();
