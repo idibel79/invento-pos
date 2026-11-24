@@ -19,9 +19,12 @@ import ma.invento.pos.client.domain.TypeClient;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.SeuilsRemiseDto;
 import ma.invento.pos.identite.application.UtilisateurService;
+import ma.invento.pos.identite.domain.CodeSecours;
+import ma.invento.pos.identite.domain.PolitiqueSecrets;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
+import ma.invento.pos.identite.infrastructure.CodeSecoursRepository;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.parametre.application.ParametreService;
 import ma.invento.pos.parametre.application.ParametreService.Parametres;
@@ -51,6 +54,9 @@ public class DonneesDemo {
     public static final String PIN_ADMIN = "0000";
     public static final String PIN_RESPONSABLE = "1234";
 
+    /** Code de secours de l'admin, remis à chaque démarrage pour tester la récupération. */
+    public static final String CODE_SECOURS = "DEMO-SECOURS";
+
     private static final Logger log = LoggerFactory.getLogger(DonneesDemo.class);
     private static final String REFERENCE_STOCK = "Données de démo";
 
@@ -65,6 +71,7 @@ public class DonneesDemo {
     private final TresorerieService tresorerie;
     private final ClientService clients;
     private final ParametreService parametres;
+    private final CodeSecoursRepository codesSecours;
     private final PasswordEncoder encoder;
     private final Clock clock;
 
@@ -80,6 +87,7 @@ public class DonneesDemo {
             TresorerieService tresorerie,
             ClientService clients,
             ParametreService parametres,
+            CodeSecoursRepository codesSecours,
             PasswordEncoder encoder,
             Clock clock) {
         this.utilisateurs = utilisateurs;
@@ -93,6 +101,7 @@ public class DonneesDemo {
         this.tresorerie = tresorerie;
         this.clients = clients;
         this.parametres = parametres;
+        this.codesSecours = codesSecours;
         this.encoder = encoder;
         this.clock = clock;
     }
@@ -104,6 +113,9 @@ public class DonneesDemo {
         if (caisses.count() == 0) creerBase();
         creerTresorerieSiVide();
         creerClientsSiVide();
+        codesSecours.supprimerCodesNonUtilises();
+        codesSecours.save(new CodeSecours(
+                encoder.encode(PolitiqueSecrets.normaliserCodeSecours(CODE_SECOURS)), Instant.now(clock)));
     }
 
     private void creerBase() {

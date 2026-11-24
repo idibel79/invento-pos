@@ -2,5 +2,9 @@ pos:
   security:
     jwt-secret: secret-de-test-uniquement-0123456789abcdef
     cookie-secure: true
+    # Toute la suite se connecte depuis la même adresse : plafond IP testé à part (AuthIT).
+    limites:
+      connexion-echecs: 10000
+      secours-echecs: 10000
   admin:
     mot-de-passe-initial: Installation-2026

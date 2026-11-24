@@ -2,6 +2,7 @@ package ma.invento.pos.identite.application;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import ma.invento.pos.identite.api.UtilisateurDtos.UtilisateurDto;
 import ma.invento.pos.identite.application.JetonService.Jetons;
@@ -11,6 +12,7 @@ import ma.invento.pos.identite.domain.PolitiqueSecrets;
 import ma.invento.pos.identite.domain.RefreshToken;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.Utilisateur;
+import ma.invento.pos.identite.infrastructure.EssaisConnexionJdbc;
 import ma.invento.pos.identite.infrastructure.RefreshTokenRepository;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
@@ -28,10 +30,15 @@ public class AuthService {
     private static final String IDENTIFIANTS_INVALIDES = "Identifiant ou mot de passe incorrect.";
     private static final String SESSION_INVALIDE = "Session expirée, reconnectez-vous.";
 
+    /** Les essais restants s'affichent à partir de ce seuil (dès le 3e échec sur 5). */
+    private static final int ESSAIS_RESTANTS_SIGNALES = 2;
+
     private final UtilisateurRepository utilisateurs;
     private final RefreshTokenRepository refreshTokens;
     private final JetonService jetons;
     private final CodeSecoursService codesSecours;
+    private final LimiteurEssais limiteur;
+    private final EssaisConnexionJdbc essaisConnexion;
     private final JournalService journal;
     private final PasswordEncoder encoder;
     private final Clock clock;
@@ -44,6 +51,8 @@ public class AuthService {
             RefreshTokenRepository refreshTokens,
             JetonService jetons,
             CodeSecoursService codesSecours,
+            LimiteurEssais limiteur,
+            EssaisConnexionJdbc essaisConnexion,
             JournalService journal,
             PasswordEncoder encoder,
             Clock clock) {
@@ -51,26 +60,39 @@ public class AuthService {
         this.refreshTokens = refreshTokens;
         this.jetons = jetons;
         this.codesSecours = codesSecours;
+        this.limiteur = limiteur;
+        this.essaisConnexion = essaisConnexion;
         this.journal = journal;
         this.encoder = encoder;
         this.clock = clock;
         this.empreinteFactice = encoder.encode("empreinte-factice");
     }
 
-    /** Les essais ratés sont comptés même si la connexion échoue (pas d'annulation sur 401/403). */
+    /**
+     * Les essais ratés sont comptés même si la connexion échoue (pas d'annulation sur 401/403). Un
+     * identifiant inconnu ou désactivé reçoit exactement les mêmes réponses qu'un vrai compte
+     * (essais restants, puis verrouillage) grâce à son propre compteur : les réponses ne révèlent
+     * pas quels comptes existent.
+     */
     @Transactional(noRollbackFor = {IdentifiantsInvalidesException.class, CompteVerrouilleException.class})
-    public Session connecter(String login, String motDePasse) {
+    public Session connecter(String login, String motDePasse, String adresseIp) {
+        limiteur.verifier(limiteur.connexion(), adresseIp);
         Utilisateur utilisateur = trouverParLogin(login);
         if (utilisateur == null || !utilisateur.isActif()) {
             encoder.matches(motDePasse, empreinteFactice);
-            throw new IdentifiantsInvalidesException(IDENTIFIANTS_INVALIDES);
+            limiteur.enregistrerEchec(limiteur.connexion(), adresseIp);
+            int essais = essaisConnexion.ajouterEssaiInconnu(empreinteIdentifiant(login), Instant.now(clock));
+            throw refus(essais);
         }
-        if (!encoder.matches(motDePasse, utilisateur.getMotDePasseHash())) {
-            enregistrerEchec(utilisateur);
-            throw new IdentifiantsInvalidesException(IDENTIFIANTS_INVALIDES);
+        boolean motDePasseCorrect = encoder.matches(motDePasse, utilisateur.getMotDePasseHash());
+        if (!motDePasseCorrect) {
+            limiteur.enregistrerEchec(limiteur.connexion(), adresseIp);
         }
         if (utilisateur.isVerrouille()) {
-            throw new CompteVerrouilleException();
+            throw new CompteVerrouilleException(CompteVerrouilleException.MESSAGE_CONNEXION);
+        }
+        if (!motDePasseCorrect) {
+            throw refus(enregistrerEchec(utilisateur));
         }
         utilisateur.connexionReussie(Instant.now(clock));
         return ouvrirSession(utilisateur);
@@ -126,13 +148,15 @@ public class AuthService {
      * Récupération de l'admin par son code de secours : nouveau mot de passe choisi, compte
      * déverrouillé, sessions fermées, et un nouveau code de secours renvoyé (affiché une fois).
      */
-    @Transactional
-    public RecuperationAdmin recupererAdmin(String code, String nouveauMotDePasse) {
+    @Transactional(noRollbackFor = IdentifiantsInvalidesException.class)
+    public RecuperationAdmin recupererAdmin(String code, String nouveauMotDePasse, String adresseIp) {
+        limiteur.verifier(limiteur.secours(), adresseIp);
         Utilisateur admin = utilisateurs
                 .findByRole(Role.ADMIN)
                 .orElseThrow(() -> new IdentifiantsInvalidesException("Code de secours invalide."));
         PolitiqueSecrets.verifierMotDePasse(admin.getLogin(), nouveauMotDePasse);
         if (!codesSecours.consommer(code)) {
+            limiteur.enregistrerEchec(limiteur.secours(), adresseIp);
             throw new IdentifiantsInvalidesException("Code de secours invalide.");
         }
         admin.changerMotDePasse(encoder.encode(nouveauMotDePasse));
@@ -174,13 +198,38 @@ public class AuthService {
                 .orElse(null);
     }
 
-    private void enregistrerEchec(Utilisateur utilisateur) {
-        if (utilisateur.isVerrouille()) return;
+    /** Compte l'essai raté (mise à jour atomique) et renvoie le nombre d'essais ratés cumulés. */
+    private int enregistrerEchec(Utilisateur utilisateur) {
         utilisateurs.incrementerEssaisRates(utilisateur.getId());
-        if (utilisateur.getEssaisRates() + 1 >= Utilisateur.ESSAIS_MAX) {
+        int essais = utilisateur.getEssaisRates() + 1;
+        if (essais >= Utilisateur.ESSAIS_MAX) {
             journal.enregistrer(
                     utilisateur.getId(), ActionJournal.COMPTE_VERROUILLE, "Trop d'essais de connexion ratés");
         }
+        return essais;
+    }
+
+    /**
+     * Refus après {@code essais} essais ratés : verrouillage au plafond, sinon le nombre d'essais
+     * restants quand il n'en reste que {@value #ESSAIS_RESTANTS_SIGNALES} ou moins.
+     */
+    private static RuntimeException refus(int essais) {
+        int restants = Utilisateur.ESSAIS_MAX - essais;
+        if (restants <= 0) {
+            return new CompteVerrouilleException(CompteVerrouilleException.MESSAGE_CONNEXION);
+        }
+        if (restants > ESSAIS_RESTANTS_SIGNALES) {
+            return new IdentifiantsInvalidesException(IDENTIFIANTS_INVALIDES);
+        }
+        return new IdentifiantsInvalidesException(IDENTIFIANTS_INVALIDES + " Il vous reste " + restants
+                + (restants == 1 ? " essai" : " essais") + " avant le verrouillage du compte.");
+    }
+
+    /** Empreinte de l'identifiant saisi, sous la même forme que la recherche du compte. */
+    private static String empreinteIdentifiant(String saisie) {
+        String forme = IdentifiantConnexion.normaliser(saisie.trim());
+        return GenerateurSecrets.empreinte(
+                forme.isEmpty() ? saisie.trim().toLowerCase(Locale.ROOT) : forme.toLowerCase(Locale.ROOT));
     }
 
     private Session ouvrirSession(Utilisateur utilisateur) {

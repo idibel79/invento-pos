@@ -1,5 +1,6 @@
 package ma.invento.pos.identite.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import ma.invento.pos.identite.api.UtilisateurDtos.ChangementMotDePasse;
 import ma.invento.pos.identite.api.UtilisateurDtos.CodeSecoursDto;
@@ -42,8 +43,8 @@ class AuthController {
     }
 
     @PostMapping("/connexion")
-    ResponseEntity<SessionDto> connexion(@Valid @RequestBody Connexion connexion) {
-        return reponse(authService.connecter(connexion.login(), connexion.motDePasse()));
+    ResponseEntity<SessionDto> connexion(@Valid @RequestBody Connexion connexion, HttpServletRequest requete) {
+        return reponse(authService.connecter(connexion.login(), connexion.motDePasse(), AdresseClient.de(requete)));
     }
 
     @PostMapping("/rafraichir")
@@ -68,9 +69,9 @@ class AuthController {
 
     /** Mot de passe admin oublié : code de secours remis à l'installation (usage unique). */
     @PostMapping("/secours")
-    RecuperationDto secours(@Valid @RequestBody RecuperationCommande commande) {
-        RecuperationAdmin recuperation =
-                authService.recupererAdmin(commande.codeSecours(), commande.nouveauMotDePasse());
+    RecuperationDto secours(@Valid @RequestBody RecuperationCommande commande, HttpServletRequest requete) {
+        RecuperationAdmin recuperation = authService.recupererAdmin(
+                commande.codeSecours(), commande.nouveauMotDePasse(), AdresseClient.de(requete));
         return new RecuperationDto(recuperation.login(), recuperation.nouveauCodeSecours());
     }
 
