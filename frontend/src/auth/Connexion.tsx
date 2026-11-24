@@ -7,7 +7,7 @@ import { Logo } from "../ui/Logo";
 import { useAuth } from "./AuthContext";
 
 const schema = z.object({
-  login: z.string().trim().min(1, "Identifiant obligatoire"),
+  login: z.string().trim().min(1, "Identifiant ou prénom et nom obligatoire"),
   motDePasse: z.string().min(1, "Mot de passe obligatoire"),
 });
 type Champs = z.infer<typeof schema>;
@@ -37,7 +37,12 @@ export function Connexion() {
         <h1 className="titre-popup">Connexion à la caisse</h1>
         <label className="champ">
           <span className="libelle">Identifiant</span>
-          <input autoComplete="username" autoFocus {...register("login")} />
+          <input
+            autoComplete="username"
+            autoFocus
+            placeholder="Identifiant ou prénom et nom"
+            {...register("login")}
+          />
           {errors.login && <span className="erreur-champ">{errors.login.message}</span>}
         </label>
         <label className="champ">

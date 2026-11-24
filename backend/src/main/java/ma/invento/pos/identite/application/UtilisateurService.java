@@ -8,6 +8,7 @@ import ma.invento.pos.caisse.application.CaisseService;
 import ma.invento.pos.identite.api.UtilisateurDtos.CreationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.ModificationUtilisateur;
 import ma.invento.pos.identite.api.UtilisateurDtos.UtilisateurDto;
+import ma.invento.pos.identite.domain.IdentifiantConnexion;
 import ma.invento.pos.identite.domain.PolitiqueSecrets;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.SeuilsRemise;
@@ -64,7 +65,7 @@ public class UtilisateurService {
     @Transactional
     public UtilisateurDto creer(CreationUtilisateur commande, long adminId) {
         refuserAdmin(commande.role());
-        String login = commande.login().trim();
+        String login = identifiant(commande.login());
         if (utilisateurs.existsByLoginIgnoreCase(login)) {
             throw new ConflitException("L'identifiant " + login + " est déjà utilisé.");
         }
@@ -103,7 +104,8 @@ public class UtilisateurService {
             refuserAdmin(commande.role());
         }
         String ancienLogin = utilisateur.getLogin();
-        String login = commande.login().trim();
+        // Un identifiant inchangé est gardé tel quel, même s'il date d'avant la forme prenom.nom.
+        String login = commande.login().trim().equals(ancienLogin) ? ancienLogin : identifiant(commande.login());
         boolean nouveauLogin = !login.equals(ancienLogin);
         if (nouveauLogin && !login.equalsIgnoreCase(ancienLogin) && utilisateurs.existsByLoginIgnoreCase(login)) {
             throw new ConflitException("L'identifiant " + login + " est déjà utilisé.");
@@ -145,6 +147,30 @@ public class UtilisateurService {
         }
         if (!commande.actif() || motDePasse != null) refreshTokens.revoquerTous(id);
         return UtilisateurDto.depuis(utilisateurs.saveAndFlush(utilisateur));
+    }
+
+    /**
+     * Identifiant libre proposé pour un compte, depuis son prénom et son nom ; le compte en cours de
+     * modification ne bloque pas son propre identifiant.
+     */
+    @Transactional(readOnly = true)
+    public String proposerIdentifiant(String prenom, String nom, Long utilisateurId) {
+        String loginActuel = utilisateurId == null
+                ? null
+                : utilisateurs
+                        .findById(utilisateurId)
+                        .map(Utilisateur::getLogin)
+                        .orElse(null);
+        return IdentifiantConnexion.proposer(
+                prenom,
+                nom,
+                candidat -> !candidat.equalsIgnoreCase(loginActuel) && utilisateurs.existsByLoginIgnoreCase(candidat));
+    }
+
+    private static String identifiant(String saisie) {
+        String login = IdentifiantConnexion.normaliser(saisie);
+        if (login.isEmpty()) throw new RegleMetierException("Identifiant invalide.");
+        return login;
     }
 
     /** Seuils de remise d'un responsable, pour le journal. */

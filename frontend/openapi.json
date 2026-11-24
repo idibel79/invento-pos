@@ -1539,6 +1539,49 @@
         }
       }
     },
+    "/api/v1/utilisateurs/identifiant-propose" : {
+      "get" : {
+        "tags" : [ "utilisateur-controller" ],
+        "operationId" : "proposerIdentifiant",
+        "parameters" : [ {
+          "name" : "prenom",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          }
+        }, {
+          "name" : "nom",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          }
+        }, {
+          "name" : "utilisateurId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentifiantProposeDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tvas" : {
       "get" : {
         "tags" : [ "catalogue-controller" ],
@@ -4052,6 +4095,15 @@
           }
         },
         "required" : [ "codeSecours" ]
+      },
+      "IdentifiantProposeDto" : {
+        "type" : "object",
+        "properties" : {
+          "login" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "login" ]
       },
       "MonCompteDto" : {
         "type" : "object",

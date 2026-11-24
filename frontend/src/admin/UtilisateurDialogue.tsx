@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useId, useState, type ComponentProps } from "react";
+import { useEffect, useId, useState, type ComponentProps } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import type { Schemas } from "../api/client";
@@ -7,7 +7,7 @@ import { messageErreur } from "../api/erreurs";
 import { Dialogue } from "../ui/Dialogue";
 import { lireMontant } from "../ui/format";
 import { IconeOeil, IconeOeilBarre, IconeUtilisateur } from "../ui/icones";
-import { useCreerUtilisateur, useModifierUtilisateur } from "./requetes";
+import { useCreerUtilisateur, useIdentifiantPropose, useModifierUtilisateur } from "./requetes";
 
 type Utilisateur = Schemas["UtilisateurDto"];
 
@@ -26,7 +26,7 @@ const commun = {
     .trim()
     .min(1, "Identifiant obligatoire")
     .max(60, "60 caractères maximum")
-    .regex(/^[A-Za-z0-9._-]+$/, "Lettres sans accent, chiffres, point, tiret ou tiret bas"),
+    .regex(/^[A-Za-z0-9._-]+$/, "Lettres sans accent, chiffres, point, tiret ou tiret bas (pas d'espace)"),
   // PIN facultatif : vide, il n'est pas défini (création) ou reste inchangé (modification).
   pin: z.string().regex(/^(\d{4})?$/, "Exactement 4 chiffres"),
   seuilLigne: seuil,
@@ -100,7 +100,17 @@ export function UtilisateurDialogue({ utilisateur, caisses, autres, onFermer }: 
       caisseIds: utilisateur?.caisseIds ?? [],
     },
   });
-  const [role, actif, caisseIds] = useWatch({ control, name: ["role", "actif", "caisseIds"] });
+  const [role, actif, caisseIds, prenom, nom, login] = useWatch({
+    control,
+    name: ["role", "actif", "caisseIds", "prenom", "nom", "login"],
+  });
+  const idLogin = useId();
+  // En création, l'identifiant suit le prénom et le nom tant que l'admin ne l'a pas saisi lui-même.
+  const [loginSaisi, setLoginSaisi] = useState(false);
+  const proposition = useIdentifiantPropose(prenom, nom, utilisateur?.id).data?.login ?? "";
+  useEffect(() => {
+    if (!utilisateur && !loginSaisi && proposition) setValue("login", proposition);
+  }, [utilisateur, loginSaisi, proposition, setValue]);
   // Une caisse inactive déjà attribuée reste affichée pour pouvoir la retirer.
   const proposees = caisses.filter((c) => c.active || caisseIds.includes(c.id));
   // Une caisse n'a qu'un titulaire : celles des autres comptes sont affichées mais pas sélectionnables.
@@ -169,11 +179,35 @@ export function UtilisateurDialogue({ utilisateur, caisses, autres, onFermer }: 
           </label>
         </div>
         <div className="deux-colonnes">
-          <label className="champ">
-            <span className="libelle">Identifiant</span>
-            <input autoComplete="off" autoCapitalize="none" spellCheck={false} {...register("login")} />
-            {errors.login && <span className="erreur-champ">{errors.login.message}</span>}
-          </label>
+          <div className="champ">
+            <label className="libelle" htmlFor={idLogin}>
+              Identifiant de connexion
+            </label>
+            <input
+              id={idLogin}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-describedby={`${idLogin}-aide`}
+              {...register("login", { onChange: () => setLoginSaisi(true) })}
+            />
+            {errors.login ? (
+              <span className="erreur-champ">{errors.login.message}</span>
+            ) : (
+              <span id={`${idLogin}-aide`} className="texte-secondaire">
+                Pour se connecter, on tape cet identifiant ou son prénom et son nom.
+              </span>
+            )}
+            {utilisateur && proposition && proposition.toLowerCase() !== login.toLowerCase() && (
+              <button
+                type="button"
+                className="bouton-lien bouton-proposition"
+                onClick={() => setValue("login", proposition, { shouldValidate: true })}
+              >
+                Utiliser {proposition}
+              </button>
+            )}
+          </div>
           <ChampSecret
             libelle={utilisateur ? "Nouveau mot de passe temporaire" : "Mot de passe temporaire"}
             nom="le mot de passe"
