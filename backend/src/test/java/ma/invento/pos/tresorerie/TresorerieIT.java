@@ -270,8 +270,9 @@ class TresorerieIT extends IntegrationTest {
                                 Map.of("montantEspeces", new BigDecimal("120.01"), "montantTpe", BigDecimal.ZERO))))
                 .andExpect(status().isUnprocessableEntity());
 
-        // À la clôture (tiroir : 50 de ventes + 20 reçus), les ventes de la session entrent dans le solde dû.
-        cloturer(session, "70")
+        // À la clôture (tiroir : 50 de ventes ; les 20 reçus sans part tiroir sont allés au compte),
+        // les ventes de la session entrent dans le solde dû.
+        cloturer(session, "50")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ecart").value(0.0));
         assertThat(soldeCaissier()).isEqualByComparingTo("170");
