@@ -1,6 +1,7 @@
 package ma.invento.pos.identite;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,29 +10,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.servlet.http.Cookie;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import ma.invento.pos.IntegrationTest;
 import ma.invento.pos.identite.application.AdministrationAdminService;
+import ma.invento.pos.identite.application.LimiteurEssais;
+import ma.invento.pos.identite.config.LimitesEssaisProperties;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.Utilisateur;
+import ma.invento.pos.identite.infrastructure.EssaisConnexionJdbc;
 import ma.invento.pos.journal.domain.ActionJournal;
 import ma.invento.pos.journal.infrastructure.JournalActionRepository;
+import ma.invento.pos.shared.domain.TropDEssaisException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 
 class AuthIT extends IntegrationTest {
 
     private static final String COOKIE = "pos_refresh";
+    private static final String VERROUILLE =
+            "Compte verrouillé après 5 essais ratés. Demandez un nouveau mot de passe à l'administrateur.";
 
     @Autowired
     AdministrationAdminService administrationAdmin;
+
+    @Autowired
+    EssaisConnexionJdbc essaisConnexion;
+
+    @Autowired
+    TransactionTemplate transactions;
 
     @Autowired
     JournalActionRepository journal;
@@ -67,12 +83,25 @@ class AuthIT extends IntegrationTest {
     @Test
     void verrouillage_apres_cinq_essais_rates_puis_deverrouillage_par_l_admin() throws Exception {
         Utilisateur caissier = creerUtilisateur(Role.CAISSIER);
-        for (int i = 0; i < Utilisateur.ESSAIS_MAX; i++) {
-            connexion(caissier.getLogin(), "mauvais-mot-de-passe").andExpect(status().isUnauthorized());
-        }
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Identifiant ou mot de passe incorrect."));
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe").andExpect(status().isUnauthorized());
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value(containsString("Il vous reste 2 essais")));
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe")
+                .andExpect(jsonPath("$.detail").value(containsString("Il vous reste 1 essai ")));
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value(VERROUILLE));
+        // Verrouillé : même réponse, que le mot de passe soit juste ou faux.
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value(VERROUILLE));
         connexion(caissier.getLogin(), MDP_UTILISATEUR)
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.detail").value(containsString("verrouillé")));
+                .andExpect(jsonPath("$.detail").value(VERROUILLE));
         assertThat(journal.findByAction(ActionJournal.COMPTE_VERROUILLE))
                 .anyMatch(a -> caissier.getId().equals(a.getUtilisateurId()));
 
@@ -80,6 +109,42 @@ class AuthIT extends IntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(jetonAdmin())))
                 .andExpect(status().isNoContent());
         connexion(caissier.getLogin(), MDP_UTILISATEUR).andExpect(status().isOk());
+    }
+
+    @Test
+    void identifiant_inconnu_recoit_les_memes_reponses_qu_un_vrai_compte() throws Exception {
+        String inconnu = "fantome." + UUID.randomUUID().toString().substring(0, 8);
+        connexion(inconnu, "x").andExpect(status().isUnauthorized());
+        connexion(inconnu.toUpperCase(), "x").andExpect(status().isUnauthorized());
+        connexion(inconnu, "x")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value(containsString("Il vous reste 2 essais")));
+        connexion(inconnu, "x").andExpect(status().isUnauthorized());
+        connexion(inconnu, "x")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value(VERROUILLE));
+    }
+
+    @Test
+    void essais_rates_plafonnes_par_adresse_ip() {
+        var limiteur = new LimiteurEssais(
+                essaisConnexion,
+                new LimitesEssaisProperties(2, Duration.ofMinutes(15), 1, Duration.ofHours(1)),
+                Clock.systemUTC());
+        String ip = "203.0.113." + (int) (Math.random() * 250);
+        transactions.executeWithoutResult(t -> {
+            limiteur.verifier(limiteur.connexion(), ip);
+            limiteur.enregistrerEchec(limiteur.connexion(), ip);
+            limiteur.enregistrerEchec(limiteur.connexion(), ip);
+        });
+        assertThatThrownBy(() -> transactions.executeWithoutResult(t -> limiteur.verifier(limiteur.connexion(), ip)))
+                .isInstanceOf(TropDEssaisException.class)
+                .hasMessageContaining("Réessayez dans");
+        // Une autre adresse et un autre type d'essai ont leurs propres compteurs.
+        transactions.executeWithoutResult(t -> {
+            limiteur.verifier(limiteur.connexion(), ip + "1");
+            limiteur.verifier(limiteur.secours(), ip);
+        });
     }
 
     @Test

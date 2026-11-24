@@ -7,6 +7,7 @@ import ma.invento.pos.shared.domain.ConflitException;
 import ma.invento.pos.shared.domain.OperationInterditeException;
 import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.shared.domain.RessourceIntrouvableException;
+import ma.invento.pos.shared.domain.TropDEssaisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,6 +38,13 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthentificationRefuseeException.class)
     ProblemDetail authentificationRefusee(AuthentificationRefuseeException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    @ExceptionHandler(TropDEssaisException.class)
+    ResponseEntity<ProblemDetail> tropDEssais(TropDEssaisException e) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(e.getAttente().toSeconds()))
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, e.getMessage()));
     }
 
     @ExceptionHandler(OperationInterditeException.class)

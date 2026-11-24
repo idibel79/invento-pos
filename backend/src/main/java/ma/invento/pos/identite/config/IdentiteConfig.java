@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 /** Beans partagés par l'API et par la commande {@code --reset-admin} (sans serveur web). */
 @Configuration
-@EnableConfigurationProperties({SecurityProperties.class, AdminProperties.class})
+@EnableConfigurationProperties({SecurityProperties.class, AdminProperties.class, LimitesEssaisProperties.class})
 class IdentiteConfig {
 
     @Bean
