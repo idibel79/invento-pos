@@ -37,6 +37,9 @@ public final class TresorerieDtos {
             @Schema(nullable = true, description = "Part en tickets TPE (absente : versement de la caisse principale)")
             BigDecimal tpe,
 
+            @Schema(description = "Part sortie du tiroir du caissier ou entrée dedans (le reste : son compte)")
+            BigDecimal tiroir,
+
             StatutVersement statut,
             boolean versLaPrincipale,
             Long caissierId,
@@ -53,6 +56,7 @@ public final class TresorerieDtos {
                     v.montant(),
                     v.montantEspeces(),
                     v.montantTpe(),
+                    v.tiroirEspeces().add(v.tiroirTpe()),
                     v.statut(),
                     v.versLaPrincipale(),
                     v.caissierId(),
@@ -76,6 +80,19 @@ public final class TresorerieDtos {
             BigDecimal soldeTpe,
             boolean sessionOuverte,
             @Schema(nullable = true) BigDecimal tiroirAttendu,
+
+            @Schema(description = "Plafond du versement en espèces depuis le tiroir (0 sans caisse ouverte)")
+            BigDecimal plafondTiroirEspeces,
+
+            @Schema(description = "Plafond du versement en tickets TPE depuis le tiroir (0 sans caisse ouverte)")
+            BigDecimal plafondTiroirTpe,
+
+            @Schema(description = "Plafond du versement en espèces hors tiroir (argent gardé sur soi)")
+            BigDecimal plafondCompteEspeces,
+
+            @Schema(description = "Plafond du versement en tickets TPE hors tiroir")
+            BigDecimal plafondCompteTpe,
+
             List<VersementDto> aValider,
             List<VersementDto> historique) {}
 
@@ -109,7 +126,25 @@ public final class TresorerieDtos {
             @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2)
             BigDecimal montantTpe,
 
+            @Schema(nullable = true, description = "Part des espèces prise dans le tiroir (caisse ouverte)")
+            @DecimalMin("0")
+            @Digits(integer = 10, fraction = 2)
+            BigDecimal tiroirEspeces,
+
+            @Schema(nullable = true, description = "Part des tickets TPE prise dans le tiroir (caisse ouverte)")
+            @DecimalMin("0")
+            @Digits(integer = 10, fraction = 2)
+            BigDecimal tiroirTpe,
+
             @Schema(nullable = true) UUID cle) {}
+
+    /**
+     * Confirmation de réception d'un versement : un caissier dont la caisse est ouverte indique la part mise
+     * dans le tiroir, le reste allant sur son compte.
+     */
+    public record ValidationVersementCommande(
+            @Schema(nullable = true) @DecimalMin("0") @Digits(integer = 10, fraction = 2)
+            BigDecimal tiroir) {}
 
     /** Versement de la caisse principale à un caissier (admin). */
     public record VersementCaissierCommande(

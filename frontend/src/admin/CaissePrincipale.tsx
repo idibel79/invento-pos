@@ -283,7 +283,7 @@ function BandeauVersement({
         type="button"
         className="bouton-compact plein"
         disabled={occupe}
-        onClick={() => valider.mutate(v.id)}
+        onClick={() => valider.mutate({ id: v.id })}
       >
         Valider
       </button>

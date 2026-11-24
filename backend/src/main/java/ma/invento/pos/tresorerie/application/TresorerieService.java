@@ -38,6 +38,7 @@ import ma.invento.pos.tresorerie.api.TresorerieDtos.MonCompteDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementDto;
 import ma.invento.pos.tresorerie.domain.DuParMode;
 import ma.invento.pos.tresorerie.domain.MouvementTpe;
+import ma.invento.pos.tresorerie.domain.PlafondsVersement;
 import ma.invento.pos.tresorerie.domain.ReglesTresorerie;
 import ma.invento.pos.tresorerie.domain.StatutVersement;
 import ma.invento.pos.tresorerie.domain.TypeCompte;
@@ -115,7 +116,7 @@ public class TresorerieService implements ComptesCaissiers {
         BigDecimal[] recuEtVerse = versements.recuEtVerse(sessionId);
         RemboursementsDettes.Montants dettes = remboursements.pendantLaSession(sessionId);
         return new MouvementsSession(
-                recuEtVerse[0].add(dettes.especes()), dettes.tpe(), recuEtVerse[1], dettes.especes());
+                recuEtVerse[0].add(dettes.especes()), dettes.tpe(), recuEtVerse[1], recuEtVerse[2], dettes.especes());
     }
 
     @Override
@@ -184,8 +185,10 @@ public class TresorerieService implements ComptesCaissiers {
                     true,
                     BigDecimal.ZERO,
                     null,
-                    adminId);
-            valider(versement, adminId, false);
+                    adminId,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO);
+            valider(versement, adminId, false, null);
         }
     }
 
@@ -202,48 +205,87 @@ public class TresorerieService implements ComptesCaissiers {
         List<VersementDto> historique = compte.map(c -> dtos(versements.recentsDuCompte(c.id(), debutDuJour())))
                 .orElse(List.of());
         DuParMode du = du(utilisateurId);
-        return new MonCompteDto(du.total(), du.especes(), du.tpe(), session.isPresent(), attendu, aValider, historique);
+        PlafondsVersement plafonds = plafonds(utilisateurId, session.orElse(null));
+        return new MonCompteDto(
+                du.total(),
+                du.especes(),
+                du.tpe(),
+                session.isPresent(),
+                attendu,
+                plafonds.tiroirEspeces(),
+                plafonds.tiroirTpe(),
+                plafonds.compteEspeces(),
+                plafonds.compteTpe(),
+                aValider,
+                historique);
     }
 
     /**
-     * Versement du caissier vers la caisse principale, à tout moment, si son solde le permet : en espèces et en
-     * tickets TPE, comme le paiement d'un ticket ; le total est débité de son compte.
+     * Versement du caissier vers la caisse principale, à tout moment : en espèces et en tickets TPE, comme le
+     * paiement d'un ticket ; le total est débité de son compte. Caisse ouverte, {@code tiroirEspeces} et
+     * {@code tiroirTpe} sortent du tiroir (ventes de la session comprises) et le reste vient de l'argent qu'il
+     * garde sur lui ; chaque part reste dans son plafond.
      */
     @Transactional
     public VersementDto verserALaPrincipale(
-            UtilisateurConnecte utilisateur, BigDecimal especes, BigDecimal tpe, UUID cle) {
+            UtilisateurConnecte utilisateur,
+            BigDecimal especes,
+            BigDecimal tpe,
+            BigDecimal tiroirEspeces,
+            BigDecimal tiroirTpe,
+            UUID cle) {
         Repartition repartition = new Repartition(especes, tpe);
         BigDecimal montant = repartition.total();
         ReglesTresorerie.verifierMontant(montant);
+        BigDecimal duTiroirEspeces = tiroirEspeces == null ? BigDecimal.ZERO : tiroirEspeces;
+        BigDecimal duTiroirTpe = tiroirTpe == null ? BigDecimal.ZERO : tiroirTpe;
+        if (duTiroirEspeces.compareTo(especes) > 0 || duTiroirTpe.compareTo(tpe) > 0) {
+            throw new RegleMetierException("La part versée depuis le tiroir dépasse le montant du versement.");
+        }
         Optional<VersementDto> deja = dejaEnvoye(cle, utilisateur.id());
         if (deja.isPresent()) return deja.get();
         Compte compte = comptes.caissierOuCree(utilisateur.id());
-        Optional<SessionCaisse> session = sessions.findOuverteDuCaissierForUpdate(utilisateur.id());
+        SessionCaisse session =
+                sessions.findOuverteDuCaissierForUpdate(utilisateur.id()).orElse(null);
         comptes.verrouiller(compte.id());
-        du(utilisateur.id()).verifierVersement(repartition.especes(), repartition.tpe());
+        plafonds(utilisateur.id(), session)
+                .verifier(duTiroirEspeces, duTiroirTpe, especes.subtract(duTiroirEspeces), tpe.subtract(duTiroirTpe));
+        // Les ventes de la session n'entrent au solde qu'à la clôture : verser depuis le tiroir peut le faire
+        // passer provisoirement sous zéro, au plus de ces ventes.
+        BigDecimal plancher =
+                session == null ? BigDecimal.ZERO : tiroir(session).ventes().negate();
         Versement versement = envoyer(
                 compte,
                 comptes.principale(),
                 montant,
                 repartition,
                 null,
-                session.orElse(null),
+                session,
                 false,
-                BigDecimal.ZERO,
+                plancher,
                 cle,
-                utilisateur.id());
+                utilisateur.id(),
+                duTiroirEspeces,
+                duTiroirTpe);
         // L'admin qui est aussi caissier valide lui-même ses versements (auto-validation au journal).
-        if (utilisateur.estAdmin()) versement = valider(versement, utilisateur.id(), true);
+        if (utilisateur.estAdmin()) versement = valider(versement, utilisateur.id(), true, null);
         return VersementDto.depuis(versement);
     }
 
-    /** Confirmation par le récepteur qu'il a reçu l'argent : il est crédité. */
+    /**
+     * Confirmation par le récepteur qu'il a reçu l'argent : il est crédité. Un caissier dont la caisse est
+     * ouverte met {@code tiroir} dans son tiroir et garde le reste sur lui.
+     */
     @Transactional
-    public VersementDto valider(long versementId, UtilisateurConnecte utilisateur) {
+    public VersementDto valider(long versementId, BigDecimal tiroir, UtilisateurConnecte utilisateur) {
         Versement versement = chargerPourMaj(versementId);
         verifierRecepteur(versement, utilisateur);
         versement.statut().verifierEnTransit();
-        return VersementDto.depuis(valider(versement, utilisateur.id(), false));
+        if (tiroir != null && (tiroir.signum() < 0 || tiroir.compareTo(versement.montant()) > 0)) {
+            throw new RegleMetierException(
+                    "La part mise dans le tiroir doit être comprise entre 0 et le montant reçu.");
+        }
+        return VersementDto.depuis(valider(versement, utilisateur.id(), false, tiroir));
     }
 
     /** Refus par le récepteur, avec un motif : l'argent revient à l'émetteur. */
@@ -318,8 +360,10 @@ public class TresorerieService implements ComptesCaissiers {
                 false,
                 BigDecimal.ZERO,
                 cle,
-                adminId);
-        if (utilisateurId == adminId) versement = valider(versement, adminId, true);
+                adminId,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO);
+        if (utilisateurId == adminId) versement = valider(versement, adminId, true, null);
         return VersementDto.depuis(versement);
     }
 
@@ -358,7 +402,7 @@ public class TresorerieService implements ComptesCaissiers {
         Map<Long, BigDecimal> soldes = comptes.soldesCaissiers();
         List<Utilisateur> tous = utilisateurs.findAllByOrderByNomAscPrenomAsc();
         Map<Long, List<MouvementTpe>> mouvementsTpe =
-                versements.mouvementsTpe(tous.stream().map(Utilisateur::getId).toList());
+                versements.mouvementsTpe(tous.stream().map(Utilisateur::getId).toList(), false);
         Map<Long, EnTransit> enTransit = versements.enTransitParCaissier();
         Map<Long, SessionCaisse> ouvertes = sessions.findByFermetureIsNull().stream()
                 .collect(Collectors.toMap(SessionCaisse::getCaissierId, Function.identity()));
@@ -616,7 +660,9 @@ public class TresorerieService implements ComptesCaissiers {
             boolean cloture,
             BigDecimal plancher,
             UUID cle,
-            long auteurId) {
+            long auteurId,
+            BigDecimal tiroirEspeces,
+            BigDecimal tiroirTpe) {
         ReglesTresorerie.verifierSens(emetteur.type(), recepteur.type());
         boolean depuisPrincipale = emetteur.type() == TypeCompte.PRINCIPALE;
         long caissierId = depuisPrincipale ? recepteur.utilisateurId() : emetteur.utilisateurId();
@@ -633,6 +679,8 @@ public class TresorerieService implements ComptesCaissiers {
                 repartition == null ? null : repartition.tpe(),
                 motif,
                 sessionEmetteur == null ? null : sessionEmetteur.getId(),
+                tiroirEspeces,
+                tiroirTpe,
                 cloture,
                 cle,
                 auteurId,
@@ -659,8 +707,11 @@ public class TresorerieService implements ComptesCaissiers {
         return versements.parId(id).orElseThrow();
     }
 
-    /** Crédite le récepteur ; s'il a une session ouverte, l'argent entre dans son tiroir. */
-    private Versement valider(Versement versement, long auteurId, boolean auto) {
+    /**
+     * Crédite le récepteur. Un caissier dont la caisse est ouverte met {@code tiroir} dans son tiroir et garde
+     * le reste sur lui (tout, s'il n'a rien indiqué) ; sans caisse ouverte, tout va sur son compte.
+     */
+    private Versement valider(Versement versement, long auteurId, boolean auto, BigDecimal tiroir) {
         Compte recepteur = comptes.parId(versement.recepteurId());
         SessionCaisse session = recepteur.type() == TypeCompte.CAISSIER
                 ? sessions.findOuverteDuCaissierForUpdate(versement.caissierId())
@@ -672,6 +723,7 @@ public class TresorerieService implements ComptesCaissiers {
                 null,
                 auto,
                 session == null ? null : session.getId(),
+                session == null ? null : (tiroir == null ? BigDecimal.ZERO : tiroir),
                 auteurId,
                 Instant.now(clock))) {
             throw new ConflitException("Ce versement a déjà été traité.");
@@ -699,7 +751,7 @@ public class TresorerieService implements ComptesCaissiers {
     /** Refus ou annulation : l'argent revient sur le compte de l'émetteur. */
     private Versement rendre(
             Versement versement, StatutVersement statut, String motif, long auteurId, TypeOperation type) {
-        if (!versements.traiter(versement.id(), statut, motif, false, null, auteurId, Instant.now(clock))) {
+        if (!versements.traiter(versement.id(), statut, motif, false, null, null, auteurId, Instant.now(clock))) {
             throw new ConflitException("Ce versement a déjà été traité.");
         }
         comptes.crediter(versement.emetteurId(), versement.montant());
@@ -765,8 +817,24 @@ public class TresorerieService implements ComptesCaissiers {
     private DuParMode du(long utilisateurId) {
         return DuParMode.depuis(
                 soldeAffiche(utilisateurId),
+                MouvementTpe.nonVerses(versements
+                        .mouvementsTpe(List.of(utilisateurId), false)
+                        .getOrDefault(utilisateurId, List.of())));
+    }
+
+    /**
+     * Plafonds d'un versement à la caisse principale. Caisse ouverte, le dû est pris ventes de la session
+     * comprises (comme si elle était clôturée maintenant) et partagé entre le tiroir et ce qui est hors tiroir.
+     */
+    private PlafondsVersement plafonds(long utilisateurId, SessionCaisse session) {
+        if (session == null) return PlafondsVersement.horsSession(du(utilisateurId));
+        ComptageTiroir tiroir = tiroir(session);
+        DuParMode duAvecSession = DuParMode.depuis(
+                soldeAffiche(utilisateurId).add(tiroir.ventes()),
                 MouvementTpe.nonVerses(
-                        versements.mouvementsTpe(List.of(utilisateurId)).getOrDefault(utilisateurId, List.of())));
+                        versements.mouvementsTpe(List.of(utilisateurId), true).getOrDefault(utilisateurId, List.of())));
+        return PlafondsVersement.enSession(
+                duAvecSession, tiroir.attenduEspeces(session.getFondInitial()), tiroir.attenduTpe());
     }
 
     private ComptageTiroir tiroir(SessionCaisse session) {
@@ -777,7 +845,8 @@ public class TresorerieService implements ComptesCaissiers {
                 ventes.carte(),
                 mouvements.recu(),
                 mouvements.recuTpe(),
-                mouvements.verse(),
+                mouvements.verseEspeces(),
+                mouvements.verseTpe(),
                 mouvements.dettesEspeces());
     }
 

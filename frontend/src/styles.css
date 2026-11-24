@@ -3405,6 +3405,17 @@ button:disabled {
   color: var(--gris-clair);
 }
 
+.a-valider-tiroir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a-valider-tiroir .champ-montant {
+  width: 140px;
+}
+
 .a-valider-actions,
 .a-valider-refus {
   display: flex;
@@ -3725,6 +3736,60 @@ button:disabled {
 
 .tresorerie-repartition {
   font-variant-numeric: tabular-nums;
+}
+
+/* Caisse ouverte : argent dû par mode, dans le tiroir et sur soi. */
+.tresorerie-entete:has(.tiroir-et-compte) .tresorerie-solde {
+  flex-grow: 0;
+  margin-right: 24px;
+}
+.tiroir-et-compte {
+  flex: 0 0 auto;
+  /* Collé au solde, à gauche ; les boutons restent à droite. */
+  margin-right: auto;
+  border-collapse: collapse;
+  background: var(--carte);
+  border: 1px solid var(--bordure-carte);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--texte);
+}
+
+.tiroir-et-compte th,
+.tiroir-et-compte td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--bordure);
+  text-align: right;
+}
+
+.tiroir-et-compte thead th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.tiroir-et-compte tbody th,
+.tiroir-et-compte tfoot th {
+  text-align: left;
+  font-weight: 500;
+}
+
+.tiroir-et-compte thead tr,
+.tiroir-et-compte tfoot tr {
+  background: var(--bordure);
+}
+
+.tiroir-et-compte tfoot th,
+.tiroir-et-compte tfoot td {
+  border-bottom: 0;
+  font-weight: 600;
+}
+
+.tiroir-et-compte .total {
+  font-weight: 600;
+  color: var(--texte-fort);
 }
 
 .tresorerie-repartition strong {

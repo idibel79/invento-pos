@@ -12,6 +12,7 @@ import ma.invento.pos.tresorerie.api.TresorerieDtos.CalendrierDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.JourneeDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.MonCompteDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.RefusCommande;
+import ma.invento.pos.tresorerie.api.TresorerieDtos.ValidationVersementCommande;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementCommande;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementDto;
 import ma.invento.pos.tresorerie.application.HistoriqueCompteService;
@@ -93,13 +94,21 @@ class MonCompteController {
     @ResponseStatus(HttpStatus.CREATED)
     VersementDto verser(@Valid @RequestBody VersementCommande commande, @AuthenticationPrincipal Jwt jwt) {
         return tresorerie.verserALaPrincipale(
-                UtilisateurConnecte.depuis(jwt), commande.montantEspeces(), commande.montantTpe(), commande.cle());
+                UtilisateurConnecte.depuis(jwt),
+                commande.montantEspeces(),
+                commande.montantTpe(),
+                commande.tiroirEspeces(),
+                commande.tiroirTpe(),
+                commande.cle());
     }
 
-    /** Le récepteur confirme avoir reçu l'argent. */
+    /** Le récepteur confirme avoir reçu l'argent (caisse ouverte : avec la part mise dans le tiroir). */
     @PostMapping("/versements/{id}/validation")
-    VersementDto valider(@PathVariable long id, @AuthenticationPrincipal Jwt jwt) {
-        return tresorerie.valider(id, UtilisateurConnecte.depuis(jwt));
+    VersementDto valider(
+            @PathVariable long id,
+            @Valid @RequestBody(required = false) ValidationVersementCommande commande,
+            @AuthenticationPrincipal Jwt jwt) {
+        return tresorerie.valider(id, commande == null ? null : commande.tiroir(), UtilisateurConnecte.depuis(jwt));
     }
 
     @PostMapping("/versements/{id}/refus")

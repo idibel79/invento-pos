@@ -1360,6 +1360,9 @@ export interface components {
             pin?: string | null;
             seuilsRemise: components["schemas"]["SeuilsRemiseDto"];
         };
+        ValidationVersementCommande: {
+            tiroir?: number | null;
+        };
         VersementDto: {
             /** Format: int64 */
             id: number;
@@ -1368,6 +1371,8 @@ export interface components {
             especes: number | null;
             /** @description Part en tickets TPE (absente : versement de la caisse principale) */
             tpe: number | null;
+            /** @description Part sortie du tiroir du caissier ou entrée dedans (le reste : son compte) */
+            tiroir: number;
             /** @enum {string} */
             statut: "EN_TRANSIT" | "VALIDE" | "REFUSE" | "ANNULE";
             versLaPrincipale: boolean;
@@ -1402,6 +1407,10 @@ export interface components {
         VersementCommande: {
             montantEspeces: number;
             montantTpe: number;
+            /** @description Part des espèces prise dans le tiroir (caisse ouverte) */
+            tiroirEspeces?: number | null;
+            /** @description Part des tickets TPE prise dans le tiroir (caisse ouverte) */
+            tiroirTpe?: number | null;
             /** Format: uuid */
             cle?: string | null;
         };
@@ -1573,6 +1582,14 @@ export interface components {
             soldeTpe: number;
             sessionOuverte: boolean;
             tiroirAttendu: number | null;
+            /** @description Plafond du versement en espèces depuis le tiroir (0 sans caisse ouverte) */
+            plafondTiroirEspeces: number;
+            /** @description Plafond du versement en tickets TPE depuis le tiroir (0 sans caisse ouverte) */
+            plafondTiroirTpe: number;
+            /** @description Plafond du versement en espèces hors tiroir (argent gardé sur soi) */
+            plafondCompteEspeces: number;
+            /** @description Plafond du versement en tickets TPE hors tiroir */
+            plafondCompteTpe: number;
             aValider: components["schemas"]["VersementDto"][];
             historique: components["schemas"]["VersementDto"][];
         };
@@ -2383,7 +2400,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ValidationVersementCommande"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

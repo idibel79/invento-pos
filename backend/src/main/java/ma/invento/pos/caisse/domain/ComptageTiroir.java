@@ -8,13 +8,16 @@ import java.util.Objects;
  * carte (les tickets TPE comptent comme de l'argent), versements reçus de la caisse principale et
  * versements faits pendant la session. {@code recu} (espèces) et {@code recuTpe} comptent aussi les dettes
  * de clients remboursées pendant la session ; {@code dettesEspeces} est la part des dettes dans {@code recu}.
+ * Seule la part des versements qui entre dans le tiroir ou en sort compte ({@code recu}, {@code verseEspeces},
+ * {@code verseTpe}) : le reste va sur le compte du caissier ou en vient (argent qu'il garde sur lui).
  */
 public record ComptageTiroir(
         BigDecimal ventesEspeces,
         BigDecimal ventesCarte,
         BigDecimal recu,
         BigDecimal recuTpe,
-        BigDecimal verse,
+        BigDecimal verseEspeces,
+        BigDecimal verseTpe,
         BigDecimal dettesEspeces) {
 
     public ComptageTiroir {
@@ -22,12 +25,18 @@ public record ComptageTiroir(
         Objects.requireNonNull(ventesCarte);
         Objects.requireNonNull(recu);
         Objects.requireNonNull(recuTpe);
-        Objects.requireNonNull(verse);
+        Objects.requireNonNull(verseEspeces);
+        Objects.requireNonNull(verseTpe);
         Objects.requireNonNull(dettesEspeces);
     }
 
     public ComptageTiroir(BigDecimal ventesEspeces, BigDecimal ventesCarte, BigDecimal recu, BigDecimal verse) {
-        this(ventesEspeces, ventesCarte, recu, BigDecimal.ZERO, verse, BigDecimal.ZERO);
+        this(ventesEspeces, ventesCarte, recu, BigDecimal.ZERO, verse, BigDecimal.ZERO, BigDecimal.ZERO);
+    }
+
+    /** Versé à la caisse principale depuis le tiroir pendant la session (espèces et tickets TPE). */
+    public BigDecimal verse() {
+        return verseEspeces.add(verseTpe);
     }
 
     /** Alimentations reçues de la caisse principale (espèces) : le reçu hors dettes. */
@@ -44,14 +53,14 @@ public record ComptageTiroir(
         return attenduEspeces(fond).add(attenduTpe());
     }
 
-    /** Espèces attendues = fond + ventes espèces + reçu − versé (les versements sont en espèces). */
+    /** Espèces attendues = fond + ventes espèces + reçu − versé en espèces depuis le tiroir. */
     public BigDecimal attenduEspeces(BigDecimal fond) {
-        return fond.add(ventesEspeces).add(recu).subtract(verse);
+        return fond.add(ventesEspeces).add(recu).subtract(verseEspeces);
     }
 
-    /** Tickets TPE attendus = ventes carte + dettes remboursées par TPE. */
+    /** Tickets TPE attendus = ventes carte + dettes remboursées par TPE − tickets versés depuis le tiroir. */
     public BigDecimal attenduTpe() {
-        return ventesCarte.add(recuTpe);
+        return ventesCarte.add(recuTpe).subtract(verseTpe);
     }
 
     /**

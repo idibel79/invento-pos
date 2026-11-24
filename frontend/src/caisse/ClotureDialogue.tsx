@@ -95,7 +95,7 @@ export function ClotureDialogue({ session, nombreEnAttente, onFermer }: Props) {
               <Ligne libelle="Dettes encaissées (TPE)" montant={tiroir?.dettesTpe ?? 0} plus />
             )}
             {(tiroir?.verse ?? 0) > 0 && (
-              <Ligne libelle="Versements effectués" montant={-(tiroir?.verse ?? 0)} plus />
+              <Ligne libelle="Versé depuis le tiroir" montant={-(tiroir?.verse ?? 0)} plus />
             )}
             <div className="encadre-ligne encadre-total">
               <span>Attendu dans le tiroir (espèces + TPE)</span>

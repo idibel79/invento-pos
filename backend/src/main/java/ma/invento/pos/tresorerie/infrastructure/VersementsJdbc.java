@@ -42,6 +42,8 @@ public class VersementsJdbc {
             String motif,
             Long sessionEmissionId,
             Long sessionReceptionId,
+            BigDecimal tiroirEspeces,
+            BigDecimal tiroirTpe,
             boolean cloture,
             boolean autoValide,
             long creePar,
@@ -56,6 +58,8 @@ public class VersementsJdbc {
             BigDecimal montantTpe,
             String motif,
             Long sessionEmissionId,
+            BigDecimal tiroirEspeces,
+            BigDecimal tiroirTpe,
             boolean cloture,
             UUID cle,
             long creePar,
@@ -77,7 +81,7 @@ public class VersementsJdbc {
         this.selection = "select v.id, v.emetteur_id, v.recepteur_id, r.type = 'PRINCIPALE' as vers_principale,"
                 + " u.id as caissier_id, trim(u.prenom || ' ' || u.nom) as caissier, v.montant,"
                 + " v.montant_especes, v.montant_tpe, v.statut, v.motif,"
-                + " v.session_emission_id, v.session_reception_id, v.cloture, v.auto_valide, v.cree_par, v.cree_le,"
+                + " v.session_emission_id, v.session_reception_id, v.tiroir_especes, v.tiroir_tpe, v.cloture, v.auto_valide, v.cree_par, v.cree_le,"
                 + " v.traite_le"
                 + " from " + s + "versement v"
                 + " join " + s + "compte_tresorerie e on e.id = v.emetteur_id"
@@ -88,9 +92,10 @@ public class VersementsJdbc {
     public long inserer(NouveauVersement v) {
         return jdbc.queryForObject(
                 "insert into " + s + "versement (emetteur_id, recepteur_id, montant, montant_especes, montant_tpe,"
-                        + " statut, motif, session_emission_id, cloture, cle_idempotence, cree_par, cree_le)"
-                        + " values (:emetteur, :recepteur, :montant, :especes, :tpe, 'EN_TRANSIT', :motif, :session,"
-                        + " :cloture, :cle, :creePar, :creeLe) returning id",
+                        + " statut, motif, session_emission_id, tiroir_especes, tiroir_tpe, cloture, cle_idempotence,"
+                        + " cree_par, cree_le) values (:emetteur, :recepteur, :montant, :especes, :tpe, 'EN_TRANSIT',"
+                        + " :motif, :session, :tiroirEspeces, :tiroirTpe, :cloture, :cle, :creePar, :creeLe)"
+                        + " returning id",
                 new MapSqlParameterSource("emetteur", v.emetteurId())
                         .addValue("recepteur", v.recepteurId())
                         .addValue("montant", v.montant())
@@ -98,6 +103,8 @@ public class VersementsJdbc {
                         .addValue("tpe", v.montantTpe())
                         .addValue("motif", v.motif())
                         .addValue("session", v.sessionEmissionId())
+                        .addValue("tiroirEspeces", v.tiroirEspeces())
+                        .addValue("tiroirTpe", v.tiroirTpe())
                         .addValue("cloture", v.cloture())
                         .addValue("cle", v.cle())
                         .addValue("creePar", v.creePar())
@@ -120,7 +127,8 @@ public class VersementsJdbc {
 
     /**
      * Passe un versement en transit à son statut final ; faux s'il a déjà été traité entre-temps.
-     * {@code sessionReception} : session ouverte du caissier qui reçoit l'argent dans son tiroir.
+     * {@code sessionReception} : session ouverte du caissier qui reçoit l'argent, dont {@code tiroir} entre dans son
+     * tiroir (le reste va sur son compte).
      */
     public boolean traiter(
             long id,
@@ -128,17 +136,20 @@ public class VersementsJdbc {
             String motif,
             boolean autoValide,
             Long sessionReception,
+            BigDecimal tiroir,
             long par,
             Instant le) {
         return jdbc.update(
                         "update " + s + "versement set statut = :statut, motif = coalesce(:motif, motif),"
-                                + " auto_valide = :auto, session_reception_id = :session, traite_par = :par,"
+                                + " auto_valide = :auto, session_reception_id = :session,"
+                                + " tiroir_especes = coalesce(:tiroir, tiroir_especes), traite_par = :par,"
                                 + " traite_le = :le where id = :id and statut = 'EN_TRANSIT'",
                         new MapSqlParameterSource("id", id)
                                 .addValue("statut", statut.name())
                                 .addValue("motif", motif)
                                 .addValue("auto", autoValide)
                                 .addValue("session", sessionReception)
+                                .addValue("tiroir", tiroir)
                                 .addValue("par", par)
                                 .addValue("le", Timestamp.from(le)))
                 == 1;
@@ -171,18 +182,23 @@ public class VersementsJdbc {
     }
 
     /**
-     * Argent entré dans le tiroir (versements validés pendant la session) et sorti (versements envoyés
-     * pendant la session et ni refusés ni annulés), hors versement de clôture.
+     * Argent entré dans le tiroir (part tiroir des versements validés pendant la session) et sorti (part
+     * tiroir des versements envoyés pendant la session et ni refusés ni annulés : un refus ou une annulation
+     * la remet dans le tiroir), hors versement de clôture : {reçu, versé espèces, versé TPE}.
      */
     public BigDecimal[] recuEtVerse(long sessionId) {
         return jdbc.queryForObject(
-                "select coalesce(sum(montant) filter (where session_reception_id = :s and statut = 'VALIDE'), 0)"
-                        + " as recu,"
-                        + " coalesce(sum(montant) filter (where session_emission_id = :s and not cloture"
-                        + " and statut in ('EN_TRANSIT', 'VALIDE')), 0) as verse"
+                "select coalesce(sum(tiroir_especes) filter (where session_reception_id = :s"
+                        + " and statut = 'VALIDE'), 0) as recu,"
+                        + " coalesce(sum(tiroir_especes) filter (where session_emission_id = :s and not cloture"
+                        + " and statut in ('EN_TRANSIT', 'VALIDE')), 0) as verse_especes,"
+                        + " coalesce(sum(tiroir_tpe) filter (where session_emission_id = :s and not cloture"
+                        + " and statut in ('EN_TRANSIT', 'VALIDE')), 0) as verse_tpe"
                         + " from " + s + "versement where session_reception_id = :s or session_emission_id = :s",
                 new MapSqlParameterSource("s", sessionId),
-                (r, i) -> new BigDecimal[] {r.getBigDecimal("recu"), r.getBigDecimal("verse")});
+                (r, i) -> new BigDecimal[] {
+                    r.getBigDecimal("recu"), r.getBigDecimal("verse_especes"), r.getBigDecimal("verse_tpe")
+                });
     }
 
     /**
@@ -190,8 +206,9 @@ public class VersementsJdbc {
      * payées par carte dans ses sessions et dettes de clients remboursées par TPE sur son compte (non
      * annulées) d'un côté, ses versements à la caisse principale ni refusés ni annulés de l'autre, par ordre
      * chronologique, en une requête. Un utilisateur sans aucun de ces mouvements est absent de la table.
+     * {@code avecSessionOuverte} : compte aussi les ventes de la session ouverte (dû si elle était clôturée).
      */
-    public Map<Long, List<MouvementTpe>> mouvementsTpe(Collection<Long> utilisateurIds) {
+    public Map<Long, List<MouvementTpe>> mouvementsTpe(Collection<Long> utilisateurIds, boolean avecSessionOuverte) {
         Map<Long, List<MouvementTpe>> resultat = new HashMap<>();
         if (utilisateurIds.isEmpty()) return resultat;
         jdbc.query(
@@ -201,7 +218,8 @@ public class VersementsJdbc {
                         + " join " + s + "vente v on v.id = p.vente_id"
                         + " join " + s + "session_caisse sc on sc.id = v.session_caisse_id"
                         // Ventes d'une session close seulement : elles n'entrent au solde dû qu'à la clôture.
-                        + " where p.mode = 'CARTE' and v.statut = 'VALIDEE' and sc.fermeture is not null"
+                        + " where p.mode = 'CARTE' and v.statut = 'VALIDEE'"
+                        + (avecSessionOuverte ? "" : " and sc.fermeture is not null")
                         + " and sc.caissier_id in (:u)"
                         + " union all select m.utilisateur_id, 'ENCAISSEMENT', m.tpe, m.cree_le, m.id from " + s
                         + "mouvement_client m where m.type = 'REMBOURSEMENT' and not m.annule"
@@ -264,6 +282,8 @@ public class VersementsJdbc {
                 r.getString("motif"),
                 r.getObject("session_emission_id", Long.class),
                 r.getObject("session_reception_id", Long.class),
+                r.getBigDecimal("tiroir_especes"),
+                r.getBigDecimal("tiroir_tpe"),
                 r.getBoolean("cloture"),
                 r.getBoolean("auto_valide"),
                 r.getLong("cree_par"),
