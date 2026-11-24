@@ -3391,26 +3391,31 @@ button:disabled {
 .a-valider {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--primaire);
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--bordure);
   border-radius: 8px;
-  background: var(--accent-doux);
+  background: var(--surface);
 }
 
 .a-valider-ligne {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .a-valider-montant {
-  font-size: 16px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
   color: var(--texte-fort);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .a-valider-detail {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--gris);
 }
 
@@ -3420,15 +3425,153 @@ button:disabled {
   color: var(--gris-clair);
 }
 
-.a-valider-tiroir {
+.a-valider-choix {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.a-valider-choix legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
+.a-valider-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.a-valider-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.a-valider-option.choisie {
+  border: 2px solid var(--primaire);
+  padding: 8px 10px;
+  background: var(--accent-doux);
+}
+
+.a-valider-option:focus-within {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+.a-valider-option-titre {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--texte-fort);
 }
 
-.a-valider-tiroir .champ-montant {
-  width: 140px;
+.a-valider-option.choisie .a-valider-option-titre {
+  font-weight: 600;
+}
+
+.a-valider-option-titre input {
+  margin: 0;
+  accent-color: var(--primaire);
+}
+
+.a-valider-option-aide {
+  padding-left: 22px;
+  font-size: 12px;
+  color: var(--gris);
+}
+
+.a-valider-partage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background: var(--fond);
+}
+
+.a-valider-partage-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--texte-fort);
+}
+
+.a-valider-saisie {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 6px;
+  background: var(--champ);
+}
+
+.a-valider-saisie:focus-within {
+  border-color: var(--primaire);
+  box-shadow: 0 0 0 1px var(--primaire);
+}
+
+.a-valider-saisie input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  text-align: right;
+  color: var(--texte-fort);
+  font-variant-numeric: tabular-nums;
+}
+
+.a-valider-saisie span,
+.a-valider-sur-moi span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--gris);
+}
+
+.a-valider-sur-moi {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 40px;
+  padding: 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.a-valider-partage .a-valider-note {
+  grid-column: 1 / -1;
+}
+
+.a-valider-note {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+@media (max-width: 520px) {
+  .a-valider-options {
+    grid-template-columns: 1fr;
+  }
 }
 
 .a-valider-actions,
@@ -3436,6 +3579,10 @@ button:disabled {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.a-valider-actions {
+  justify-content: space-between;
 }
 
 .a-valider-refus input {
