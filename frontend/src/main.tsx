@@ -5,6 +5,9 @@ import { App } from "./App";
 import { ErreurApi } from "./api/erreurs";
 import { AuthProvider } from "./auth/AuthContext";
 import "./styles.css";
+import { installerEchelle } from "./ui/echelle";
+
+installerEchelle();
 
 const queryClient = new QueryClient({
   defaultOptions: {

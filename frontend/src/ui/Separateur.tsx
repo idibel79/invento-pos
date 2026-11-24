@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent, type PointerEvent } from "react";
+import { echelle } from "./echelle";
 
 interface Props {
   /** Nom lu par les lecteurs d'écran (« Largeur du ticket »). */
@@ -24,7 +25,8 @@ export function Separateur({ libelle, largeur, min, max, sens, onLargeur }: Prop
   }
 
   function deplacer(e: PointerEvent<HTMLDivElement>) {
-    if (depart) onLargeur(borner(depart.largeur + sens * (e.clientX - depart.x)));
+    // clientX est en pixels d'écran, la largeur en pixels de page (avant l'échelle d'affichage).
+    if (depart) onLargeur(borner(depart.largeur + (sens * (e.clientX - depart.x)) / echelle()));
   }
 
   function clavier(e: KeyboardEvent<HTMLDivElement>) {
