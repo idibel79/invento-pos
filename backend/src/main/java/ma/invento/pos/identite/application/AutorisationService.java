@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -16,6 +17,7 @@ import ma.invento.pos.identite.api.UtilisateurDtos.SeuilsRemiseDto;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.SeuilsRemise;
 import ma.invento.pos.identite.domain.Utilisateur;
+import ma.invento.pos.identite.infrastructure.JetonsRemiseUtilisesJdbc;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
 import ma.invento.pos.journal.domain.ActionJournal;
@@ -33,13 +35,15 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Autorisation d'une remise sur la caisse par un responsable ou l'admin, avec son PIN (cadrage
  * § 1). Le PIN est vérifié une fois par remise : la caisse reçoit un jeton signé, court, lié au caissier
  * demandeur et à une seule remise (un article ou le ticket), qu'elle joint à la vente. Ce jeton est signé avec une clé dérivée, distincte de
- * celle des jetons d'accès : il ne peut pas servir à appeler l'API.
+ * celle des jetons d'accès : il ne peut pas servir à appeler l'API. Il est à usage unique : la vente qui
+ * l'utilise l'inscrit en base dans sa propre transaction ({@link #consommer}).
  */
 @Service
 public class AutorisationService {
@@ -51,7 +55,10 @@ public class AutorisationService {
     private static final String PIN_REFUSE = "PIN incorrect.";
     private static final SeuilsRemise SANS_LIMITE = new SeuilsRemise(BigDecimal.valueOf(100), BigDecimal.valueOf(100));
 
+    private static final String DEJA_UTILISEE = "Autorisation déjà utilisée pour une vente : faites ressaisir le PIN.";
+
     private final UtilisateurRepository utilisateurs;
+    private final JetonsRemiseUtilisesJdbc jetonsUtilises;
     private final PasswordEncoder encoder;
     private final JournalService journal;
     private final Clock clock;
@@ -60,11 +67,13 @@ public class AutorisationService {
 
     public AutorisationService(
             UtilisateurRepository utilisateurs,
+            JetonsRemiseUtilisesJdbc jetonsUtilises,
             PasswordEncoder encoder,
             JournalService journal,
             Clock clock,
             SecretKey jwtSecretKey) {
         this.utilisateurs = utilisateurs;
+        this.jetonsUtilises = jetonsUtilises;
         this.encoder = encoder;
         this.journal = journal;
         this.clock = clock;
@@ -115,6 +124,7 @@ public class AutorisationService {
         Instant maintenant = Instant.now(clock);
         Instant expiration = maintenant.plus(DUREE);
         JwtClaimsSet claims = JwtClaimsSet.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(autorisateurId))
                 .issuedAt(maintenant)
                 .expiresAt(expiration)
@@ -134,8 +144,29 @@ public class AutorisationService {
                 expiration);
     }
 
-    /** Vérifie un jeton joint à une vente : signature, échéance et caissier demandeur ; l'appelant compare l'objet. */
+    /**
+     * Vérifie un jeton joint à une vente : signature, échéance, caissier demandeur et jeton pas encore
+     * utilisé ; l'appelant compare l'objet. Ne consomme pas le jeton (aperçu du panier). Sans transaction
+     * propre : un refus ne doit pas marquer celle de l'appelant comme à annuler.
+     */
     public Autorisation verifier(String jeton, long demandeurId) {
+        Autorisation autorisation = decoder(jeton, demandeurId);
+        if (jetonsUtilises.estUtilise(autorisation.id())) throw new RegleMetierException(DEJA_UTILISEE);
+        return autorisation;
+    }
+
+    /**
+     * Inscrit le jeton comme utilisé, dans la transaction de la vente : si la vente échoue, il reste
+     * utilisable ; si deux ventes le présentent en même temps, une seule l'obtient.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void consommer(Autorisation autorisation) {
+        if (!jetonsUtilises.utiliser(autorisation.id(), autorisation.expireLe())) {
+            throw new RegleMetierException(DEJA_UTILISEE);
+        }
+    }
+
+    private Autorisation decoder(String jeton, long demandeurId) {
         try {
             Jwt jwt = jwtDecoder.decode(jeton);
             Instant expiration = jwt.getExpiresAt();
@@ -153,7 +184,12 @@ public class AutorisationService {
                     .findById(autorisateurId)
                     .filter(u -> u.isActif() && !u.isVerrouille(Instant.now(clock)) && u.getRole() == role)
                     .orElseThrow(() -> new RegleMetierException("Autorisation retirée : faites ressaisir le PIN."));
-            return new Autorisation(autorisateurId, role, Objects.requireNonNull(jwt.getClaimAsString(CLAIM_OBJET)));
+            return new Autorisation(
+                    UUID.fromString(Objects.requireNonNull(jwt.getId())),
+                    expiration,
+                    autorisateurId,
+                    role,
+                    Objects.requireNonNull(jwt.getClaimAsString(CLAIM_OBJET)));
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
             throw new RegleMetierException("Autorisation invalide : faites ressaisir le PIN.");
         }
@@ -176,6 +212,9 @@ public class AutorisationService {
     public record JetonAutorisation(
             String jeton, Long autorisateurId, String autorisateur, Role role, Instant expireLe) {}
 
-    /** @param objet remise autorisée ({@link ma.invento.pos.shared.domain.ObjetAutorisation}) */
-    public record Autorisation(long autorisateurId, Role role, String objet) {}
+    /**
+     * @param id identifiant unique du jeton (usage unique)
+     * @param objet remise autorisée ({@link ma.invento.pos.shared.domain.ObjetAutorisation})
+     */
+    public record Autorisation(UUID id, Instant expireLe, long autorisateurId, Role role, String objet) {}
 }

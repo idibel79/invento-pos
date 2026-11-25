@@ -138,7 +138,7 @@ class AccordsRemise {
                     throw new OperationInterditeException(
                             "Cette remise dépasse les seuils de ce responsable : autorisation de l'admin requise.");
                 }
-                return new Accord(produitId, taux, niveau, autorisation.autorisateurId(), null);
+                return new Accord(produitId, taux, niveau, autorisation.autorisateurId(), null, autorisation);
             }
             if (dejaAccorde != null && couvre(actif(dejaAccorde).orElse(null), taux, surTicket)) {
                 return new Accord(produitId, taux, niveau, dejaAccorde, null);
@@ -147,6 +147,14 @@ class AccordsRemise {
         } catch (RegleMetierException | OperationInterditeException e) {
             return new Accord(produitId, taux, niveau, null, e);
         }
+    }
+
+    /**
+     * Consomme les jetons de PIN qui accordent ces remises, dans la transaction de la vente : un jeton
+     * sert à une seule vente (ou mise en attente ; la reprise garde ensuite l'autorisation).
+     */
+    void consommer(Accords accords) {
+        accords.tous().map(Accord::jeton).filter(Objects::nonNull).forEach(autorisations::consommer);
     }
 
     private static String refus(UtilisateurConnecte vendeur, boolean surTicket) {
@@ -184,8 +192,19 @@ class AccordsRemise {
      * @param produitId article, ou null pour le ticket
      * @param valideePar qui l'accorde, null si elle ne l'est pas encore
      * @param refus raison du refus, quand elle n'est pas accordée
+     * @param jeton autorisation par PIN qui l'accorde, à consommer avec la vente ; null sinon
      */
-    record Accord(Long produitId, BigDecimal taux, NiveauAutorisation niveau, Long valideePar, RuntimeException refus) {
+    record Accord(
+            Long produitId,
+            BigDecimal taux,
+            NiveauAutorisation niveau,
+            Long valideePar,
+            RuntimeException refus,
+            Autorisation jeton) {
+
+        Accord(Long produitId, BigDecimal taux, NiveauAutorisation niveau, Long valideePar, RuntimeException refus) {
+            this(produitId, taux, niveau, valideePar, refus, null);
+        }
 
         AccordRemiseDto versDto() {
             return new AccordRemiseDto(produitId, taux, niveau, valideePar);

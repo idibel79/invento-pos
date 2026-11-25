@@ -368,7 +368,10 @@ public class VenteService {
         return new Panier(parId, CalculateurVente.calculer(lignes, remiseTicket(commande)));
     }
 
-    /** Remises accordées : motif obligatoire dès qu'une autorisation est demandée, sinon la vente est refusée. */
+    /**
+     * Remises accordées : motif obligatoire dès qu'une autorisation est demandée, sinon la vente est refusée.
+     * Les jetons de PIN utilisés sont consommés dans la transaction de la vente.
+     */
     private AccordsRemise.Accords exigerAccords(
             Panier panier, PanierCommande commande, UtilisateurConnecte vendeur, Vente reprise) {
         AccordsRemise.Accords accords = accordsRemise.accorder(panier.calcul(), commande, vendeur, reprise);
@@ -376,6 +379,7 @@ public class VenteService {
             throw new RegleMetierException("Indiquez le motif de la remise.");
         }
         accords.exiger();
+        accordsRemise.consommer(accords);
         return accords;
     }
 
