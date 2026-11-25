@@ -14,6 +14,7 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,6 +27,9 @@ public class Utilisateur {
 
     /** Nombre d'essais ratés (mot de passe ou PIN) qui verrouille le compte. */
     public static final int ESSAIS_MAX = 5;
+
+    /** Durée du verrouillage de la connexion après {@link #ESSAIS_MAX} mots de passe ratés. */
+    public static final Duration DUREE_VERROUILLAGE = Duration.ofMinutes(15);
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "utilisateur_seq")
@@ -51,6 +55,10 @@ public class Utilisateur {
 
     private int essaisRates;
     private int essaisPinRates;
+
+    /** Fin du verrouillage de la connexion ; compté et posé en base (voir EssaisConnexionJdbc). */
+    private Instant verrouilleJusqua;
+
     private Instant derniereConnexion;
 
     @Version
@@ -81,16 +89,25 @@ public class Utilisateur {
         this.creeLe = creeLe;
     }
 
-    public boolean isVerrouille() {
-        return essaisRates >= ESSAIS_MAX || essaisPinRates >= ESSAIS_MAX;
+    /**
+     * Verrouillé : connexion bloquée pour {@link #DUREE_VERROUILLAGE} après trop de mots de passe ratés
+     * (déblocage automatique), ou PIN bloqué jusqu'au déverrouillage par l'admin.
+     */
+    public boolean isVerrouille(Instant maintenant) {
+        return isConnexionVerrouillee(maintenant) || essaisPinRates >= ESSAIS_MAX;
     }
 
-    public boolean peutSeConnecter() {
-        return actif && !isVerrouille();
+    public boolean isConnexionVerrouillee(Instant maintenant) {
+        return verrouilleJusqua != null && maintenant.isBefore(verrouilleJusqua);
+    }
+
+    public boolean peutSeConnecter(Instant maintenant) {
+        return actif && !isVerrouille(maintenant);
     }
 
     public void connexionReussie(Instant maintenant) {
         this.essaisRates = 0;
+        this.verrouilleJusqua = null;
         this.derniereConnexion = maintenant;
     }
 
@@ -110,6 +127,7 @@ public class Utilisateur {
     public void deverrouiller() {
         this.essaisRates = 0;
         this.essaisPinRates = 0;
+        this.verrouilleJusqua = null;
     }
 
     /** Le PIN sert à autoriser une remise : un caissier n'en a pas. */
@@ -212,6 +230,10 @@ public class Utilisateur {
 
     public int getEssaisRates() {
         return essaisRates;
+    }
+
+    public Instant getVerrouilleJusqua() {
+        return verrouilleJusqua;
     }
 
     public Instant getDerniereConnexion() {

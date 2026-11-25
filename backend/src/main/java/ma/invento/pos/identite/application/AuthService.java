@@ -13,6 +13,7 @@ import ma.invento.pos.identite.domain.RefreshToken;
 import ma.invento.pos.identite.domain.Role;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.identite.infrastructure.EssaisConnexionJdbc;
+import ma.invento.pos.identite.infrastructure.EssaisConnexionJdbc.EssaisRates;
 import ma.invento.pos.identite.infrastructure.RefreshTokenRepository;
 import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import ma.invento.pos.journal.application.JournalService;
@@ -72,29 +73,34 @@ public class AuthService {
      * Les essais ratés sont comptés même si la connexion échoue (pas d'annulation sur 401/403). Un
      * identifiant inconnu ou désactivé reçoit exactement les mêmes réponses qu'un vrai compte
      * (essais restants, puis verrouillage) grâce à son propre compteur : les réponses ne révèlent
-     * pas quels comptes existent.
+     * pas quels comptes existent. Le verrouillage dure {@link Utilisateur#DUREE_VERROUILLAGE} puis se
+     * lève tout seul ; l'admin peut le lever avant.
      */
     @Transactional(noRollbackFor = {IdentifiantsInvalidesException.class, CompteVerrouilleException.class})
     public Session connecter(String login, String motDePasse, String adresseIp) {
         limiteur.verifier(limiteur.connexion(), adresseIp);
+        Instant maintenant = Instant.now(clock);
         Utilisateur utilisateur = trouverParLogin(login);
         if (utilisateur == null || !utilisateur.isActif()) {
             encoder.matches(motDePasse, empreinteFactice);
             limiteur.enregistrerEchec(limiteur.connexion(), adresseIp);
-            int essais = essaisConnexion.ajouterEssaiInconnu(empreinteIdentifiant(login), Instant.now(clock));
-            throw refus(essais);
+            throw refus(essaisConnexion.ajouterEssaiInconnu(empreinteIdentifiant(login), maintenant), maintenant);
         }
         boolean motDePasseCorrect = encoder.matches(motDePasse, utilisateur.getMotDePasseHash());
         if (!motDePasseCorrect) {
             limiteur.enregistrerEchec(limiteur.connexion(), adresseIp);
         }
-        if (utilisateur.isVerrouille()) {
-            throw new CompteVerrouilleException(CompteVerrouilleException.MESSAGE_CONNEXION);
+        if (utilisateur.isConnexionVerrouillee(maintenant)) {
+            throw CompteVerrouilleException.connexion(utilisateur.getVerrouilleJusqua(), maintenant);
+        }
+        if (utilisateur.isVerrouille(maintenant)) {
+            // PIN bloqué : seul l'admin le débloque.
+            throw new CompteVerrouilleException();
         }
         if (!motDePasseCorrect) {
-            throw refus(enregistrerEchec(utilisateur));
+            throw refus(enregistrerEchec(utilisateur, maintenant), maintenant);
         }
-        utilisateur.connexionReussie(Instant.now(clock));
+        utilisateur.connexionReussie(maintenant);
         return ouvrirSession(utilisateur);
     }
 
@@ -113,9 +119,10 @@ public class AuthService {
             throw new IdentifiantsInvalidesException(SESSION_INVALIDE);
         }
         jeton.revoquer();
+        Instant maintenant = Instant.now(clock);
         Utilisateur utilisateur = utilisateurs
                 .findById(jeton.getUtilisateurId())
-                .filter(Utilisateur::peutSeConnecter)
+                .filter(u -> u.peutSeConnecter(maintenant))
                 .orElseThrow(() -> new IdentifiantsInvalidesException(SESSION_INVALIDE));
         return ouvrirSession(utilisateur);
     }
@@ -178,7 +185,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public UtilisateurDto profil(long utilisateurId) {
-        return UtilisateurDto.depuis(charger(utilisateurId));
+        return UtilisateurDto.depuis(charger(utilisateurId), Instant.now(clock));
     }
 
     /**
@@ -198,26 +205,27 @@ public class AuthService {
                 .orElse(null);
     }
 
-    /** Compte l'essai raté (mise à jour atomique) et renvoie le nombre d'essais ratés cumulés. */
-    private int enregistrerEchec(Utilisateur utilisateur) {
-        utilisateurs.incrementerEssaisRates(utilisateur.getId());
-        int essais = utilisateur.getEssaisRates() + 1;
-        if (essais >= Utilisateur.ESSAIS_MAX) {
+    /** Compte l'essai raté (mise à jour atomique en base) ; le dernier essai permis verrouille le compte. */
+    private EssaisRates enregistrerEchec(Utilisateur utilisateur, Instant maintenant) {
+        EssaisRates essais = essaisConnexion.ajouterEssaiCompte(utilisateur.getId(), maintenant);
+        if (essais.verrouille(maintenant)) {
             journal.enregistrer(
-                    utilisateur.getId(), ActionJournal.COMPTE_VERROUILLE, "Trop d'essais de connexion ratés");
+                    utilisateur.getId(),
+                    ActionJournal.COMPTE_VERROUILLE,
+                    "Trop d'essais de connexion ratés (" + Utilisateur.DUREE_VERROUILLAGE.toMinutes() + " min)");
         }
         return essais;
     }
 
     /**
-     * Refus après {@code essais} essais ratés : verrouillage au plafond, sinon le nombre d'essais
-     * restants quand il n'en reste que {@value #ESSAIS_RESTANTS_SIGNALES} ou moins.
+     * Refus après un essai raté : verrouillage au plafond, sinon le nombre d'essais restants quand il
+     * n'en reste que {@value #ESSAIS_RESTANTS_SIGNALES} ou moins.
      */
-    private static RuntimeException refus(int essais) {
-        int restants = Utilisateur.ESSAIS_MAX - essais;
-        if (restants <= 0) {
-            return new CompteVerrouilleException(CompteVerrouilleException.MESSAGE_CONNEXION);
+    private static RuntimeException refus(EssaisRates essais, Instant maintenant) {
+        if (essais.verrouille(maintenant)) {
+            return CompteVerrouilleException.connexion(essais.verrouilleJusqua(), maintenant);
         }
+        int restants = Utilisateur.ESSAIS_MAX - essais.essais();
         if (restants > ESSAIS_RESTANTS_SIGNALES) {
             return new IdentifiantsInvalidesException(IDENTIFIANTS_INVALIDES);
         }
@@ -233,7 +241,7 @@ public class AuthService {
     }
 
     private Session ouvrirSession(Utilisateur utilisateur) {
-        return new Session(jetons.emettre(utilisateur), UtilisateurDto.depuis(utilisateur));
+        return new Session(jetons.emettre(utilisateur), UtilisateurDto.depuis(utilisateur, Instant.now(clock)));
     }
 
     private RefreshToken trouverJeton(String jetonRafraichissement) {

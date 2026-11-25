@@ -1,5 +1,7 @@
 package ma.invento.pos.identite.application;
 
+import java.time.Duration;
+import java.time.Instant;
 import ma.invento.pos.identite.domain.Utilisateur;
 import ma.invento.pos.shared.domain.OperationInterditeException;
 
@@ -7,11 +9,14 @@ import ma.invento.pos.shared.domain.OperationInterditeException;
 public class CompteVerrouilleException extends OperationInterditeException {
 
     /**
-     * Message de l'écran de connexion : identique pour tous les comptes, y compris les identifiants
-     * inconnus, pour ne révéler ni l'existence ni le rôle d'un compte.
+     * Refus de l'écran de connexion pendant le verrouillage temporaire : même message pour tous les
+     * comptes, y compris les identifiants inconnus, pour ne révéler ni l'existence ni le rôle d'un compte.
      */
-    static final String MESSAGE_CONNEXION = "Compte verrouillé après " + Utilisateur.ESSAIS_MAX
-            + " essais ratés. Demandez un nouveau mot de passe à l'administrateur.";
+    static CompteVerrouilleException connexion(Instant fin, Instant maintenant) {
+        long minutes = Math.max(1, (Duration.between(maintenant, fin).getSeconds() + 59) / 60);
+        return new CompteVerrouilleException("Compte verrouillé après " + Utilisateur.ESSAIS_MAX
+                + " essais ratés. Réessayez dans " + minutes + " min ou demandez à l'administrateur de le débloquer.");
+    }
 
     public CompteVerrouilleException() {
         this("Compte verrouillé après " + Utilisateur.ESSAIS_MAX

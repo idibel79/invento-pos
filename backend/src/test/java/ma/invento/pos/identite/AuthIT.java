@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -37,11 +38,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 class AuthIT extends IntegrationTest {
 
     private static final String COOKIE = "pos_refresh";
-    private static final String VERROUILLE =
-            "Compte verrouillé après 5 essais ratés. Demandez un nouveau mot de passe à l'administrateur.";
+    private static final String VERROUILLE = "Compte verrouillé après 5 essais ratés. Réessayez dans 15 min"
+            + " ou demandez à l'administrateur de le débloquer.";
 
     @Autowired
     AdministrationAdminService administrationAdmin;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     @Autowired
     EssaisConnexionJdbc essaisConnexion;
@@ -112,6 +116,27 @@ class AuthIT extends IntegrationTest {
     }
 
     @Test
+    void verrouillage_leve_tout_seul_apres_quinze_minutes() throws Exception {
+        Utilisateur caissier = creerUtilisateur(Role.CAISSIER);
+        for (int i = 0; i < Utilisateur.ESSAIS_MAX; i++) connexion(caissier.getLogin(), "mauvais-mot-de-passe");
+        connexion(caissier.getLogin(), MDP_UTILISATEUR).andExpect(status().isForbidden());
+        assertThat(utilisateurs.findById(caissier.getId()).orElseThrow().getVerrouilleJusqua())
+                .isBetween(
+                        Instant.now().plus(Duration.ofMinutes(14)),
+                        Instant.now().plus(Duration.ofMinutes(16)));
+
+        // Fin du verrouillage atteinte : le compteur repart de zéro.
+        expirerVerrouillages("utilisateur", "id = " + caissier.getId());
+        connexion(caissier.getLogin(), "mauvais-mot-de-passe")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Identifiant ou mot de passe incorrect."));
+        connexion(caissier.getLogin(), MDP_UTILISATEUR).andExpect(status().isOk());
+        Utilisateur relu = utilisateurs.findById(caissier.getId()).orElseThrow();
+        assertThat(relu.getEssaisRates()).isZero();
+        assertThat(relu.getVerrouilleJusqua()).isNull();
+    }
+
+    @Test
     void identifiant_inconnu_recoit_les_memes_reponses_qu_un_vrai_compte() throws Exception {
         String inconnu = "fantome." + UUID.randomUUID().toString().substring(0, 8);
         connexion(inconnu, "x").andExpect(status().isUnauthorized());
@@ -123,6 +148,18 @@ class AuthIT extends IntegrationTest {
         connexion(inconnu, "x")
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.detail").value(VERROUILLE));
+        connexion(inconnu, "x").andExpect(status().isForbidden());
+
+        // Comme un vrai compte, le verrouillage se lève tout seul et le compteur repart de zéro.
+        expirerVerrouillages("essai_identifiant_inconnu", "verrouille_jusqua > now()");
+        connexion(inconnu, "x")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Identifiant ou mot de passe incorrect."));
+    }
+
+    /** Ramène dans le passé la fin des verrouillages choisis (simule l'attente de 15 minutes). */
+    private void expirerVerrouillages(String table, String condition) {
+        jdbc.update("update pos." + table + " set verrouille_jusqua = now() - interval '1 minute' where " + condition);
     }
 
     @Test

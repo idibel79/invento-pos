@@ -1,6 +1,8 @@
 package ma.invento.pos.vente.application;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,19 +45,22 @@ class AccordsRemise {
 
     private final UtilisateurRepository utilisateurs;
     private final AutorisationService autorisations;
+    private final Clock clock;
 
-    AccordsRemise(UtilisateurRepository utilisateurs, AutorisationService autorisations) {
+    AccordsRemise(UtilisateurRepository utilisateurs, AutorisationService autorisations, Clock clock) {
         this.utilisateurs = utilisateurs;
         this.autorisations = autorisations;
+        this.clock = clock;
     }
 
     Accords accorder(PanierCalcule calcul, PanierCommande commande, UtilisateurConnecte vendeur, Vente reprise) {
         if (!NiveauAutorisation.aUneRemise(calcul)) return new Accords(null, Map.of());
+        Instant maintenant = Instant.now(clock);
         Contexte contexte = new Contexte(
                 vendeur,
                 actif(vendeur.id()).orElse(null),
                 utilisateurs.findAutorisateurs(List.of(Role.RESPONSABLE)).stream()
-                        .filter(u -> !u.isVerrouille())
+                        .filter(u -> !u.isVerrouille(maintenant))
                         .toList());
 
         Accord ticket = null;

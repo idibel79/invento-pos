@@ -57,8 +57,9 @@ public class UtilisateurService {
 
     @Transactional(readOnly = true)
     public List<UtilisateurDto> lister() {
+        Instant maintenant = Instant.now(clock);
         return utilisateurs.findAllByOrderByNomAscPrenomAsc().stream()
-                .map(UtilisateurDto::depuis)
+                .map(u -> UtilisateurDto.depuis(u, maintenant))
                 .toList();
     }
 
@@ -87,7 +88,7 @@ public class UtilisateurService {
         utilisateurs.save(utilisateur);
         journal.enregistrer(adminId, ActionJournal.UTILISATEUR_CREE, login + " (" + commande.role() + ")");
         if (commande.pin() != null) journal.enregistrer(adminId, ActionJournal.PIN_DEFINI, login);
-        return UtilisateurDto.depuis(utilisateur);
+        return UtilisateurDto.depuis(utilisateur, Instant.now(clock));
     }
 
     @Transactional
@@ -146,7 +147,7 @@ public class UtilisateurService {
             journal.enregistrer(adminId, ActionJournal.PIN_DEFINI, login);
         }
         if (!commande.actif() || motDePasse != null) refreshTokens.revoquerTous(id);
-        return UtilisateurDto.depuis(utilisateurs.saveAndFlush(utilisateur));
+        return UtilisateurDto.depuis(utilisateurs.saveAndFlush(utilisateur), Instant.now(clock));
     }
 
     /**
