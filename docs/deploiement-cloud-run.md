@@ -44,6 +44,9 @@ Valeurs obtenues :
 | `POS_DB_USER` | `invento_pos.<ref>` |
 | mot de passe | celui du rôle `invento_pos` (va dans Secret Manager, pas dans GitHub) |
 
+Le déploiement remplace le `sslmode` de cette adresse par `verify-full` (certificat et nom d'hôte
+vérifiés avec la racine Supabase `deploy/supabase-ca-2021.crt`, copiée dans l'image).
+
 ## 2. Google Cloud
 
 Le plus simple est **Cloud Shell** (icône `>_` en haut de la console GCP) : `gcloud` y est déjà

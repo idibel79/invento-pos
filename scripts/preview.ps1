@@ -44,6 +44,9 @@ function Test-Port([int]$Port) {
 }
 
 Set-Location (Join-Path $PSScriptRoot "..")
+# docker-compose n'a plus de mot de passe par défaut : base locale de l'aperçu, joignable
+# seulement depuis ce poste (127.0.0.1), sans .env.
+if (-not $env:POS_DB_PASSWORD) { $env:POS_DB_PASSWORD = "pos" }
 
 # ---------------------------------------------------------------- Prérequis
 foreach ($outil in "git", "docker", "java", "node", "npm") {

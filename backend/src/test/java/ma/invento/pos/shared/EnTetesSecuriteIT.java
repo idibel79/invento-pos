@@ -17,6 +17,13 @@ class EnTetesSecuriteIT extends IntegrationTest {
                 .andExpect(header().string("Strict-Transport-Security", "max-age=31536000 ; includeSubDomains"));
     }
 
+    @Test
+    void referrer_limite_a_la_meme_origine() throws Exception {
+        mvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Referrer-Policy", "same-origin"));
+    }
+
     /** L'aperçu local et l'installation en HTTP sur le réseau du site ne doivent pas recevoir HSTS. */
     @Test
     void pas_de_hsts_en_http() throws Exception {

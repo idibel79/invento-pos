@@ -3,6 +3,7 @@ package ma.invento.pos.identite.config;
 import java.time.Duration;
 import java.util.List;
 import ma.invento.pos.identite.application.JetonService;
+import ma.invento.pos.identite.infrastructure.UtilisateurRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,7 +38,8 @@ class SecurityConfig {
     private static final long HSTS_DUREE_SECONDES = Duration.ofDays(365).toSeconds();
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemDetailSecurityHandler problemes)
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http, ProblemDetailSecurityHandler problemes, UtilisateurRepository utilisateurs)
             throws Exception {
         http.csrf(csrf -> csrf.disable()) // pas de session ni de cookie d'authentification hors /auth (SameSite=Strict)
                 .cors(cors -> {})
@@ -59,12 +62,15 @@ class SecurityConfig {
                         // HTTPS imposé au navigateur pendant un an. Envoyé seulement sur une requête HTTPS
                         // (directe ou X-Forwarded-Proto du proxy) : l'aperçu local en HTTP n'est pas touché.
                         .httpStrictTransportSecurity(hsts ->
-                                hsts.maxAgeInSeconds(HSTS_DUREE_SECONDES).includeSubDomains(true)))
+                                hsts.maxAgeInSeconds(HSTS_DUREE_SECONDES).includeSubDomains(true))
+                        // Aucune adresse de l'application (rubrique dans le #, paramètres) envoyée à un autre site.
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.SAME_ORIGIN)))
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter()))
                         .authenticationEntryPoint(problemes)
                         .accessDeniedHandler(problemes))
                 .exceptionHandling(e -> e.authenticationEntryPoint(problemes).accessDeniedHandler(problemes))
-                .addFilterAfter(new MotDePasseAChangerFilter(problemes), BearerTokenAuthenticationFilter.class);
+                .addFilterAfter(new CompteActifFilter(problemes, utilisateurs), BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(new MotDePasseAChangerFilter(problemes), CompteActifFilter.class);
         return http.build();
     }
 

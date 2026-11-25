@@ -163,8 +163,10 @@ class UtilisateurIT extends IntegrationTest {
     }
 
     @Test
-    void desactiver_un_compte_le_garde_et_bloque_sa_connexion() throws Exception {
-        var responsable = creerUtilisateur(Role.RESPONSABLE);
+    void desactiver_un_compte_le_garde_bloque_sa_connexion_et_ferme_ses_sessions() throws Exception {
+        var cree = creerUtilisateur(Role.RESPONSABLE);
+        String sessionOuverte = jeton(cree.getLogin(), MDP_UTILISATEUR);
+        var responsable = utilisateurs.findById(cree.getId()).orElseThrow();
         Map<String, Object> modification = new HashMap<>();
         modification.put("nom", "Test");
         modification.put("prenom", "Responsable");
@@ -183,6 +185,9 @@ class UtilisateurIT extends IntegrationTest {
                 .andExpect(jsonPath("$.actif").value(false));
 
         connexion(responsable.getLogin(), MDP_UTILISATEUR).andExpect(status().isUnauthorized());
+        // Son jeton d'accès encore valide (15 min) est refusé dès la requête suivante.
+        mvc.perform(get("/api/v1/auth/moi").header(HttpHeaders.AUTHORIZATION, bearer(sessionOuverte)))
+                .andExpect(status().isUnauthorized());
         assertThat(utilisateurs.findById(responsable.getId())).isPresent();
     }
 

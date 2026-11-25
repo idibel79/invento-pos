@@ -26,6 +26,9 @@ main() {
     done
 
     cd "$(dirname "$0")/.."
+    # docker-compose n'a plus de mot de passe par défaut : base locale de l'aperçu, joignable
+    # seulement depuis ce poste (127.0.0.1), sans .env.
+    export POS_DB_PASSWORD="${POS_DB_PASSWORD:-pos}"
     verifier_prerequis
     [[ -n "$cible" ]] && recuperer "$cible"
     if curl -s -o /dev/null "$API"; then

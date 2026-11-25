@@ -1,7 +1,12 @@
 # Installation sur le site (Raspberry Pi ou PC) : l'application et sa base PostgreSQL.
 #   cp .env.example .env   # puis renseigner les secrets
 #   docker compose up -d
-# En développement, seule la base est utile : docker compose up -d db
+# En développement, seule la base est utile : docker compose up -d db (scripts/preview.* fournit
+# un mot de passe local s'il n'y a pas de .env).
+# Aucun mot de passe de base par défaut : sans POS_DB_PASSWORD (.env), docker compose refuse de
+# démarrer. La base reste sur le réseau Docker interne (et 127.0.0.1 pour pg_dump), sans TLS.
+x-mot-de-passe-base: &mot-de-passe-base ${POS_DB_PASSWORD:?POS_DB_PASSWORD manquant, renseignez-le dans .env (voir .env.example)}
+
 services:
   db:
     image: postgres:16-alpine
@@ -9,7 +14,7 @@ services:
     environment:
       POSTGRES_DB: pos
       POSTGRES_USER: pos
-      POSTGRES_PASSWORD: ${POS_DB_PASSWORD:-pos}
+      POSTGRES_PASSWORD: *mot-de-passe-base
     volumes:
       - pos-db:/var/lib/postgresql/data
     ports:
@@ -31,7 +36,7 @@ services:
     environment:
       POS_DB_URL: jdbc:postgresql://db:5432/pos
       POS_DB_USER: pos
-      POS_DB_PASSWORD: ${POS_DB_PASSWORD:-pos}
+      POS_DB_PASSWORD: *mot-de-passe-base
       # Repris de .env sans interpolation : `docker compose up -d db` fonctionne sans ce secret,
       # et l'application refuse de démarrer en prod s'il est absent ou vide.
       POS_JWT_SECRET:
