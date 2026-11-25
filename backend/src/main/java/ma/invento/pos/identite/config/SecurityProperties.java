@@ -13,6 +13,9 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param refreshTokenTtl durée de vie du jeton de rafraîchissement (une journée de caisse)
  * @param cookieSecure cookie de rafraîchissement limité à HTTPS (désactivé seulement en dev)
  * @param corsOrigins origines autorisées à appeler l'API depuis un autre domaine
+ * @param proxyConfiance l'application est derrière un proxy inverse qui écrit {@code X-Forwarded-For}
+ *     et {@code X-Forwarded-Proto} (Cloud Run, Caddy…) ; faux quand les clients s'y connectent
+ *     directement (Raspberry Pi sans proxy), sinon ces en-têtes inventés seraient crus
  */
 @ConfigurationProperties("pos.security")
 public record SecurityProperties(
@@ -20,4 +23,5 @@ public record SecurityProperties(
         @DefaultValue("15m") Duration accessTokenTtl,
         @DefaultValue("12h") Duration refreshTokenTtl,
         @DefaultValue("true") boolean cookieSecure,
-        @DefaultValue List<String> corsOrigins) {}
+        @DefaultValue List<String> corsOrigins,
+        @DefaultValue("false") boolean proxyConfiance) {}

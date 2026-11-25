@@ -1,5 +1,6 @@
 package ma.invento.pos.identite.config;
 
+import java.time.Duration;
 import java.util.List;
 import ma.invento.pos.identite.application.JetonService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -32,6 +33,8 @@ class SecurityConfig {
     private static final String CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
             + " object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 
+    private static final long HSTS_DUREE_SECONDES = Duration.ofDays(365).toSeconds();
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemDetailSecurityHandler problemes)
             throws Exception {
@@ -52,7 +55,11 @@ class SecurityConfig {
                         // Le reste est le front React (fichiers statiques).
                         .anyRequest()
                         .permitAll())
-                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(CSP)))
+                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
+                        // HTTPS imposé au navigateur pendant un an. Envoyé seulement sur une requête HTTPS
+                        // (directe ou X-Forwarded-Proto du proxy) : l'aperçu local en HTTP n'est pas touché.
+                        .httpStrictTransportSecurity(hsts ->
+                                hsts.maxAgeInSeconds(HSTS_DUREE_SECONDES).includeSubDomains(true)))
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter()))
                         .authenticationEntryPoint(problemes)
                         .accessDeniedHandler(problemes))

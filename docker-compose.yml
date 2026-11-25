@@ -38,6 +38,8 @@ services:
       POS_ADMIN_INITIAL_PASSWORD: ${POS_ADMIN_INITIAL_PASSWORD:-}
       # Sur le réseau local sans HTTPS, mettre false (sinon le cookie de session est refusé).
       POS_COOKIE_SECURE: ${POS_COOKIE_SECURE:-true}
+      # true seulement avec un proxy inverse devant l'application (sinon X-Forwarded-* inventables).
+      POS_PROXY_CONFIANCE: ${POS_PROXY_CONFIANCE:-false}
     ports:
       - "8080:8080"
 
