@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { EcranAdministration } from "./admin/EcranAdministration";
 import { ChangementMotDePasse } from "./auth/ChangementMotDePasse";
 import { Connexion } from "./auth/Connexion";
 import { useAuth } from "./auth/AuthContext";
 import { OuvertureSession } from "./caisse/OuvertureSession";
 import { useAvisSessionFermee, useSessionCourante } from "./caisse/requetes";
+import { naviguer, useAdresse } from "./ui/adresse";
 import { EcranVente } from "./vente/EcranVente";
 
 export function App() {
@@ -20,12 +20,12 @@ export function App() {
  * monté (caché) pour ne pas perdre le ticket en cours.
  */
 function Espace() {
-  const [administration, setAdministration] = useState(false);
+  const administration = useAdresse()[0] === "administration";
   return (
     <>
-      {administration && <EcranAdministration onQuitter={() => setAdministration(false)} />}
+      {administration && <EcranAdministration onQuitter={() => naviguer([])} />}
       <div hidden={administration}>
-        <Caisse onAdministration={() => setAdministration(true)} />
+        <Caisse onAdministration={() => naviguer(["administration"])} />
       </div>
     </>
   );
