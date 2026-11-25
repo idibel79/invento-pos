@@ -505,6 +505,21 @@ class VenteIT extends IntegrationTest {
                                 && a.getDetail().contains(vente.get("numero").asText())))
                 .hasSize(2)
                 .allSatisfy(a -> assertThat(a.getDetail()).contains("Client fidèle"));
+        // Un jeton sert à une seule vente : rejoué pour un deuxième ticket, il est refusé.
+        calcul(caissier, panier).andExpect(jsonPath("$.autorisationAcquise").value(false));
+        valider(caissier, UUID.randomUUID().toString(), panier, "127.50")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail")
+                        .value("Autorisation déjà utilisée pour une vente : faites ressaisir le PIN."));
+        // Une vente refusée (stock insuffisant) ne consomme pas le jeton : il reste utilisable.
+        String jetonStock = jetonPour(caissier, responsable.getId(), produit, "15");
+        Map<String, Object> tropGrand =
+                panier(avecJeton(remise(ligne(produit, 100_000), "POURCENT", "15"), jetonStock));
+        tropGrand.put("motifRemise", "Client fidèle");
+        valider(caissier, UUID.randomUUID().toString(), tropGrand, "10000000").andExpect(status().is4xxClientError());
+        Map<String, Object> unSeul = panier(avecJeton(remise(ligne(produit, 1), "POURCENT", "15"), jetonStock));
+        unSeul.put("motifRemise", "Client fidèle");
+        valider(caissier, UUID.randomUUID().toString(), unSeul, "85").andExpect(status().isCreated());
 
         // Au-delà de ses seuils (20 % par ligne, 10 % sur le ticket), son PIN ne suffit plus : l'admin.
         Map<String, Object> fort = panier(avecJeton(
