@@ -189,4 +189,5 @@ Pas à pas complet (projet GCP, Workload Identity Federation, secrets, variables
 | `POS_ADMIN_INITIAL_PASSWORD` | Mot de passe initial de l'admin (sinon généré) | — |
 | `POS_COOKIE_SECURE` | Cookie de session limité à HTTPS | `true` (`false` en `dev`) |
 | `POS_CORS_ORIGINS` | Origines autorisées (front servi ailleurs) | aucune (`localhost:5173` en `dev`) |
+| `POS_PROXY_CONFIANCE` | Derrière un proxy inverse (Cloud Run, Caddy) : `X-Forwarded-For` / `-Proto` sont crus | `false` (`true` sur Cloud Run) |
 | `PORT` | Port HTTP (Cloud Run) | `8080` |

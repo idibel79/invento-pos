@@ -208,6 +208,7 @@ jobs:
             POS_DB_URL=${{ vars.POS_DB_URL }}
             POS_DB_USER=${{ vars.POS_DB_USER }}
             POS_DB_POOL_SIZE=5
+            POS_PROXY_CONFIANCE=true
           secrets: |
             POS_DB_PASSWORD=pos-db-password:latest
             POS_JWT_SECRET=pos-jwt-secret:latest

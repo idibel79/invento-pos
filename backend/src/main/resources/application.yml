@@ -51,7 +51,9 @@ server:
   error:
     include-message: never
     include-stacktrace: never
-  forward-headers-strategy: framework
+  # En-têtes X-Forwarded-* lus seulement derrière un proxy de confiance (pos.security.proxy-confiance,
+  # voir ProxyConfianceConfig) : sans proxy, n'importe quel client pourrait les inventer.
+  forward-headers-strategy: none
 
 management:
   endpoints:
@@ -77,5 +79,6 @@ pos:
     jwt-secret: ${POS_JWT_SECRET:}
     cookie-secure: ${POS_COOKIE_SECURE:true}
     cors-origins: ${POS_CORS_ORIGINS:}
+    proxy-confiance: ${POS_PROXY_CONFIANCE:false}
   admin:
     mot-de-passe-initial: ${POS_ADMIN_INITIAL_PASSWORD:}

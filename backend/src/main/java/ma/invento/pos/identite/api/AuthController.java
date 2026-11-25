@@ -44,7 +44,7 @@ class AuthController {
 
     @PostMapping("/connexion")
     ResponseEntity<SessionDto> connexion(@Valid @RequestBody Connexion connexion, HttpServletRequest requete) {
-        return reponse(authService.connecter(connexion.login(), connexion.motDePasse(), AdresseClient.de(requete)));
+        return reponse(authService.connecter(connexion.login(), connexion.motDePasse(), adresse(requete)));
     }
 
     @PostMapping("/rafraichir")
@@ -70,8 +70,8 @@ class AuthController {
     /** Mot de passe admin oublié : code de secours remis à l'installation (usage unique). */
     @PostMapping("/secours")
     RecuperationDto secours(@Valid @RequestBody RecuperationCommande commande, HttpServletRequest requete) {
-        RecuperationAdmin recuperation = authService.recupererAdmin(
-                commande.codeSecours(), commande.nouveauMotDePasse(), AdresseClient.de(requete));
+        RecuperationAdmin recuperation =
+                authService.recupererAdmin(commande.codeSecours(), commande.nouveauMotDePasse(), adresse(requete));
         return new RecuperationDto(recuperation.login(), recuperation.nouveauCodeSecours());
     }
 
@@ -98,6 +98,10 @@ class AuthController {
                                         properties.refreshTokenTtl().toSeconds())
                                 .toString())
                 .body(new SessionDto(jetons.acces(), jetons.expireDansSecondes(), session.utilisateur()));
+    }
+
+    private String adresse(HttpServletRequest requete) {
+        return AdresseClient.de(requete, properties.proxyConfiance());
     }
 
     private ResponseCookie cookie(String valeur, long maxAgeSecondes) {
