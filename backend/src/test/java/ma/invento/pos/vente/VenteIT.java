@@ -568,7 +568,7 @@ class VenteIT extends IntegrationTest {
             autoriser(caissier, responsable.getId(), "9999", null, "5").andExpect(status().isUnprocessableEntity());
         }
         autoriser(caissier, responsable.getId(), PIN, null, "5").andExpect(status().isForbidden());
-        assertThat(utilisateurs.findById(responsable.getId()).orElseThrow().isVerrouille())
+        assertThat(utilisateurs.findById(responsable.getId()).orElseThrow().isVerrouille(Instant.now()))
                 .isTrue();
     }
 

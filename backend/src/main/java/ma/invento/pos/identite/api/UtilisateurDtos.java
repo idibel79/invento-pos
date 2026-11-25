@@ -36,7 +36,7 @@ public final class UtilisateurDtos {
             @Schema(nullable = true) Instant derniereConnexion,
             long version) {
 
-        public static UtilisateurDto depuis(Utilisateur u) {
+        public static UtilisateurDto depuis(Utilisateur u, Instant maintenant) {
             return new UtilisateurDto(
                     u.getId(),
                     u.getNom(),
@@ -44,7 +44,7 @@ public final class UtilisateurDtos {
                     u.getLogin(),
                     u.getRole(),
                     u.isActif(),
-                    u.isVerrouille(),
+                    u.isVerrouille(maintenant),
                     u.isDoitChangerMotDePasse(),
                     u.isPinDefini(),
                     u.getCaisseIds(),

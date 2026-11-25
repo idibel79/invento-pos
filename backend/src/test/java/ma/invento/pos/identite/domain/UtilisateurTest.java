@@ -19,7 +19,7 @@ class UtilisateurTest {
     void nouveau_compte_doit_changer_son_mot_de_passe() {
         Utilisateur u = caissier();
         assertThat(u.isDoitChangerMotDePasse()).isTrue();
-        assertThat(u.peutSeConnecter()).isTrue();
+        assertThat(u.peutSeConnecter(Instant.EPOCH)).isTrue();
         u.changerMotDePasse("nouveau");
         assertThat(u.isDoitChangerMotDePasse()).isFalse();
         assertThat(u.getMotDePasseHash()).isEqualTo("nouveau");
@@ -31,18 +31,18 @@ class UtilisateurTest {
         u.changerMotDePasse("perso");
         u.reinitialiserMotDePasse("temporaire");
         assertThat(u.isDoitChangerMotDePasse()).isTrue();
-        assertThat(u.isVerrouille()).isFalse();
+        assertThat(u.isVerrouille(Instant.EPOCH)).isFalse();
     }
 
     @Test
     void desactive_ne_peut_pas_se_connecter_et_garde_ses_caisses() {
         Utilisateur u = caissier();
         u.modifierProfil("Alaoui", "Sara", Role.RESPONSABLE, false, Set.of(2L));
-        assertThat(u.peutSeConnecter()).isFalse();
+        assertThat(u.peutSeConnecter(Instant.EPOCH)).isFalse();
         assertThat(u.getRole()).isEqualTo(Role.RESPONSABLE);
         assertThat(u.getCaisseIds()).containsExactly(2L);
         u.reactiver();
-        assertThat(u.peutSeConnecter()).isTrue();
+        assertThat(u.peutSeConnecter(Instant.EPOCH)).isTrue();
     }
 
     @Test

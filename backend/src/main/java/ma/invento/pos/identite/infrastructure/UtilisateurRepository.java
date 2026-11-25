@@ -24,10 +24,6 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     /** Incrément atomique, sans conflit de version entre deux essais simultanés. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update Utilisateur u set u.essaisRates = u.essaisRates + 1 where u.id = :id")
-    void incrementerEssaisRates(@Param("id") long id);
-
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Utilisateur u set u.essaisPinRates = u.essaisPinRates + 1 where u.id = :id")
     void incrementerEssaisPinRates(@Param("id") long id);
 

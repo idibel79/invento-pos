@@ -80,9 +80,10 @@ public class AutorisationService {
 
     @Transactional(readOnly = true)
     public List<Autorisateur> autorisateurs() {
+        Instant maintenant = Instant.now(clock);
         return utilisateurs.findAutorisateurs(List.of(Role.RESPONSABLE, Role.ADMIN)).stream()
                 // Un responsable sans seuil de remise ne peut rien autoriser.
-                .filter(u -> !u.isVerrouille()
+                .filter(u -> !u.isVerrouille(maintenant)
                         && (u.getRole() == Role.ADMIN || !u.getSeuilsRemise().aucun()))
                 .map(u -> new Autorisateur(
                         u.getId(),
@@ -100,7 +101,7 @@ public class AutorisationService {
                 .findById(autorisateurId)
                 .filter(u -> u.isActif() && u.isPinDefini() && u.getRole() != Role.CAISSIER)
                 .orElseThrow(() -> new PinIncorrectException(PIN_REFUSE));
-        if (autorisateur.isVerrouille()) {
+        if (autorisateur.isVerrouille(Instant.now(clock))) {
             throw new CompteVerrouilleException();
         }
         if (!encoder.matches(pin, autorisateur.getPinHash())) {
@@ -150,7 +151,7 @@ public class AutorisationService {
             Role role = Role.valueOf(Objects.requireNonNull(jwt.getClaimAsString(CLAIM_ROLE)));
             utilisateurs
                     .findById(autorisateurId)
-                    .filter(u -> u.isActif() && !u.isVerrouille() && u.getRole() == role)
+                    .filter(u -> u.isActif() && !u.isVerrouille(Instant.now(clock)) && u.getRole() == role)
                     .orElseThrow(() -> new RegleMetierException("Autorisation retirée : faites ressaisir le PIN."));
             return new Autorisation(autorisateurId, role, Objects.requireNonNull(jwt.getClaimAsString(CLAIM_OBJET)));
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
