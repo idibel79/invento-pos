@@ -1,10 +1,21 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
+import { naviguer, slug, useAdresse } from "../ui/adresse";
 
 export type EntreeMenu = { nom: string; detail: string; ecran: () => ReactNode };
 
-/** Rubrique d'administration disposée comme la Caisse principale : menu à gauche, écran choisi à droite. */
-export function RubriqueAvecMenu({ titre, entrees }: { titre: string; entrees: EntreeMenu[] }) {
-  const [choisie, setChoisie] = useState(0);
+type Props = { titre: string; onglet: string; entrees: EntreeMenu[] };
+
+/**
+ * Rubrique d'administration disposée comme la Caisse principale : menu à gauche, écran choisi à
+ * droite. L'entrée choisie est gardée dans l'adresse (`#/administration/<onglet>/<entrée>`).
+ */
+export function RubriqueAvecMenu({ titre, onglet, entrees }: Props) {
+  const demandee = useAdresse()[2];
+  const choisie = Math.max(
+    0,
+    entrees.findIndex((e) => slug(e.nom) === demandee),
+  );
+  const choisir = (e: EntreeMenu) => naviguer(["administration", onglet, slug(e.nom)]);
 
   return (
     <div className="tresorerie-ecran">
@@ -16,7 +27,7 @@ export function RubriqueAvecMenu({ titre, entrees }: { titre: string; entrees: E
             type="button"
             className="tresorerie-compte"
             aria-current={choisie === i ? "true" : undefined}
-            onClick={() => setChoisie(i)}
+            onClick={() => choisir(e)}
           >
             <span className="tresorerie-compte-texte">
               <span className="tresorerie-compte-nom">{e.nom}</span>

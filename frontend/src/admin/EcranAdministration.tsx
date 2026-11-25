@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { useUtilisateur } from "../auth/AuthContext";
 import { useParametres } from "../caisse/requetes";
+import { naviguer, useAdresse } from "../ui/adresse";
 import { Clients } from "../client/Clients";
 import { MonCompte } from "../tresorerie/MonCompte";
 import { useMonCompte } from "../tresorerie/requetes";
@@ -79,8 +79,10 @@ const PARAMETRES: EntreeMenu[] = [
 export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
   const admin = useUtilisateur().role === "ADMIN";
   const onglets = admin ? ONGLETS_ADMIN : ONGLETS_VENDEUR;
-  // Un vendeur arrive sur son compte, l'admin sur les ventes.
-  const [onglet, setOnglet] = useState<Onglet>(admin ? "ventes" : "tresorerie");
+  // L'onglet vient de l'adresse ; sinon un vendeur arrive sur son compte, l'admin sur les ventes.
+  const demande = useAdresse()[1];
+  const onglet: Onglet = onglets.find((o) => o === demande) ?? (admin ? "ventes" : "tresorerie");
+  const setOnglet = (cle: Onglet) => naviguer(["administration", cle]);
   const fuseau = useParametres().data?.fuseauHoraire;
   const maintenant = useMaintenant(30_000);
   const aValider = useMonCompte().data?.aValider.length ?? 0;
@@ -122,15 +124,19 @@ export function EcranAdministration({ onQuitter }: { onQuitter: () => void }) {
         ))}
       </nav>
       <main className="admin-corps">
-        {onglet === "ventes" && <RubriqueAvecMenu titre="Ventes" entrees={admin ? VENTES : VENTES_VENDEUR} />}
-        {onglet === "clients" && <RubriqueAvecMenu titre="Clients" entrees={CLIENTS} />}
+        {onglet === "ventes" && (
+          <RubriqueAvecMenu titre="Ventes" onglet="ventes" entrees={admin ? VENTES : VENTES_VENDEUR} />
+        )}
+        {onglet === "clients" && <RubriqueAvecMenu titre="Clients" onglet="clients" entrees={CLIENTS} />}
         {onglet === "tresorerie" &&
           (admin ? (
             <CaissePrincipale />
           ) : (
-            <RubriqueAvecMenu titre="Trésorerie" entrees={TRESORERIE_VENDEUR} />
+            <RubriqueAvecMenu titre="Trésorerie" onglet="tresorerie" entrees={TRESORERIE_VENDEUR} />
           ))}
-        {onglet === "parametres" && <RubriqueAvecMenu titre="Paramètres" entrees={PARAMETRES} />}
+        {onglet === "parametres" && (
+          <RubriqueAvecMenu titre="Paramètres" onglet="parametres" entrees={PARAMETRES} />
+        )}
       </main>
     </div>
   );
