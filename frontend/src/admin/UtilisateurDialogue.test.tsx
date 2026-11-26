@@ -38,14 +38,45 @@ function afficher(utilisateur: Schemas["UtilisateurDto"] | null, autres: Schemas
   return onFermer;
 }
 
+/** Comptes de trésorerie : Salma doit encore 120 DH à la caisse principale. */
+const comptes = {
+  soldePrincipale: 0,
+  aValiderNombre: 0,
+  aValiderMontant: 0,
+  caissiers: [
+    {
+      utilisateurId: 5,
+      nom: "Salma Bennani",
+      role: "CAISSIER",
+      actif: true,
+      solde: 120,
+      soldeEspeces: 120,
+      soldeTpe: 0,
+      sessionOuverteCaisse: null,
+      ventesSessionOuverte: null,
+      recusNombre: 0,
+      recusMontant: 0,
+      envoyesNombre: 0,
+      envoyesMontant: 0,
+    },
+  ],
+};
+
 /** Simule l'API ; `requetes` ne garde que les enregistrements, pas les demandes d'identifiant proposé. */
 function simulerServeur(statut = 200, corps: unknown = salma, identifiantPropose = "") {
   const requetes: Request[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (requete: Request) => {
-      if (new URL(requete.url).pathname.endsWith("/identifiant-propose")) {
+      const chemin = new URL(requete.url).pathname;
+      if (chemin.endsWith("/identifiant-propose")) {
         return new Response(JSON.stringify({ login: identifiantPropose }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (chemin === "/api/v1/tresorerie/comptes") {
+        return new Response(JSON.stringify(comptes), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
@@ -113,6 +144,11 @@ describe("UtilisateurDialogue", () => {
     await userEvent.click(screen.getByLabelText("Caisse 1"));
     await userEvent.click(screen.getByRole("button", { name: "Désactivé" }));
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    // Elle doit encore de l'argent : la désactivation est confirmée, montant dû affiché.
+    expect(await screen.findByText(/Doit encore/)).toHaveTextContent("120,00");
+    expect(requetes).toHaveLength(0);
+    await userEvent.click(screen.getByRole("button", { name: "Désactiver" }));
 
     await waitFor(() => expect(onFermer).toHaveBeenCalled());
     expect(requetes[0]?.method).toBe("PUT");

@@ -12,6 +12,7 @@ import ma.invento.pos.shared.domain.ConflitException;
 import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.shared.domain.RessourceIntrouvableException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -67,6 +68,12 @@ public class CaisseService {
         journal.enregistrer(adminId, ActionJournal.CAISSE_MODIFIEE, propre + (active ? "" : " (désactivée)"));
         if (desactivee) sessions.cloturerDOffice(id, adminId);
         return CaisseDto.depuis(caisse);
+    }
+
+    /** Utilisateur désactivé : sa session ouverte est clôturée d'office, dans la transaction de la désactivation. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cloturerSessionDe(long utilisateurId, long adminId) {
+        sessions.cloturerDOfficeDuCaissier(utilisateurId, adminId);
     }
 
     /**

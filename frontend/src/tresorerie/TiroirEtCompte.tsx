@@ -13,8 +13,6 @@ interface Props {
  * les plafonds de la fenêtre Verser.
  */
 export function TiroirEtCompte({ tiroirEspeces, tiroirTpe, compteEspeces, compteTpe }: Props) {
-  const tiroir = arrondi(tiroirEspeces + tiroirTpe);
-  const compte = arrondi(compteEspeces + compteTpe);
   return (
     <table className="tiroir-et-compte">
       <caption className="visuellement-cache">Argent dû, dans le tiroir et sur moi, par mode (DH)</caption>
@@ -40,14 +38,6 @@ export function TiroirEtCompte({ tiroirEspeces, tiroirTpe, compteEspeces, compte
           <td className="total">{decimal(arrondi(tiroirTpe + compteTpe))}</td>
         </tr>
       </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row">Total DH</th>
-          <td>{decimal(tiroir)}</td>
-          <td>{decimal(compte)}</td>
-          <td className="total">{decimal(arrondi(tiroir + compte))}</td>
-        </tr>
-      </tfoot>
     </table>
   );
 }

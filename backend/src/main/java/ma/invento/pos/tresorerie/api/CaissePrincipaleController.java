@@ -9,6 +9,7 @@ import ma.invento.pos.identite.application.UtilisateurConnecte;
 import ma.invento.pos.shared.api.PageResponse;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.ComptesDto;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.OperationCommande;
+import ma.invento.pos.tresorerie.api.TresorerieDtos.ReceptionCommande;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementCaissierCommande;
 import ma.invento.pos.tresorerie.api.TresorerieDtos.VersementDto;
 import ma.invento.pos.tresorerie.application.TresorerieService;
@@ -103,6 +104,20 @@ class CaissePrincipaleController {
                 utilisateurId,
                 commande.montant(),
                 commande.motif(),
+                commande.cle(),
+                UtilisateurConnecte.depuis(jwt).id());
+    }
+
+    /** Argent remis à l'admin par un utilisateur désactivé : reçu aussitôt dans la caisse principale. */
+    @PostMapping("/comptes/{utilisateurId}/reception")
+    VersementDto recevoir(
+            @PathVariable long utilisateurId,
+            @Valid @RequestBody ReceptionCommande commande,
+            @AuthenticationPrincipal Jwt jwt) {
+        return tresorerie.recevoirDe(
+                utilisateurId,
+                commande.montantEspeces(),
+                commande.montantTpe(),
                 commande.cle(),
                 UtilisateurConnecte.depuis(jwt).id());
     }

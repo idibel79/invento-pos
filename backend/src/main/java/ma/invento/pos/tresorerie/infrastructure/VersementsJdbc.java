@@ -173,14 +173,6 @@ public class VersementsJdbc {
                 (r, i) -> versVersement(r));
     }
 
-    public boolean existeEnTransit(long compteId) {
-        return Boolean.TRUE.equals(jdbc.queryForObject(
-                "select exists (select 1 from " + s + "versement where statut = 'EN_TRANSIT'"
-                        + " and (emetteur_id = :c or recepteur_id = :c))",
-                new MapSqlParameterSource("c", compteId),
-                Boolean.class));
-    }
-
     /**
      * Argent entré dans le tiroir (part tiroir des versements validés pendant la session) et sorti (part
      * tiroir des versements envoyés pendant la session et ni refusés ni annulés : un refus ou une annulation

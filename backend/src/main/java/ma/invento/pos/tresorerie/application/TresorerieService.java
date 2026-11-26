@@ -367,6 +367,51 @@ public class TresorerieService implements ComptesCaissiers {
         return VersementDto.depuis(versement);
     }
 
+    /**
+     * Argent remis en main propre à l'admin par un utilisateur désactivé, qui ne peut plus verser lui-même :
+     * versement à la caisse principale enregistré par l'admin et reçu aussitôt, dans la limite du dû par mode.
+     */
+    @Transactional
+    public VersementDto recevoirDe(long utilisateurId, BigDecimal especes, BigDecimal tpe, UUID cle, long adminId) {
+        Repartition repartition = new Repartition(especes, tpe);
+        ReglesTresorerie.verifierMontant(repartition.total());
+        Optional<VersementDto> deja = dejaEnvoye(cle, adminId);
+        if (deja.isPresent()) return deja.get();
+        Utilisateur caissier = chargerUtilisateur(utilisateurId);
+        if (caissier.isActif()) {
+            throw new RegleMetierException("Un utilisateur actif verse lui-même son argent depuis Mon compte.");
+        }
+        if (sessions.findOuverteDuCaissierForUpdate(utilisateurId).isPresent()) {
+            throw new RegleMetierException("Sa caisse est encore ouverte : clôturez-la d'office avant.");
+        }
+        Compte compte = comptes.caissierOuCree(utilisateurId);
+        comptes.verrouiller(compte.id());
+        DuParMode du = du(utilisateurId);
+        plafond(especes, du.especes().max(BigDecimal.ZERO), "en espèces");
+        plafond(tpe, du.tpe(), "en tickets TPE");
+        Versement versement = envoyer(
+                compte,
+                comptes.principale(),
+                repartition.total(),
+                repartition,
+                null,
+                null,
+                false,
+                BigDecimal.ZERO,
+                cle,
+                adminId,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO);
+        return VersementDto.depuis(valider(versement, adminId, false, null));
+    }
+
+    private static void plafond(BigDecimal montant, BigDecimal du, String mode) {
+        if (montant.compareTo(du) > 0) {
+            throw new RegleMetierException(
+                    "Il ne doit que " + du.toPlainString() + " DH " + mode + " à la caisse principale.");
+        }
+    }
+
     /** Passage en perte : le solde du caissier baisse, sans effet sur la caisse principale. */
     @Transactional
     public void ajuster(long utilisateurId, BigDecimal montant, String motif, UUID cle, long adminId) {
@@ -413,6 +458,8 @@ public class TresorerieService implements ComptesCaissiers {
                                 .toList())
                         .stream()
                         .collect(Collectors.toMap(Caisse::getId, Caisse::getNom));
+        Map<Long, VentesSession> ventesOuvertes = encaissements.ventesParSession(
+                ouvertes.values().stream().map(SessionCaisse::getId).toList());
         List<CompteCaissierDto> caissiers = tous.stream()
                 .map(u -> {
                     SessionCaisse session = ouvertes.get(u.getId());
@@ -430,6 +477,11 @@ public class TresorerieService implements ComptesCaissiers {
                             du.especes(),
                             du.tpe(),
                             session == null ? null : nomsCaisses.get(session.getCaisseId()),
+                            session == null
+                                    ? null
+                                    : ventesOuvertes
+                                            .getOrDefault(session.getId(), VentesSession.AUCUNE)
+                                            .total(),
                             transit.recusNombre(),
                             transit.recusMontant(),
                             transit.envoyesNombre(),
@@ -535,22 +587,6 @@ public class TresorerieService implements ComptesCaissiers {
         long total = operations.compter(filtre);
         return new PageResponse<>(operations.lister(filtre, croissant, page, taille), page, taille, total, (int)
                 ((total + taille - 1) / taille));
-    }
-
-    /** Un utilisateur ne peut être désactivé que si son compte est soldé et sans versement en transit. */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void verifierDesactivable(long utilisateurId) {
-        Optional<Compte> compte = comptes.caissier(utilisateurId);
-        if (compte.isEmpty()) return;
-        if (soldeAffiche(utilisateurId).signum() != 0) {
-            throw new RegleMetierException(
-                    "Cet utilisateur doit encore " + soldeAffiche(utilisateurId).toPlainString()
-                            + " DH à la caisse principale : soldez son compte avant de le désactiver.");
-        }
-        if (versements.existeEnTransit(compte.get().id())) {
-            throw new RegleMetierException(
-                    "Cet utilisateur a un versement en transit : validez-le, refusez-le ou annulez-le avant de le désactiver.");
-        }
     }
 
     // ---------------------------------------------------------------- Dettes des clients

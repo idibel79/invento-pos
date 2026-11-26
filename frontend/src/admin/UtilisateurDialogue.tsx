@@ -5,8 +5,9 @@ import { z } from "zod";
 import type { Schemas } from "../api/client";
 import { messageErreur } from "../api/erreurs";
 import { Dialogue } from "../ui/Dialogue";
-import { lireMontant } from "../ui/format";
-import { IconeOeil, IconeOeilBarre, IconeUtilisateur } from "../ui/icones";
+import { useComptes } from "../tresorerie/requetes";
+import { dh, lireMontant } from "../ui/format";
+import { IconeAlerte, IconeOeil, IconeOeilBarre, IconeUtilisateur } from "../ui/icones";
 import { useCreerUtilisateur, useIdentifiantPropose, useModifierUtilisateur } from "./requetes";
 
 type Utilisateur = Schemas["UtilisateurDto"];
@@ -118,7 +119,14 @@ export function UtilisateurDialogue({ utilisateur, caisses, autres, onFermer }: 
     autres.find((u) => u.id !== utilisateur?.id && u.role !== "ADMIN" && u.caisseIds.includes(caisseId));
   const pinActuel = utilisateur?.pinDefini === true && utilisateur.role !== "CAISSIER";
 
+  // Désactiver un compte actif passe par une confirmation qui rappelle ce qu'il doit encore.
+  const [aConfirmer, setAConfirmer] = useState<Champs | null>(null);
   const envoyer = handleSubmit((c) => {
+    if (utilisateur?.actif && !c.actif) setAConfirmer(c);
+    else enregistrer(c);
+  });
+
+  const enregistrer = (c: Champs) => {
     const pin = c.role === "CAISSIER" || c.pin === "" ? null : c.pin;
     const seuilsRemise =
       c.role === "RESPONSABLE"
@@ -156,7 +164,22 @@ export function UtilisateurDialogue({ utilisateur, caisses, autres, onFermer }: 
         { onSuccess: onFermer },
       );
     }
-  });
+  };
+
+  if (aConfirmer && utilisateur) {
+    return (
+      <ConfirmationDesactivation
+        utilisateur={utilisateur}
+        enCours={modifier.isPending}
+        erreur={modifier.isError ? messageErreur(modifier.error) : null}
+        onConfirmer={() => enregistrer(aConfirmer)}
+        onAnnuler={() => {
+          modifier.reset();
+          setAConfirmer(null);
+        }}
+      />
+    );
+  }
 
   return (
     <Dialogue
@@ -386,5 +409,86 @@ function ChampSecret({ libelle, nom, erreur, ...champ }: PropsSecret) {
       </div>
       {erreur && <span className="erreur-champ">{erreur}</span>}
     </div>
+  );
+}
+
+/**
+ * Confirmation avant de désactiver un compte : il ne pourra plus se connecter ni vendre, sa caisse ouverte est
+ * clôturée d'office, et ce qu'il doit reste dû, à recevoir ou passer en perte depuis la Caisse principale.
+ */
+function ConfirmationDesactivation({
+  utilisateur,
+  enCours,
+  erreur,
+  onConfirmer,
+  onAnnuler,
+}: {
+  utilisateur: Utilisateur;
+  enCours: boolean;
+  erreur: string | null;
+  onConfirmer: () => void;
+  onAnnuler: () => void;
+}) {
+  const comptes = useComptes();
+  const compte = comptes.data?.caissiers.find((c) => c.utilisateurId === utilisateur.id);
+  const nom = `${utilisateur.prenom} ${utilisateur.nom}`.trim() || utilisateur.login;
+  return (
+    <Dialogue titre={`Désactiver ${nom} ?`} icone={<IconeAlerte />} onFermer={onAnnuler}>
+      <div className="formulaire">
+        {comptes.isPending ? (
+          <p className="texte-secondaire">Lecture de son solde…</p>
+        ) : compte && compte.solde > 0 ? (
+          // Un seul bloc de texte : l'alerte est en flex, chaque morceau deviendrait sinon une colonne.
+          <div className="alerte alerte-attention">
+            <div>
+              <p className="confirmation-du">
+                Doit encore <strong>{dh(compte.solde)}</strong> à la caisse principale
+                {compte.soldeTpe > 0
+                  ? ` (${dh(compte.soldeEspeces)} en espèces, ${dh(compte.soldeTpe)} en tickets TPE)`
+                  : ""}
+                .
+              </p>
+              <p>
+                Cette somme reste due : vous pourrez la recevoir ou la passer en perte depuis la Caisse
+                principale.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="alerte alerte-attention">{nom} ne doit rien à la caisse principale.</p>
+        )}
+        {compte?.sessionOuverteCaisse && (
+          <div className="alerte alerte-attention">
+            <div>
+              <p className="confirmation-du">
+                {compte.sessionOuverteCaisse} ouverte :{" "}
+                <strong>{dh(compte.ventesSessionOuverte ?? 0)}</strong> de ventes en cours.
+              </p>
+              <p>
+                Elle sera clôturée d'office, sans comptage, et ses ventes en attente annulées. Ces ventes
+                s'ajouteront à ce qu'il doit ; le tiroir sera à compter depuis la Caisse principale.
+              </p>
+            </div>
+          </div>
+        )}
+        <p>
+          Il ne pourra plus se connecter ni vendre, et ses sessions ouvertes sont coupées. Réactivé, il
+          retrouve son solde tel quel.
+        </p>
+        {erreur && (
+          <p className="alerte alerte-danger" role="alert">
+            {erreur}
+          </p>
+        )}
+        <div className="rangee-boutons">
+          <button type="button" className="bouton bouton-contour" onClick={onAnnuler}>
+            Annuler
+          </button>
+          <button type="button" className="bouton bouton-danger" disabled={enCours} onClick={onConfirmer}>
+            Désactiver
+          </button>
+        </div>
+      </div>
+    </Dialogue>
   );
 }

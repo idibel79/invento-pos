@@ -3932,10 +3932,8 @@ button:disabled {
 }
 
 .tiroir-et-compte thead th {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
   color: var(--gris);
 }
 
@@ -5204,4 +5202,54 @@ button.filtre-compact {
 /* Un espace entre le titre « Nom de la boutique » et son champ. */
 .boutique-nom-titre {
   margin-bottom: 0.75em;
+}
+
+/* Confirmation de désactivation d'un compte : le montant dû en tête, lisible d'un coup d'œil. */
+.confirmation-du {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.confirmation-du + p {
+  margin: 0;
+}
+
+/* Ventes de la caisse ouverte, sous le solde dû sans s'y ajouter. */
+.tresorerie-ventes-en-cours {
+  margin-top: 8px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  color: var(--gris);
+}
+.tresorerie-ventes-en-cours strong {
+  color: var(--texte-fort);
+  font-weight: 600;
+}
+.pastille-ouverte {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--succes);
+  flex: none;
+}
+
+/* Mon compte, caisse ouverte : solde et tableau alignés en haut, le tableau titré par son total. */
+.tresorerie-entete.en-haut {
+  align-items: flex-start;
+}
+.tiroir-et-compte-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-right: auto;
+  font-size: 13px;
+}
+.tiroir-et-compte-bloc strong {
+  color: var(--texte-fort);
+  font-weight: 600;
 }
