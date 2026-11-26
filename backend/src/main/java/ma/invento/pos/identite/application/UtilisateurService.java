@@ -20,7 +20,6 @@ import ma.invento.pos.journal.domain.ActionJournal;
 import ma.invento.pos.shared.domain.ConflitException;
 import ma.invento.pos.shared.domain.RegleMetierException;
 import ma.invento.pos.shared.domain.RessourceIntrouvableException;
-import ma.invento.pos.tresorerie.application.TresorerieService;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,7 +32,6 @@ public class UtilisateurService {
     private final UtilisateurRepository utilisateurs;
     private final RefreshTokenRepository refreshTokens;
     private final CaisseService caisses;
-    private final TresorerieService tresorerie;
     private final PasswordEncoder encoder;
     private final JournalService journal;
     private final Clock clock;
@@ -42,14 +40,12 @@ public class UtilisateurService {
             UtilisateurRepository utilisateurs,
             RefreshTokenRepository refreshTokens,
             CaisseService caisses,
-            TresorerieService tresorerie,
             PasswordEncoder encoder,
             JournalService journal,
             Clock clock) {
         this.utilisateurs = utilisateurs;
         this.refreshTokens = refreshTokens;
         this.caisses = caisses;
-        this.tresorerie = tresorerie;
         this.encoder = encoder;
         this.journal = journal;
         this.clock = clock;
@@ -117,8 +113,10 @@ public class UtilisateurService {
         caisses.verifierExistence(commande.caisseIds());
         if (utilisateur.getRole() != Role.ADMIN) verifierCaissesLibres(commande.caisseIds(), id);
 
-        // L'argent dont il répond doit être soldé avant de désactiver un utilisateur.
-        if (utilisateur.isActif() && !commande.actif()) tresorerie.verifierDesactivable(id);
+        // Désactivé, il ne se connecte plus et sa caisse ouverte est clôturée d'office (comptage en attente) ;
+        // ce qu'il doit reste à son compte, soldable depuis la caisse principale (réception de l'argent ou
+        // passage en perte), et retrouvé tel quel s'il est réactivé.
+        if (utilisateur.isActif() && !commande.actif()) caisses.cloturerSessionDe(id, adminId);
         if (nouveauLogin) utilisateur.changerLogin(login);
         utilisateur.modifierProfil(
                 commande.nom().trim(),

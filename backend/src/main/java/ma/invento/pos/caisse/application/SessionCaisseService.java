@@ -181,17 +181,26 @@ public class SessionCaisseService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void cloturerDOffice(long caisseId, long adminId) {
-        sessions.findOuverteDeLaCaisseForUpdate(caisseId).ifPresent(session -> {
-            evenements.publishEvent(new SessionCaisseCloturee(session.getId()));
-            session.cloturerDOffice(Instant.now(clock));
-            comptes.cloturerDOffice(
-                    session, encaissements.ventes(session.getId()).total(), adminId);
-            journal.enregistrer(
-                    adminId,
-                    ActionJournal.SESSION_CLOTUREE_D_OFFICE,
-                    nomCaisse(caisseId) + ", caisse désactivée : session de l'utilisateur " + session.getCaissierId()
-                            + " clôturée, comptage du tiroir en attente");
-        });
+        sessions.findOuverteDeLaCaisseForUpdate(caisseId)
+                .ifPresent(session -> cloturerDOffice(session, "caisse désactivée", adminId));
+    }
+
+    /** Utilisateur désactivé par l'admin : sa session ouverte est clôturée de même, sans comptage. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cloturerDOfficeDuCaissier(long caissierId, long adminId) {
+        sessions.findOuverteDuCaissierForUpdate(caissierId)
+                .ifPresent(session -> cloturerDOffice(session, "utilisateur désactivé", adminId));
+    }
+
+    private void cloturerDOffice(SessionCaisse session, String raison, long adminId) {
+        evenements.publishEvent(new SessionCaisseCloturee(session.getId()));
+        session.cloturerDOffice(Instant.now(clock));
+        comptes.cloturerDOffice(session, encaissements.ventes(session.getId()).total(), adminId);
+        journal.enregistrer(
+                adminId,
+                ActionJournal.SESSION_CLOTUREE_D_OFFICE,
+                nomCaisse(session.getCaisseId()) + ", " + raison + " : session de l'utilisateur "
+                        + session.getCaissierId() + " clôturée, comptage du tiroir en attente");
     }
 
     /**

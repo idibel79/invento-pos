@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { messageErreur } from "../api/erreurs";
 import { arrondi } from "../caisse/cloture";
-import { useParametres } from "../caisse/requetes";
+import { useParametres, useSessionCourante } from "../caisse/requetes";
 import { decimal, dh } from "../ui/format";
 import { EncaisserDetteDialogue } from "../client/EncaisserDetteDialogue";
 import { AValiderDialogue, VerserDialogue } from "./ComptePopups";
@@ -18,6 +18,7 @@ export function MonCompte() {
   const fuseau = useParametres().data?.fuseauHoraire;
   const [popup, setPopup] = useState<"verser" | "valider" | "dette" | null>(null);
   const compte = useMonCompte();
+  const session = useSessionCourante().data;
   const aValider = compte.data?.aValider.length ?? 0;
   // Caisse ouverte : le tableau compte les ventes de la session, que le solde dû n'intègre qu'à la clôture.
   const ventesEnCours = compte.data
@@ -32,30 +33,36 @@ export function MonCompte() {
 
   return (
     <div className="mon-compte-ecran">
-      <div className="tresorerie-entete">
+      <div className={`tresorerie-entete${compte.data?.sessionOuverte ? " en-haut" : ""}`}>
         <div className="tresorerie-solde">
           <span>Solde dû à la caisse principale</span>
           <strong className="tresorerie-solde-montant">
             {compte.data ? decimal(compte.data.solde) : "…"} <span>DH</span>
           </strong>
-          {compte.data &&
-            (compte.data.sessionOuverte ? (
-              ventesEnCours > 0 && (
-                <span className="tresorerie-repartition">
-                  + {dh(ventesEnCours)} de ventes en cours, ajoutées à la clôture
-                </span>
-              )
-            ) : (
-              <RepartitionDu especes={compte.data.soldeEspeces} tpe={compte.data.soldeTpe} />
-            ))}
+          {compte.data && <RepartitionDu especes={compte.data.soldeEspeces} tpe={compte.data.soldeTpe} />}
+          {compte.data?.sessionOuverte && (
+            // Sous le solde, sans s'y ajouter : ces ventes sont encore dans le tiroir.
+            <span className="tresorerie-ventes-en-cours">
+              <span className="pastille-ouverte" aria-hidden="true" />
+              <span>
+                <strong>{session?.caisseNom ?? "Caisse"} ouverte</strong> · ventes en cours{" "}
+                <strong>{dh(ventesEnCours)}</strong>, ajoutées à la clôture
+              </span>
+            </span>
+          )}
         </div>
         {compte.data?.sessionOuverte && (
-          <TiroirEtCompte
-            tiroirEspeces={compte.data.plafondTiroirEspeces}
-            tiroirTpe={compte.data.plafondTiroirTpe}
-            compteEspeces={compte.data.plafondCompteEspeces}
-            compteTpe={compte.data.plafondCompteTpe}
-          />
+          <div className="tiroir-et-compte-bloc">
+            <span className="texte-secondaire">
+              <strong>{dh(arrondi(compte.data.solde + ventesEnCours))}</strong> = solde dû + ventes en cours
+            </span>
+            <TiroirEtCompte
+              tiroirEspeces={compte.data.plafondTiroirEspeces}
+              tiroirTpe={compte.data.plafondTiroirTpe}
+              compteEspeces={compte.data.plafondCompteEspeces}
+              compteTpe={compte.data.plafondCompteTpe}
+            />
+          </div>
         )}
         <button
           type="button"

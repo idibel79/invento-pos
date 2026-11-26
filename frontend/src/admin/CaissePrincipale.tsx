@@ -17,6 +17,7 @@ import { Dialogue } from "../ui/Dialogue";
 import { decimal, dh, heure } from "../ui/format";
 import { ComptageDialogue } from "./ComptageDialogue";
 import { OperationTresorerieDialogue, type TypeOperation } from "./OperationTresorerieDialogue";
+import { RecevoirDialogue } from "./RecevoirDialogue";
 
 type Selection = "principale" | "monCompte" | number;
 type Compte = Schemas["CompteCaissierDto"];
@@ -148,7 +149,8 @@ function detailCaissier(c: Compte, comptages: Session[]): string {
   if (c.envoyesEnTransitNombre > 0) parties.push(`${decimal(c.envoyesEnTransitMontant)} en transit`);
   if (c.recusEnTransitNombre > 0) parties.push(`${decimal(c.recusEnTransitMontant)} à valider`);
   if (comptages.some((s) => s.caissierId === c.utilisateurId)) parties.push("comptage en attente");
-  if (c.sessionOuverteCaisse) parties.push(`${c.sessionOuverteCaisse} ouverte`);
+  if (c.sessionOuverteCaisse)
+    parties.push(`${c.sessionOuverteCaisse} ouverte · ventes ${decimal(c.ventesSessionOuverte ?? 0)}`);
   if (!c.actif) parties.push("désactivé");
   return parties.length > 0 ? parties.join(" · ") : "Aucun mouvement en cours";
 }
@@ -356,18 +358,27 @@ function EnteteCaissier({
   onOperation: (type: TypeOperation) => void;
 }) {
   const [aCompter, setACompter] = useState<Session | null>(null);
+  const [aRecevoir, setARecevoir] = useState(false);
   return (
     <>
       <div className="tresorerie-entete">
         <div className="tresorerie-solde">
           <span>
             Solde dû par {compte.nom}
-            {compte.sessionOuverteCaisse
-              ? ` · ${compte.sessionOuverteCaisse} ouverte, ventes comptées à la clôture`
-              : ""}
+            {compte.actif ? "" : " · compte désactivé"}
           </span>
           <SoldeDh montant={compte.solde} />
           <RepartitionDu especes={compte.soldeEspeces} tpe={compte.soldeTpe} />
+          {compte.sessionOuverteCaisse != null && (
+            // Sous le solde, sans s'y ajouter : ces ventes sont encore dans le tiroir.
+            <span className="tresorerie-ventes-en-cours">
+              <span className="pastille-ouverte" aria-hidden="true" />
+              <span>
+                <strong>{compte.sessionOuverteCaisse} ouverte</strong> · ventes en cours{" "}
+                <strong>{dh(compte.ventesSessionOuverte ?? 0)}</strong>, ajoutées au solde à la clôture
+              </span>
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -377,15 +388,28 @@ function EnteteCaissier({
         >
           Ajuster / passer en perte
         </button>
-        <button
-          type="button"
-          className="bouton-compact plein"
-          disabled={!compte.actif}
-          onClick={() => onOperation("verser")}
-        >
-          Verser à {compte.nom}
-        </button>
+        {compte.actif ? (
+          <button type="button" className="bouton-compact plein" onClick={() => onOperation("verser")}>
+            Verser à {compte.nom}
+          </button>
+        ) : (
+          // Désactivé, il ne peut plus verser lui-même : l'admin reçoit l'argent qu'il lui remet.
+          <button
+            type="button"
+            className="bouton-compact plein"
+            disabled={compte.solde <= 0 || compte.sessionOuverteCaisse != null}
+            title={
+              compte.sessionOuverteCaisse != null
+                ? `Clôturez d'abord ${compte.sessionOuverteCaisse} d'office (onglet Caisses)`
+                : undefined
+            }
+            onClick={() => setARecevoir(true)}
+          >
+            Recevoir de {compte.nom}
+          </button>
+        )}
       </div>
+      {aRecevoir && <RecevoirDialogue compte={compte} onFermer={() => setARecevoir(false)} />}
       {comptages.map((s) => (
         <div key={s.id} className="bandeau-info bandeau-attention">
           <span className="bandeau-info-texte">

@@ -187,6 +187,29 @@ export function useAjuster() {
   });
 }
 
+/** Argent remis à l'admin par un utilisateur désactivé, reçu aussitôt dans la caisse principale. */
+export function useRecevoirDe() {
+  const apres = useApresOperation();
+  return useMutation({
+    mutationFn: ({
+      utilisateurId,
+      ...corps
+    }: {
+      utilisateurId: number;
+      montantEspeces: number;
+      montantTpe: number;
+      cle: string;
+    }) =>
+      appel(
+        api.POST("/api/v1/tresorerie/comptes/{utilisateurId}/reception", {
+          params: { path: { utilisateurId } },
+          body: corps,
+        }),
+      ),
+    onSuccess: apres,
+  });
+}
+
 export function useTerminerComptage() {
   const queryClient = useQueryClient();
   const apres = useApresOperation();

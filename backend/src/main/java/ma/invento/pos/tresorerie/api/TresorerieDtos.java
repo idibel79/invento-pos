@@ -106,6 +106,10 @@ public final class TresorerieDtos {
             BigDecimal soldeEspeces,
             BigDecimal soldeTpe,
             @Schema(nullable = true) String sessionOuverteCaisse,
+
+            @Schema(nullable = true, description = "Ventes de la caisse ouverte, hors solde dû jusqu'à la clôture")
+            BigDecimal ventesSessionOuverte,
+
             int recusEnTransitNombre,
             BigDecimal recusEnTransitMontant,
             int envoyesEnTransitNombre,
@@ -162,6 +166,16 @@ public final class TresorerieDtos {
             BigDecimal montant,
 
             @Schema(nullable = true) @Size(max = 300) String motif,
+            @Schema(nullable = true) UUID cle) {}
+
+    /** Argent remis à l'admin par un utilisateur désactivé, en espèces et en tickets TPE (total non nul). */
+    public record ReceptionCommande(
+            @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantEspeces,
+
+            @NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2)
+            BigDecimal montantTpe,
+
             @Schema(nullable = true) UUID cle) {}
 
     public record RefusCommande(

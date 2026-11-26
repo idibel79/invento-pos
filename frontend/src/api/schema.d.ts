@@ -340,6 +340,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tresorerie/comptes/{utilisateurId}/reception": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recevoir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tresorerie/comptes/{utilisateurId}/ajustement": {
         parameters: {
             query?: never;
@@ -1430,6 +1446,12 @@ export interface components {
             /** Format: uuid */
             cle?: string | null;
         };
+        ReceptionCommande: {
+            montantEspeces: number;
+            montantTpe: number;
+            /** Format: uuid */
+            cle?: string | null;
+        };
         OuvertureCommande: {
             /** Format: int64 */
             caisseId: number;
@@ -1721,6 +1743,8 @@ export interface components {
             soldeEspeces: number;
             soldeTpe: number;
             sessionOuverteCaisse: string | null;
+            /** @description Ventes de la caisse ouverte, hors solde dû jusqu'à la clôture */
+            ventesSessionOuverte: number | null;
             /** Format: int32 */
             recusEnTransitNombre: number;
             recusEnTransitMontant: number;
@@ -2567,6 +2591,32 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersementDto"];
+                };
+            };
+        };
+    };
+    recevoir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                utilisateurId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceptionCommande"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -163,7 +163,7 @@ class TresorerieIT extends IntegrationTest {
     }
 
     @Test
-    void solde_insuffisant_refuse_versement_retrait_fond_et_desactivation() throws Exception {
+    void solde_insuffisant_refuse_versement_retrait_et_fond() throws Exception {
         valider(verserAuCaissier("100"));
         mvc.perform(post("/api/v1/tresorerie/mon-compte/versements")
                         .header(HttpHeaders.AUTHORIZATION, bearer(jetonCaissier))
@@ -178,8 +178,15 @@ class TresorerieIT extends IntegrationTest {
                 .andExpect(status().isUnprocessableEntity());
         operation("/api/v1/tresorerie/principale/retrait", "1", "").andExpect(status().isUnprocessableEntity());
         ouvrir("100.01").andExpect(status().isUnprocessableEntity());
+    }
 
-        // Un utilisateur qui doit encore de l'argent ne peut pas être désactivé.
+    @Test
+    void utilisateur_desactive_avec_dette_puis_argent_recu_par_l_admin() throws Exception {
+        valider(verserAuCaissier("100"));
+        // Tant qu'il est actif, il verse lui-même : l'admin ne peut pas recevoir à sa place.
+        recevoir("100", "0").andExpect(status().isUnprocessableEntity());
+
+        // Il doit encore 100 DH : il est désactivé quand même, sa dette reste à son compte.
         Map<String, Object> modification = new HashMap<>();
         modification.put("nom", caissier.getNom());
         modification.put("prenom", caissier.getPrenom());
@@ -194,7 +201,39 @@ class TresorerieIT extends IntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(modification)))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.actif").value(false));
+        mvc.perform(get("/api/v1/tresorerie/comptes").header(HttpHeaders.AUTHORIZATION, bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.caissiers[?(@.utilisateurId == " + caissier.getId() + ")].actif")
+                        .value(false))
+                .andExpect(jsonPath("$.caissiers[?(@.utilisateurId == " + caissier.getId() + ")].solde")
+                        .value(100.0));
+
+        // L'admin reçoit l'argent qu'il lui remet, dans la limite de ce qu'il doit par mode.
+        recevoir("100.01", "0").andExpect(status().isUnprocessableEntity());
+        recevoir("0", "10").andExpect(status().isUnprocessableEntity());
+        BigDecimal principaleAvant = soldePrincipale();
+        recevoir("60", "0")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statut").value("VALIDE"));
+        assertThat(soldePrincipale()).isEqualByComparingTo(principaleAvant.add(new BigDecimal("60")));
+        assertThat(soldeCaissierEnBase()).isEqualByComparingTo("40");
+    }
+
+    private ResultActions recevoir(String especes, String tpe) throws Exception {
+        return mvc.perform(post("/api/v1/tresorerie/comptes/" + caissier.getId() + "/reception")
+                .header(HttpHeaders.AUTHORIZATION, bearer(admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(
+                        Map.of("montantEspeces", new BigDecimal(especes), "montantTpe", new BigDecimal(tpe)))));
+    }
+
+    private BigDecimal soldeCaissierEnBase() {
+        return jdbc.queryForObject(
+                "select solde from pos.compte_tresorerie where type = 'CAISSIER' and utilisateur_id = ?",
+                BigDecimal.class,
+                caissier.getId());
     }
 
     @Test
@@ -258,7 +297,10 @@ class TresorerieIT extends IntegrationTest {
         mvc.perform(get("/api/v1/tresorerie/comptes").header(HttpHeaders.AUTHORIZATION, bearer(admin)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.caissiers[?(@.utilisateurId == " + caissier.getId() + ")].solde")
-                        .value(100.0));
+                        .value(100.0))
+                // Elle est affichée à part, comme ventes de la caisse ouverte.
+                .andExpect(jsonPath("$.caissiers[?(@.utilisateurId == " + caissier.getId() + ")].ventesSessionOuverte")
+                        .value(50.0));
         // Un versement reçu pendant la session ne fait pas entrer les ventes dans le solde dû.
         valider(verserAuCaissier("20"));
         assertThat(soldeCaissier()).isEqualByComparingTo("120");
