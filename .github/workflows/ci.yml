@@ -187,6 +187,13 @@ jobs:
           docker pull --platform linux/amd64 "ghcr.io/${{ github.repository }}:${{ github.sha }}"
           docker tag "ghcr.io/${{ github.repository }}:${{ github.sha }}" "$IMAGE"
           docker push "$IMAGE"
+      # TLS vérifié vers Supabase (certificat et nom d'hôte), quel que soit le sslmode de la variable :
+      # la racine Supabase est copiée dans l'image (deploy/supabase-ca-2021.crt).
+      - name: Adresse de la base en sslmode=verify-full
+        id: base
+        env:
+          URL: ${{ vars.POS_DB_URL }}
+        run: echo "url=${URL%%\?*}?sslmode=verify-full&sslrootcert=/app/certs/supabase-ca-2021.crt" >> "$GITHUB_OUTPUT"
       - uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: invento-pos
@@ -205,7 +212,7 @@ jobs:
             --cpu-boost
             --max-instances=2
           env_vars: |
-            POS_DB_URL=${{ vars.POS_DB_URL }}
+            POS_DB_URL=${{ steps.base.outputs.url }}
             POS_DB_USER=${{ vars.POS_DB_USER }}
             POS_DB_POOL_SIZE=5
             POS_PROXY_CONFIANCE=true

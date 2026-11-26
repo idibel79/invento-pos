@@ -20,6 +20,8 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     boolean existsByRole(Role role);
 
+    boolean existsByIdAndActifTrue(long id);
+
     List<Utilisateur> findAllByOrderByNomAscPrenomAsc();
 
     /** Incrément atomique, sans conflit de version entre deux essais simultanés. */

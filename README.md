@@ -52,7 +52,7 @@ Mot de passe `demo1234` pour tous, sans changement demandé à la connexion. Hui
 Prérequis : JDK 21 et Docker.
 
 ```bash
-docker compose up -d db                       # PostgreSQL 16 sur localhost:5432
+POS_DB_PASSWORD=pos docker compose up -d db   # PostgreSQL 16 sur 127.0.0.1:5432 (mot de passe obligatoire, ou .env)
 cd backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
@@ -149,7 +149,7 @@ après la première connexion.
 ## Installation sur le site (Raspberry Pi ou PC)
 
 ```bash
-cp .env.example .env      # renseigner POS_DB_PASSWORD et POS_JWT_SECRET (openssl rand -base64 48)
+cp .env.example .env      # renseigner POS_DB_PASSWORD et POS_JWT_SECRET (openssl rand -base64 48) : obligatoires
 docker compose up -d      # image ghcr.io/idibel79/invento-pos (amd64 et arm64) + PostgreSQL
 ```
 

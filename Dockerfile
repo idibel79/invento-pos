@@ -27,6 +27,9 @@ COPY --from=build /app/dependencies/ ./
 COPY --from=build /app/spring-boot-loader/ ./
 COPY --from=build /app/snapshot-dependencies/ ./
 COPY --from=build /app/application/ ./
+# Racine de Supabase (publique) : vérification TLS complète en ligne (sslmode=verify-full, voir ci.yml).
+# Inutilisée sur le Raspberry Pi, où la base reste sur le réseau Docker interne.
+COPY deploy/supabase-ca-2021.crt certs/
 USER pos
 ENV SPRING_PROFILES_ACTIVE=prod \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
